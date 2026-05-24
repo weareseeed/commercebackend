@@ -10,6 +10,7 @@ import { searchRoutes } from './routes/search';
 import { checkoutRoutes } from './routes/checkout-intents';
 import { webhookRoutes } from './routes/webhooks-stripe';
 import { orderRoutes } from './routes/orders';
+import { offersRoutes } from './routes/offers';
 
 import crypto from 'crypto';
 
@@ -72,6 +73,7 @@ export function buildApp() {
   app.register(checkoutRoutes);
   app.register(webhookRoutes);
   app.register(orderRoutes);
+  app.register(offersRoutes);
 
   return app;
 }
