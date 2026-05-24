@@ -1,16 +1,16 @@
 # CODEOWNERS for CommerceBackend
 # Protect repository configuration, security policies, database layers, payment services, and agent metadata.
 
-.github/                             @weareseeed/maintainers
-packages/db/prisma/                  @weareseeed/maintainers
-apps/api/src/services/checkout.service.ts @weareseeed/maintainers
-apps/api/src/services/orders.service.ts   @weareseeed/maintainers
-apps/api/src/routes/webhooks-stripe.ts    @weareseeed/maintainers
-packages/payments/                   @weareseeed/maintainers
-packages/payments-*                  @weareseeed/maintainers
-LICENSE                              @weareseeed/maintainers
-README.md                            @weareseeed/maintainers
-docs/release-notes-*.md              @weareseeed/maintainers
-.well-known/                         @weareseeed/maintainers
-llms.txt                             @weareseeed/maintainers
-docs/agent-discovery.md              @weareseeed/maintainers
+.github/                             @rsaer @joshua-seeed
+packages/db/prisma/                  @rsaer @joshua-seeed
+apps/api/src/services/checkout.service.ts @rsaer @joshua-seeed
+apps/api/src/services/orders.service.ts   @rsaer @joshua-seeed
+apps/api/src/routes/webhooks-stripe.ts    @rsaer @joshua-seeed
+packages/payments/                   @rsaer @joshua-seeed
+packages/payments-*                  @rsaer @joshua-seeed
+LICENSE                              @rsaer @joshua-seeed
+README.md                            @rsaer @joshua-seeed
+docs/release-notes-*.md              @rsaer @joshua-seeed
+.well-known/                         @rsaer @joshua-seeed
+llms.txt                             @rsaer @joshua-seeed
+docs/agent-discovery.md              @rsaer @joshua-seeed
