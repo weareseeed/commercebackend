@@ -14,6 +14,7 @@ export const CreateCheckoutIntentSchema = z.object({
   quantity: z.number().int().positive('Quantity must be a positive integer'),
   successUrl: z.string().url('Invalid success URL'),
   cancelUrl: z.string().url('Invalid cancel URL'),
+  offerId: z.string().optional(),
 });
 
 export const CheckoutIntentResponseSchema = z.object({
@@ -27,6 +28,7 @@ export const CheckoutIntentResponseSchema = z.object({
   currency: z.string(),
   status: CheckoutIntentStatusSchema,
   checkoutUrl: z.string().nullable(),
+  offerId: z.string().nullable().optional(),
   createdAt: z.date().or(z.string()),
   updatedAt: z.date().or(z.string()),
 });
