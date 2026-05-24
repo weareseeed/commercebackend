@@ -52,6 +52,7 @@ model Listing {
   updatedAt               DateTime @updatedAt
   checkoutIntents CheckoutIntent[]
   orders          Order[]
+  offers          Offer[]
 
   @@index([sellerAgentId])
   @@index([status])
@@ -91,10 +92,13 @@ model CheckoutIntent {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   order Order?
+  offerId                 String?
+  offer                   Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
 
   @@index([stripeCheckoutSessionId])
   @@index([buyerAgentId])
   @@index([sellerAgentId])
+  @@index([offerId])
 }
 
 enum CheckoutIntentStatus {
@@ -153,3 +157,62 @@ model AgentQueryLog {
 
   @@index([agentId])
 }
+
+enum OfferStatus {
+  pending
+  accepted
+  checkout_pending
+  rejected
+  countered
+  expired
+  cancelled
+}
+
+model Offer {
+  id                  String           @id @default(cuid())
+  listingId           String
+  listing             Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerAgentId        String
+  priceAmount         Int              // Offered price in cents
+  quantity            Int              // Offered quantity
+  status              OfferStatus      @default(pending)
+  expiresAt           DateTime
+  
+  // Counter Offer Terms
+  counterPriceAmount  Int?             // Counter offered price in cents
+  counterQuantity     Int?             // Counter offered quantity
+  counterExpiresAt    DateTime?        // Expiration for the counter offer
+  
+  // Frozen Accepted Terms
+  acceptedPriceAmount Int?
+  acceptedQuantity    Int?
+  acceptedAt          DateTime?
+  acceptedByAgentId   String?
+  
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  
+  // Relations
+  checkoutIntents     CheckoutIntent[]
+  history             OfferHistory[]
+
+  @@index([listingId])
+  @@index([buyerAgentId])
+  @@index([status])
+}
+
+model OfferHistory {
+  id         String      @id @default(cuid())
+  offerId    String
+  offer      Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  fromStatus OfferStatus?
+  toStatus   OfferStatus
+  event      String      // e.g. "OFFER_CREATED", "OFFER_ACCEPTED", "OFFER_COUNTERED", "COUNTER_ACCEPTED", "OFFER_REJECTED", "OFFER_EXPIRED", "OFFER_CANCELLED"
+  actorId    String      // The agentId performing the transition
+  note       String?
+  metadata   Json?       // Term snapshots and reasons (JSON object)
+  createdAt  DateTime    @default(now())
+
+  @@index([offerId])
+}
+
