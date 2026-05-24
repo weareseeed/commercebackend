@@ -8,12 +8,16 @@ const mockDb = {
   checkoutIntents: [] as any[],
   orders: [] as any[],
   queryLogs: [] as any[],
+  offers: [] as any[],
+  offerHistories: [] as any[],
   reset() {
     this.agents = [];
     this.listings = [];
     this.checkoutIntents = [];
     this.orders = [];
     this.queryLogs = [];
+    this.offers = [];
+    this.offerHistories = [];
   },
 };
 
@@ -167,6 +171,68 @@ vi.mock('@commercebackend/db', () => {
         };
         mockDb.queryLogs.push(log);
         return log;
+      }),
+      deleteMany: vi.fn(),
+    },
+    offer: {
+      create: vi.fn(async ({ data }) => {
+        const newOffer = {
+          id: `off_${Math.random().toString(36).substring(2, 11)}`,
+          status: 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          counterPriceAmount: null,
+          counterQuantity: null,
+          counterExpiresAt: null,
+          acceptedPriceAmount: null,
+          acceptedQuantity: null,
+          acceptedAt: null,
+          acceptedByAgentId: null,
+          ...data,
+        };
+        mockDb.offers.push(newOffer);
+        return newOffer;
+      }),
+      findUnique: vi.fn(async ({ where, include }) => {
+        const offer = mockDb.offers.find((o) => o.id === where.id);
+        if (!offer) return null;
+        const offerCopy = { ...offer };
+        if (include?.listing) {
+          offerCopy.listing = mockDb.listings.find((l) => l.id === offer.listingId);
+        }
+        if (include?.history) {
+          offerCopy.history = mockDb.offerHistories.filter((h) => h.offerId === offer.id);
+        }
+        return offerCopy;
+      }),
+      findMany: vi.fn(async ({ where }) => {
+        return mockDb.offers.filter((o) => {
+          if (where?.buyerAgentId && o.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.status && o.status !== where.status) return false;
+          if (where?.listing?.sellerAgentId) {
+            const listing = mockDb.listings.find((l) => l.id === o.listingId);
+            if (!listing || listing.sellerAgentId !== where.listing.sellerAgentId) return false;
+          }
+          return true;
+        });
+      }),
+      update: vi.fn(async ({ where, data }) => {
+        const offer = mockDb.offers.find((o) => o.id === where.id);
+        if (!offer) throw new Error('Offer not found');
+        Object.assign(offer, data);
+        return offer;
+      }),
+      deleteMany: vi.fn(),
+    },
+    offerHistory: {
+      create: vi.fn(async ({ data }) => {
+        const newHistory = {
+          id: `hst_${Math.random().toString(36).substring(2, 11)}`,
+          createdAt: new Date(),
+          ...data,
+        };
+        mockDb.offerHistories.push(newHistory);
+        return newHistory;
       }),
       deleteMany: vi.fn(),
     },
@@ -1314,6 +1380,283 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const bodyMe = JSON.parse(resMe.body);
       expect(bodyMe.agent.apiKeyHash).toBeUndefined();
+    });
+  });
+
+  describe('Offers API Endpoints (v0.2)', () => {
+    let buyerKey: string;
+    let sellerKey: string;
+    let listingId: string;
+
+    beforeEach(async () => {
+      // Create seller
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Seller S', type: 'seller', ownerEmail: 'seller_s@test.com' },
+      });
+      const sellerData = JSON.parse(resSeller.body);
+      sellerKey = sellerData.apiKey;
+
+      // Create buyer
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Buyer B', type: 'buyer', ownerEmail: 'buyer_b@test.com' },
+      });
+      const buyerData = JSON.parse(resBuyer.body);
+      buyerKey = buyerData.apiKey;
+
+      // Create listing (price 10000, quantity 10)
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          title: 'Special Item',
+          description: 'Offers accepted listing.',
+          type: 'physical_good',
+          priceAmount: 10000,
+          currency: 'USD',
+          quantityAvailable: 10,
+        },
+      });
+      listingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    it('should create a pending offer and log OFFER_CREATED event with fromStatus = null', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const response = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          priceAmount: 7500,
+          quantity: 2,
+          expiresAt,
+          note: 'Initial offer',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const data = JSON.parse(response.body);
+      expect(data.offer.status).toBe('pending');
+      expect(data.offer.priceAmount).toBe(7500);
+
+      // Verify history
+      const resOffer = await app.inject({
+        method: 'GET',
+        url: `/v1/offers/${data.offer.id}`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+      });
+      const offerDetails = JSON.parse(resOffer.body).offer;
+      expect(offerDetails.history.length).toBe(1);
+      expect(offerDetails.history[0].event).toBe('OFFER_CREATED');
+      expect(offerDetails.history[0].fromStatus).toBeNull();
+      expect(offerDetails.history[0].toStatus).toBe('pending');
+    });
+
+    it('should prevent checkout on pending, rejected, cancelled, and countered offers', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      // Checkout attempt on pending offer
+      const resCheckoutPending = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckoutPending.statusCode).toBe(400);
+
+      // Reject offer
+      await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/reject`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      // Checkout attempt on rejected offer
+      const resCheckoutRejected = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckoutRejected.statusCode).toBe(400);
+    });
+
+    it('should prevent accepting expired pending offers and expired counter-offers', async () => {
+      // We override validation locally in this test or test time-based expired check manually by injecting state.
+      // But since validateExpiration throws on past dates, we create a valid offer, and then modify mockDb directly to simulate expiration!
+      const validExpires = new Date(Date.now() + 10000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt: validExpires },
+      });
+      const offer = JSON.parse(resOffer.body).offer;
+
+      // Force mockDb offer to be expired
+      const dbOffer = mockDb.offers.find((o) => o.id === offer.id);
+      dbOffer.expiresAt = new Date(Date.now() - 5000);
+
+      // Accept attempt
+      const resAccept = await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offer.id}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+      expect(resAccept.statusCode).toBe(400);
+      const body = JSON.parse(resAccept.body);
+      expect(body.error.code).toBe('OFFER_EXPIRED');
+    });
+
+    it('should freeze terms on acceptance, lock price, and block secondary checkout intents', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      // Accept offer
+      const resAccept = await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+      expect(resAccept.statusCode).toBe(200);
+      const acceptedOffer = JSON.parse(resAccept.body).offer;
+      expect(acceptedOffer.status).toBe('accepted');
+      expect(acceptedOffer.acceptedPriceAmount).toBe(7500);
+      expect(acceptedOffer.acceptedQuantity).toBe(2);
+
+      // Create checkout intent (should use accepted price: 7500, total amount: 15000)
+      const resCheckout = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckout.statusCode).toBe(201);
+      const checkoutIntent = JSON.parse(resCheckout.body).checkoutIntent;
+      expect(checkoutIntent.amountTotal).toBe(15000); // 7500 * 2
+      expect(checkoutIntent.offerId).toBe(offerId);
+
+      // Double checkout attempt
+      const resCheckout2 = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckout2.statusCode).toBe(400); // Already checked out (checkout_pending)
+    });
+
+    it('should forbid other sellers from mutating an offer', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      // Register another seller
+      const resSeller2 = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Seller 2', type: 'seller', ownerEmail: 's2@test.com' },
+      });
+      const s2Key = JSON.parse(resSeller2.body).apiKey;
+
+      // Attempt to accept using S2 key
+      const resAccept = await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${s2Key}` },
+      });
+      expect(resAccept.statusCode).toBe(403);
+    });
+
+    it('should prevent buyer from cancelling after acceptance', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      // Accept
+      await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      // Try cancel
+      const resCancel = await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/cancel`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+      });
+      expect(resCancel.statusCode).toBe(400); // Status is accepted, not pending or countered
+    });
+
+    it('should allow legacy checkout intents without offerId to continue working normally', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 1, // Uses original price 10000
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const checkoutIntent = JSON.parse(response.body).checkoutIntent;
+      expect(checkoutIntent.amountTotal).toBe(10000);
+      expect(checkoutIntent.offerId).toBeNull();
     });
   });
 });

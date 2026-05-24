@@ -229,7 +229,8 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     "listingId": "lst_xyz789",
     "quantity": 2,
     "successUrl": "http://localhost:3000/success?checkoutIntentId={CHECKOUT_INTENT_ID}",
-    "cancelUrl": "http://localhost:3000/cancel?checkoutIntentId={CHECKOUT_INTENT_ID}"
+    "cancelUrl": "http://localhost:3000/cancel?checkoutIntentId={CHECKOUT_INTENT_ID}",
+    "offerId": "off_123"
   }
   ```
 - **Response (201 Created):**
@@ -320,6 +321,222 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here" \
     -H "Content-Type: application/json" \
     -d '{"fulfillmentStatus": "fulfilled", "fulfillmentNote": "QR tickets emailed to buyer email address."}'
+  ```
+
+### 11. Create Offer
+- **POST** `/v1/listings/:id/offers` *(Requires buyer/both type)*
+- **Body:**
+  ```json
+  {
+    "priceAmount": 7500,
+    "quantity": 2,
+    "expiresAt": "2026-05-31T09:35:17.000Z",
+    "note": "Programmatic offer from procurement agent."
+  }
+  ```
+- **Response (201 Created):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "listingId": "lst_xyz789",
+      "buyerAgentId": "agent_buyer",
+      "priceAmount": 7500,
+      "quantity": 2,
+      "status": "pending",
+      "expiresAt": "2026-05-31T09:35:17.000Z",
+      "counterPriceAmount": null,
+      "counterQuantity": null,
+      "counterExpiresAt": null,
+      "acceptedPriceAmount": null,
+      "acceptedQuantity": null,
+      "acceptedAt": null,
+      "acceptedByAgentId": null,
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/listings/lst_xyz789/offers \
+    -H "Authorization: Bearer cb_test_your_key_here" \
+    -H "Content-Type: application/json" \
+    -d '{"priceAmount": 7500, "quantity": 2, "expiresAt": "2026-05-31T09:35:17.000Z", "note": "Programmatic offer."}'
+  ```
+
+### 12. Get List of Offers
+- **GET** `/v1/offers?role=buyer&status=pending`
+- **Response (200 OK):**
+  ```json
+  {
+    "offers": [
+      {
+        "id": "off_123",
+        "listingId": "lst_xyz789",
+        "buyerAgentId": "agent_buyer",
+        "priceAmount": 7500,
+        "quantity": 2,
+        "status": "pending",
+        "expiresAt": "2026-05-31T09:35:17.000Z",
+        "createdAt": "2026-05-24T00:00:00.000Z",
+        "updatedAt": "2026-05-24T00:00:00.000Z"
+      }
+    ]
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X GET "http://localhost:4000/v1/offers?role=buyer&status=pending" \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 13. Get Offer Details
+- **GET** `/v1/offers/:id`
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "listingId": "lst_xyz789",
+      "buyerAgentId": "agent_buyer",
+      "priceAmount": 7500,
+      "quantity": 2,
+      "status": "pending",
+      "expiresAt": "2026-05-31T09:35:17.000Z",
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z",
+      "history": [
+        {
+          "id": "his_123",
+          "offerId": "off_123",
+          "fromStatus": null,
+          "toStatus": "pending",
+          "event": "OFFER_CREATED",
+          "actorId": "agent_buyer",
+          "note": "Programmatic offer.",
+          "createdAt": "2026-05-24T00:00:00.000Z"
+        }
+      ]
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X GET http://localhost:4000/v1/offers/off_123 \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 14. Accept Offer
+- **POST** `/v1/offers/:id/accept` *(Requires listing owner/seller)*
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "status": "accepted",
+      "acceptedPriceAmount": 7500,
+      "acceptedQuantity": 2,
+      "acceptedAt": "2026-05-24T00:00:00.000Z",
+      "acceptedByAgentId": "agent_seller",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/offers/off_123/accept \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 15. Reject Offer
+- **POST** `/v1/offers/:id/reject` *(Requires buyer or listing owner/seller)*
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "status": "rejected",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/offers/off_123/reject \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 16. Counter Offer
+- **POST** `/v1/offers/:id/counter` *(Requires listing owner/seller)*
+- **Body:**
+  ```json
+  {
+    "counterPriceAmount": 8000,
+    "counterQuantity": 2,
+    "counterExpiresAt": "2026-05-31T09:35:17.000Z",
+    "note": "Counter-offer at our minimum reserve price."
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "status": "countered",
+      "counterPriceAmount": 8000,
+      "counterQuantity": 2,
+      "counterExpiresAt": "2026-05-31T09:35:17.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/offers/off_123/counter \
+    -H "Authorization: Bearer cb_test_your_key_here" \
+    -H "Content-Type: application/json" \
+    -d '{"counterPriceAmount": 8000, "counterQuantity": 2, "counterExpiresAt": "2026-05-31T09:35:17.000Z", "note": "Counter offer terms."}'
+  ```
+
+### 17. Accept Counter Offer
+- **POST** `/v1/offers/:id/accept-counter` *(Requires buyer)*
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "status": "accepted",
+      "acceptedPriceAmount": 8000,
+      "acceptedQuantity": 2,
+      "acceptedAt": "2026-05-24T00:00:00.000Z",
+      "acceptedByAgentId": "agent_buyer",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/offers/off_123/accept-counter \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 18. Cancel Offer
+- **POST** `/v1/offers/:id/cancel` *(Requires buyer)*
+- **Response (200 OK):**
+  ```json
+  {
+    "offer": {
+      "id": "off_123",
+      "status": "cancelled",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl -X POST http://localhost:4000/v1/offers/off_123/cancel \
+    -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
 ---
