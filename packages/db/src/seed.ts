@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { prisma } from './client';
 import { generateApiKey } from './auth-utils';
 
@@ -97,10 +98,26 @@ async function main() {
   console.log('SEEDING SUCCESSFUL');
   console.log('=========================================');
   console.log(`Seller Agent ID:  ${sellerAgent.id}`);
-  console.log(`Seller API Key:   ${sellerKeys.apiKey}`);
+  const credentialsPath = '.commercebackend-seed-credentials.json';
+  fs.writeFileSync(
+    credentialsPath,
+    JSON.stringify(
+      {
+        sellerAgentId: sellerAgent.id,
+        sellerApiKey: sellerKeys.apiKey,
+        buyerAgentId: buyerAgent.id,
+        buyerApiKey: buyerKeys.apiKey,
+      },
+      null,
+      2
+    ),
+    { mode: 0o600 }
+  );
+
+  console.log('Seller API Key:   written to .commercebackend-seed-credentials.json');
   console.log('-----------------------------------------');
   console.log(`Buyer Agent ID:   ${buyerAgent.id}`);
-  console.log(`Buyer API Key:    ${buyerKeys.apiKey}`);
+  console.log('Buyer API Key:    written to .commercebackend-seed-credentials.json');
   console.log('-----------------------------------------');
   console.log(`Listings Created:`);
   console.log(
