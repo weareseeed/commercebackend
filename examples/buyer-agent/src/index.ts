@@ -51,7 +51,7 @@ async function main() {
     console.log('\n=========================================');
     console.log('BUYER CHECKOUT INTENT SUCCESSFUL');
     console.log('=========================================');
-    console.log(`Buyer API Key:     ${agentResult.apiKey}`);
+    console.log(`Buyer API Key:     ${agentResult.apiKey.slice(0, 12)}... (store securely; only shown once)`);
     console.log(`Checkout Intent ID: ${checkoutResult.checkoutIntent.id}`);
     console.log(`Listing ID:         ${checkoutResult.checkoutIntent.listingId}`);
     console.log(`Quantity:           ${checkoutResult.checkoutIntent.quantity}`);
