@@ -54,3 +54,10 @@ To test Stripe checkout payment loops locally, use the Stripe CLI:
 
 - **No Stripe Connect**: Payouts to sellers are not automated. Merchant balances must be managed externally.
 - **No Refunds/Disputes**: If a buyer payment triggers a `payment_inventory_conflict` (over-purchasing due to concurrency), the payment is collected by Stripe, but no order is placed. The system marks it `payment_inventory_conflict` and requires the platform operator to manually issue a refund or handle fulfillment.
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

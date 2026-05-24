@@ -57,3 +57,10 @@ When verifying PostgreSQL schema and custom migration CHECK constraints:
    ```bash
    pnpm db:seed
    ```
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

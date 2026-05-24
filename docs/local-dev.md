@@ -87,3 +87,10 @@ Run the **buyer-agent** script to register a buyer, search for listings, initiat
 ```bash
 pnpm --filter @commercebackend/example-buyer-agent start
 ```
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

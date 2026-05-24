@@ -47,3 +47,10 @@ We enforce strict validation rules across the API based on the authenticated age
 - **Idempotency**: Webhook processes checks using unique transaction scopes. If a duplicate webhook event is received for an already `paid` or `payment_inventory_conflict` intent, the system returns a `200 OK` without creating duplicate orders or double-decrementing stock.
 - **Row-Level Locking**: Webhook queries use a Postgres row-level lock (`SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE`) inside a transaction to prevent race conditions during concurrent payments.
 - **Inventory Conflict**: If stock becomes unavailable between checkout intent creation and payment success, the checkout intent is marked as `payment_inventory_conflict` to isolate the state for manual review/refunds.
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

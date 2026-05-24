@@ -2,6 +2,13 @@
   "name": "@commercebackend/sdk-js",
   "version": "0.1.0",
   "private": true,
+  "author": "Seeed LLC",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/weareseeed/commercebackend",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weareseeed/commercebackend.git"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {

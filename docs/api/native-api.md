@@ -321,3 +321,10 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Content-Type: application/json" \
     -d '{"fulfillmentStatus": "fulfilled", "fulfillmentNote": "QR tickets emailed to buyer email address."}'
   ```
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

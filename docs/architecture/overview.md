@@ -33,3 +33,10 @@ Buyer Agent / Seller Agent
 ## ACP / UCP Protocol Adapters
 
 ACP (Agentic Commerce Protocol) and UCP (Universal Commerce Protocol) are housed as external packages (`@commercebackend/protocol-acp` and `@commercebackend/protocol-ucp`). They operate purely as mappers translating internal `Listing` types into standardized protocol formats. This ensures the internal data model remains completely decoupled from external protocol specifications.
+
+---
+
+CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+

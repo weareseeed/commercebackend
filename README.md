@@ -170,6 +170,11 @@ Detailed documentation on development guides, security, testing, and payment set
 
 ---
 
+## Ownership
+
+CommerceBackend is owned and maintained by [Seeed LLC](https://www.seeed.us).
+Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
+
 ## License
 
-MIT License. See LICENSE for details.
+Licensed under the Apache License 2.0. See [LICENSE](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/LICENSE) for details.
