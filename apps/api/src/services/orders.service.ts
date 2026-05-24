@@ -106,6 +106,24 @@ export class OrdersService {
         },
       });
 
+      if (intent.offerId) {
+        await tx.offerHistory.create({
+          data: {
+            offerId: intent.offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'checkout_pending',
+            event: 'OFFER_CHECKOUT_COMPLETED',
+            actorId: 'system',
+            note: 'Stripe payment checkout completed successfully.',
+            metadata: {
+              checkoutIntentId,
+              orderId: order.id,
+              stripePaymentIntentId,
+            },
+          },
+        });
+      }
+
       return order;
     });
   }

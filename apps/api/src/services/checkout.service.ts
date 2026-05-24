@@ -135,8 +135,9 @@ export class CheckoutService {
       });
     });
 
+    let stripeSession: any = null;
     try {
-      const stripeSession = await createStripeCheckoutSession({
+      stripeSession = await createStripeCheckoutSession({
         checkoutIntentId: checkoutIntent.id,
         listingId: listing.id,
         title: listing.title,
@@ -149,16 +150,6 @@ export class CheckoutService {
         cancelUrl: input.cancelUrl,
         idempotencyKey: `checkout_intent_stripe_${checkoutIntent.id}`,
       });
-
-      const updatedIntent = await prisma.checkoutIntent.update({
-        where: { id: checkoutIntent.id },
-        data: {
-          stripeCheckoutSessionId: stripeSession.id,
-          checkoutUrl: stripeSession.url,
-        },
-      });
-
-      return updatedIntent;
     } catch (err: any) {
       await prisma.$transaction(async (tx) => {
         await tx.checkoutIntent.update({
@@ -179,7 +170,7 @@ export class CheckoutService {
               toStatus: 'accepted',
               event: 'OFFER_REVERTED_STRIPE_FAILED',
               actorId: buyerAgentId,
-              note: 'Reverted to accepted due to Stripe checkout creation failure.',
+              note: `Reverted to accepted due to Stripe checkout creation failure: ${err.message}`,
             },
           });
         }
@@ -188,6 +179,40 @@ export class CheckoutService {
       throw new AppError(
         'CHECKOUT_CREATION_FAILED',
         `Failed to create checkout session: ${err.message}`,
+        500
+      );
+    }
+
+    try {
+      const updatedIntent = await prisma.checkoutIntent.update({
+        where: { id: checkoutIntent.id },
+        data: {
+          stripeCheckoutSessionId: stripeSession.id,
+          checkoutUrl: stripeSession.url,
+        },
+      });
+
+      return updatedIntent;
+    } catch (err: any) {
+      console.error(
+        `CRITICAL RECONCILIATION NEEDED: Stripe session ${stripeSession.id} was created for CheckoutIntent ${checkoutIntent.id} (Offer: ${input.offerId || 'none'}), but updating CheckoutIntent in DB failed: ${err.message}`
+      );
+
+      try {
+        await prisma.checkoutIntent.update({
+          where: { id: checkoutIntent.id },
+          data: {
+            status: 'failed',
+            stripeCheckoutSessionId: stripeSession.id,
+          },
+        });
+      } catch (innerDbErr: any) {
+        console.error(`Failed to mark checkout intent as failed: ${innerDbErr.message}`);
+      }
+
+      throw new AppError(
+        'CHECKOUT_PERSISTENCE_FAILED',
+        `Stripe session created successfully (${stripeSession.id}) but failed to update checkout intent database state. Offer remains in checkout_pending state. Error: ${err.message}`,
         500
       );
     }

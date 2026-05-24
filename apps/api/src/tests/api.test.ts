@@ -1658,5 +1658,106 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(checkoutIntent.amountTotal).toBe(10000);
       expect(checkoutIntent.offerId).toBeNull();
     });
+
+    it('should revert offer from checkout_pending back to accepted if Stripe session creation fails before session exists', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
+      const stripeMock = vi.mocked(createStripeCheckoutSession);
+      stripeMock.mockRejectedValueOnce(new Error('Stripe API network failure'));
+
+      const resCheckout = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+
+      expect(resCheckout.statusCode).toBe(500);
+
+      const dbOffer = mockDb.offers.find((o) => o.id === offerId);
+      expect(dbOffer.status).toBe('accepted');
+
+      const offerHist = mockDb.offerHistories.filter((h) => h.offerId === offerId);
+      expect(offerHist.some((h) => h.event === 'OFFER_REVERTED_STRIPE_FAILED')).toBe(true);
+    });
+
+    it('should NOT revert offer to accepted if Stripe session exists but DB persistence fails, preventing checkout again', async () => {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      const spyUpdate = vi.mocked(prisma.checkoutIntent.update);
+      spyUpdate.mockImplementationOnce(() => {
+        throw new Error('Mock DB constraint violation or connection error');
+      });
+
+      const resCheckout = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+
+      expect(resCheckout.statusCode).toBe(500);
+      expect(resCheckout.body).toContain('CHECKOUT_PERSISTENCE_FAILED');
+
+      const dbOffer = mockDb.offers.find((o) => o.id === offerId);
+      expect(dbOffer.status).toBe('checkout_pending');
+
+      const offerHist = mockDb.offerHistories.filter((h) => h.offerId === offerId);
+      expect(offerHist.some((h) => h.event === 'OFFER_REVERTED_STRIPE_FAILED')).toBe(false);
+
+      const resCheckout2 = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckout2.statusCode).toBe(400);
+      expect(JSON.parse(resCheckout2.body).error.code).toBe('OFFER_ALREADY_CHECKED_OUT');
+    });
   });
 });

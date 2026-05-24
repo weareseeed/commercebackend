@@ -66,5 +66,7 @@ ALTER TABLE "Offer" ADD CONSTRAINT "Offer_listingId_fkey" FOREIGN KEY ("listingI
 ALTER TABLE "OfferHistory" ADD CONSTRAINT "OfferHistory_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "Offer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Custom PostgreSQL CHECK constraints for Offer
-ALTER TABLE "Offer" ADD CONSTRAINT "Offer_priceAmount_nonnegative" CHECK ("priceAmount" >= 0);
+ALTER TABLE "Offer" ADD CONSTRAINT "Offer_priceAmount_positive" CHECK ("priceAmount" > 0);
 ALTER TABLE "Offer" ADD CONSTRAINT "Offer_quantity_positive" CHECK ("quantity" > 0);
+ALTER TABLE "Offer" ADD CONSTRAINT "Offer_counterPriceAmount_positive" CHECK ("counterPriceAmount" IS NULL OR "counterPriceAmount" > 0);
+ALTER TABLE "Offer" ADD CONSTRAINT "Offer_counterQuantity_positive" CHECK ("counterQuantity" IS NULL OR "counterQuantity" > 0);
