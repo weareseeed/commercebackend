@@ -49,6 +49,24 @@ export class OrdersService {
             stripePaymentIntentId,
           },
         });
+
+        if (intent.offerId) {
+          await tx.offer.update({
+            where: { id: intent.offerId },
+            data: { status: 'cancelled' },
+          });
+
+          await tx.offerHistory.create({
+            data: {
+              offerId: intent.offerId,
+              fromStatus: 'checkout_pending',
+              toStatus: 'cancelled',
+              event: 'OFFER_CANCELLED_INVENTORY_CONFLICT',
+              actorId: 'system',
+              note: 'Offer cancelled due to concurrent payment inventory conflict.',
+            },
+          });
+        }
         return null;
       }
 
@@ -89,6 +107,41 @@ export class OrdersService {
       });
 
       return order;
+    });
+  }
+
+  static async handleExpiredPayment(checkoutIntentId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const intent = await tx.checkoutIntent.findUnique({
+        where: { id: checkoutIntentId },
+      });
+
+      if (!intent || intent.status !== 'open') {
+        return;
+      }
+
+      await tx.checkoutIntent.update({
+        where: { id: checkoutIntentId },
+        data: { status: 'expired' },
+      });
+
+      if (intent.offerId) {
+        await tx.offer.update({
+          where: { id: intent.offerId },
+          data: { status: 'accepted' },
+        });
+
+        await tx.offerHistory.create({
+          data: {
+            offerId: intent.offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'accepted',
+            event: 'OFFER_REVERTED_CHECKOUT_EXPIRED',
+            actorId: 'system',
+            note: 'Offer reverted to accepted because Stripe checkout session expired.',
+          },
+        });
+      }
     });
   }
 

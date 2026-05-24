@@ -28,24 +28,111 @@ export class CheckoutService {
       throw new AppError('VALIDATION_ERROR', 'Quantity must be greater than zero', 400);
     }
 
-    if (input.quantity > listing.quantityAvailable) {
-      throw new AppError('INSUFFICIENT_INVENTORY', 'Requested quantity exceeds available stock', 400);
-    }
+    let price = listing.priceAmount;
 
-    const price = listing.priceAmount;
-    const amountTotal = price * input.quantity;
+    const checkoutIntent = await prisma.$transaction(async (tx) => {
+      if (input.offerId) {
+        const offer = await tx.offer.findUnique({
+          where: { id: input.offerId },
+          include: { listing: true },
+        });
 
-    const checkoutIntent = await prisma.checkoutIntent.create({
-      data: {
-        listingId: listing.id,
-        buyerAgentId,
-        sellerAgentId: listing.sellerAgentId,
-        quantity: input.quantity,
-        amountSubtotal: amountTotal,
-        amountTotal,
-        currency: listing.currency,
-        status: 'open',
-      },
+        if (!offer) {
+          throw new AppError('OFFER_NOT_FOUND', 'Offer not found', 404);
+        }
+        if (offer.buyerAgentId !== buyerAgentId) {
+          throw new AppError('FORBIDDEN', 'You do not have access to this offer', 403);
+        }
+        if (offer.listingId !== listing.id) {
+          throw new AppError('VALIDATION_ERROR', 'Offer listing mismatch', 400);
+        }
+
+        // Transactional expiration check
+        const now = new Date();
+        const isExpired = 
+          (offer.status === 'pending' && offer.expiresAt < now) ||
+          (offer.status === 'countered' && offer.counterExpiresAt && offer.counterExpiresAt < now);
+
+        if (isExpired) {
+          await tx.offer.update({
+            where: { id: offer.id },
+            data: { status: 'expired' },
+          });
+
+          await tx.offerHistory.create({
+            data: {
+              offerId: offer.id,
+              fromStatus: offer.status,
+              toStatus: 'expired',
+              event: 'OFFER_EXPIRED',
+              actorId: 'system',
+              note: 'Offer automatically marked as expired during checkout creation.',
+              metadata: { checkedAt: now.toISOString() },
+            },
+          });
+
+          throw new AppError('OFFER_EXPIRED', 'This offer has expired', 400);
+        }
+
+        if (offer.status === 'checkout_pending') {
+          throw new AppError('OFFER_ALREADY_CHECKED_OUT', 'A checkout intent is already pending for this offer', 400);
+        }
+        if (offer.status !== 'accepted') {
+          throw new AppError('INVALID_OFFER_STATUS', `Cannot checkout offer with status ${offer.status}`, 400);
+        }
+        if (input.quantity !== offer.acceptedQuantity) {
+          throw new AppError('VALIDATION_ERROR', 'Requested quantity must match accepted offer quantity', 400);
+        }
+
+        price = offer.acceptedPriceAmount!;
+
+        // Transition offer to checkout_pending
+        await tx.offer.update({
+          where: { id: offer.id },
+          data: { status: 'checkout_pending' },
+        });
+
+        await tx.offerHistory.create({
+          data: {
+            offerId: offer.id,
+            fromStatus: 'accepted',
+            toStatus: 'checkout_pending',
+            event: 'OFFER_CHECKOUT_PENDING',
+            actorId: buyerAgentId,
+            note: 'Checkout intent initiated.',
+          },
+        });
+      }
+
+      const amountTotal = price * input.quantity;
+
+      // Lock listing for update to check inventory safely
+      const listingRows = await tx.$queryRawUnsafe<any[]>(
+        'SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE',
+        listing.id
+      );
+      const activeListing = listingRows[0];
+
+      if (!activeListing || activeListing.status !== 'active') {
+        throw new AppError('LISTING_NOT_ACTIVE', 'Listing is not active', 400);
+      }
+      if (activeListing.quantityAvailable < input.quantity) {
+        throw new AppError('INSUFFICIENT_INVENTORY', 'Requested quantity exceeds available stock', 400);
+      }
+
+      return await tx.checkoutIntent.create({
+        data: {
+          listingId: listing.id,
+          buyerAgentId,
+          sellerAgentId: listing.sellerAgentId,
+          quantity: input.quantity,
+          amountSubtotal: amountTotal,
+          amountTotal,
+          currency: listing.currency,
+          status: 'open',
+          offerId: input.offerId || null,
+        },
+      });
     });
 
     try {
@@ -53,7 +140,7 @@ export class CheckoutService {
         checkoutIntentId: checkoutIntent.id,
         listingId: listing.id,
         title: listing.title,
-        priceAmount: listing.priceAmount,
+        priceAmount: price,
         quantity: input.quantity,
         currency: listing.currency,
         buyerAgentId,
@@ -73,10 +160,31 @@ export class CheckoutService {
 
       return updatedIntent;
     } catch (err: any) {
-      await prisma.checkoutIntent.update({
-        where: { id: checkoutIntent.id },
-        data: { status: 'failed' },
+      await prisma.$transaction(async (tx) => {
+        await tx.checkoutIntent.update({
+          where: { id: checkoutIntent.id },
+          data: { status: 'failed' },
+        });
+
+        if (input.offerId) {
+          await tx.offer.update({
+            where: { id: input.offerId },
+            data: { status: 'accepted' },
+          });
+
+          await tx.offerHistory.create({
+            data: {
+              offerId: input.offerId,
+              fromStatus: 'checkout_pending',
+              toStatus: 'accepted',
+              event: 'OFFER_REVERTED_STRIPE_FAILED',
+              actorId: buyerAgentId,
+              note: 'Reverted to accepted due to Stripe checkout creation failure.',
+            },
+          });
+        }
       });
+
       throw new AppError(
         'CHECKOUT_CREATION_FAILED',
         `Failed to create checkout session: ${err.message}`,
