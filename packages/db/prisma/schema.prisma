@@ -1,0 +1,142 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  name        String
+  type        AgentType
+  ownerEmail  String
+  apiKeyHash  String
+  status      AgentStatus @default(active)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  listingsAsSeller Listing[] @relation("SellerListings")
+  checkoutIntentsAsBuyer CheckoutIntent[] @relation("BuyerCheckoutIntents")
+  checkoutIntentsAsSeller CheckoutIntent[] @relation("SellerCheckoutIntents")
+  ordersAsBuyer Order[] @relation("BuyerOrders")
+  ordersAsSeller Order[] @relation("SellerOrders")
+  queryLogs AgentQueryLog[]
+}
+
+enum AgentType {
+  buyer
+  seller
+  both
+}
+
+enum AgentStatus {
+  active
+  disabled
+}
+
+model Listing {
+  id                      String   @id @default(cuid())
+  sellerAgentId           String
+  sellerAgent             Agent    @relation("SellerListings", fields: [sellerAgentId], references: [id])
+  title                   String
+  description             String
+  type                    ListingType
+  status                  ListingStatus @default(active)
+  priceAmount             Int
+  currency                String @default("USD")
+  quantityAvailable       Int
+  attributes              Json
+  fulfillmentInstructions String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  checkoutIntents CheckoutIntent[]
+  orders          Order[]
+}
+
+enum ListingType {
+  physical_good
+  digital_good
+  event_ticket
+  service
+  other
+}
+
+enum ListingStatus {
+  active
+  paused
+  sold_out
+  deleted
+}
+
+model CheckoutIntent {
+  id                      String @id @default(cuid())
+  listingId               String
+  listing                 Listing @relation(fields: [listingId], references: [id])
+  buyerAgentId            String
+  buyerAgent              Agent @relation("BuyerCheckoutIntents", fields: [buyerAgentId], references: [id])
+  sellerAgentId           String
+  sellerAgent             Agent @relation("SellerCheckoutIntents", fields: [sellerAgentId], references: [id])
+  quantity                Int
+  amountSubtotal          Int
+  amountTotal             Int
+  currency                String
+  status                  CheckoutIntentStatus @default(open)
+  stripeCheckoutSessionId String?
+  stripePaymentIntentId   String?
+  checkoutUrl             String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  order Order?
+}
+
+enum CheckoutIntentStatus {
+  open
+  paid
+  expired
+  cancelled
+  failed
+}
+
+model Order {
+  id                String @id @default(cuid())
+  checkoutIntentId  String @unique
+  checkoutIntent    CheckoutIntent @relation(fields: [checkoutIntentId], references: [id])
+  listingId         String
+  listing           Listing @relation(fields: [listingId], references: [id])
+  buyerAgentId      String
+  buyerAgent        Agent @relation("BuyerOrders", fields: [buyerAgentId], references: [id])
+  sellerAgentId     String
+  sellerAgent       Agent @relation("SellerOrders", fields: [sellerAgentId], references: [id])
+  quantity          Int
+  amountTotal       Int
+  currency          String
+  paymentStatus     PaymentStatus @default(paid)
+  fulfillmentStatus FulfillmentStatus @default(pending)
+  fulfillmentNote   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  paid
+  refunded
+  failed
+}
+
+enum FulfillmentStatus {
+  pending
+  processing
+  fulfilled
+  cancelled
+}
+
+model AgentQueryLog {
+  id          String @id @default(cuid())
+  agentId     String
+  agent       Agent @relation(fields: [agentId], references: [id])
+  query       String
+  filters     Json
+  resultCount Int
+  createdAt   DateTime @default(now())
+}

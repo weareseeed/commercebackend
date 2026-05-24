@@ -1,0 +1,29 @@
+{
+  "name": "@commercebackend/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@commercebackend/db": "workspace:*",
+    "@commercebackend/schemas": "workspace:*",
+    "@commercebackend/payments-stripe": "workspace:*",
+    "@commercebackend/protocol-acp": "workspace:*",
+    "@commercebackend/protocol-ucp": "workspace:*",
+    "fastify": "^4.26.1",
+    "@fastify/cors": "^9.0.1",
+    "fastify-raw-body": "^4.3.0",
+    "dotenv": "^16.4.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^1.2.1"
+  }
+}

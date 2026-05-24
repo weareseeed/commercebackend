@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.docusaurus
+
+# Local environment configuration
+.env
+.env.local
+
+# SQLite local databases (if any)
+*.db
+*.db-journal
+
+# System files
+.DS_Store
+Thumbs.db
+/npm-debug.log*
+/yarn-error.log*
+.eslintcache
