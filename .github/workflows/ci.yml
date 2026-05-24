@@ -52,6 +52,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
 
+      - name: Build workspace for type resolution
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://commercebackend:***@localhost:5432/commercebackend
+          STRIPE_SECRET_KEY: sk_tes...2345
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
+
       - name: Run lint
         run: pnpm lint
 
