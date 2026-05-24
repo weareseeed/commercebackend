@@ -12,16 +12,59 @@ export class OrdersService {
       });
 
       if (!intent) {
-        throw new Error(`CheckoutIntent ${checkoutIntentId} not found`);
+        throw new AppError('CHECKOUT_INTENT_NOT_FOUND', `CheckoutIntent ${checkoutIntentId} not found`, 404);
       }
 
       if (intent.status === 'paid') {
         const existingOrder = await tx.order.findUnique({
           where: { checkoutIntentId },
         });
-        return existingOrder;
+        return existingOrder || null;
       }
 
+      if (intent.status === 'payment_inventory_conflict') {
+        return null;
+      }
+
+      // Lock the Listing row
+      const listings = await tx.$queryRawUnsafe<any[]>(
+        'SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE',
+        intent.listingId
+      );
+
+      const listing = listings?.[0];
+      if (!listing) {
+        throw new AppError('LISTING_NOT_FOUND', `Listing ${intent.listingId} not found`, 404);
+      }
+
+      // Check if stock is available
+      if (listing.quantityAvailable < intent.quantity) {
+        // Handle payment_inventory_conflict operational state:
+        // Do not create order, do not decrement inventory.
+        // TODO: v0.1 requires manual review / refund for this state.
+        await tx.checkoutIntent.update({
+          where: { id: checkoutIntentId },
+          data: {
+            status: 'payment_inventory_conflict',
+            stripePaymentIntentId,
+          },
+        });
+        return null;
+      }
+
+      // Decrement inventory
+      const newQty = listing.quantityAvailable - intent.quantity;
+      const newStatus = newQty === 0 ? 'sold_out' : listing.status;
+
+      await tx.listing.update({
+        where: { id: intent.listingId },
+        data: {
+          quantityAvailable: newQty,
+          status: newStatus,
+        },
+      });
+
+      // Update CheckoutIntent to paid
       await tx.checkoutIntent.update({
         where: { id: checkoutIntentId },
         data: {
@@ -30,6 +73,7 @@ export class OrdersService {
         },
       });
 
+      // Create Order
       const order = await tx.order.create({
         data: {
           checkoutIntentId,
@@ -44,47 +88,31 @@ export class OrdersService {
         },
       });
 
-      const listing = await tx.listing.findUnique({
-        where: { id: intent.listingId },
-      });
-
-      if (!listing) {
-        throw new Error(`Listing ${intent.listingId} not found`);
-      }
-
-      const newQty = Math.max(0, listing.quantityAvailable - intent.quantity);
-      const newStatus = newQty === 0 ? 'sold_out' : listing.status;
-
-      await tx.listing.update({
-        where: { id: intent.listingId },
-        data: {
-          quantityAvailable: newQty,
-          status: newStatus,
-        },
-      });
-
       return order;
     });
   }
 
-  static async getOrders(agentId: string, role?: 'buyer' | 'seller') {
+  static async getOrders(agentId: string, role?: 'buyer' | 'seller', limit = 20, offset = 0) {
+    const where: any = {};
     if (role === 'buyer') {
-      return prisma.order.findMany({
-        where: { buyerAgentId: agentId },
-      });
+      where.buyerAgentId = agentId;
+    } else if (role === 'seller') {
+      where.sellerAgentId = agentId;
+    } else {
+      where.OR = [{ buyerAgentId: agentId }, { sellerAgentId: agentId }];
     }
 
-    if (role === 'seller') {
-      return prisma.order.findMany({
-        where: { sellerAgentId: agentId },
-      });
-    }
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.order.count({ where }),
+    ]);
 
-    return prisma.order.findMany({
-      where: {
-        OR: [{ buyerAgentId: agentId }, { sellerAgentId: agentId }],
-      },
-    });
+    return { orders, total };
   }
 
   static async getOrderDetails(id: string, agentId: string) {

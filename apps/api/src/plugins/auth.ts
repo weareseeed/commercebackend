@@ -34,7 +34,9 @@ export async function authenticateAgent(request: FastifyRequest, reply: FastifyR
     throw new AppError('AGENT_DISABLED', 'This agent has been disabled', 403);
   }
 
-  request.agent = agent;
+  const agentWithoutHash = { ...agent };
+  delete (agentWithoutHash as any).apiKeyHash;
+  request.agent = agentWithoutHash;
 }
 
 export function registerAuthPlugin(fastify: FastifyInstance) {

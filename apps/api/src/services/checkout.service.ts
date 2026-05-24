@@ -8,16 +8,28 @@ export class CheckoutService {
   static async createCheckoutIntent(buyerAgentId: string, input: CreateCheckoutIntentInput) {
     const listing = await ListingsService.getListingById(input.listingId);
 
+    if (listing.status === 'paused') {
+      throw new AppError('LISTING_NOT_ACTIVE', 'Listing is paused', 400);
+    }
+
+    if (listing.status === 'sold_out' || listing.quantityAvailable === 0) {
+      throw new AppError('LISTING_OUT_OF_STOCK', 'Listing is out of stock', 400);
+    }
+
     if (listing.status !== 'active') {
       throw new AppError('LISTING_NOT_ACTIVE', 'Listing is not active', 400);
     }
 
     if (listing.sellerAgentId === buyerAgentId) {
-      throw new AppError('FORBIDDEN', 'Buyer agent cannot purchase their own listing', 403);
+      throw new AppError('SELF_PURCHASE_NOT_ALLOWED', 'Buyer agent cannot purchase their own listing', 403);
+    }
+
+    if (input.quantity <= 0) {
+      throw new AppError('VALIDATION_ERROR', 'Quantity must be greater than zero', 400);
     }
 
     if (input.quantity > listing.quantityAvailable) {
-      throw new AppError('INSUFFICIENT_STOCK', 'Requested quantity exceeds available stock', 400);
+      throw new AppError('INSUFFICIENT_INVENTORY', 'Requested quantity exceeds available stock', 400);
     }
 
     const price = listing.priceAmount;
@@ -48,6 +60,7 @@ export class CheckoutService {
         sellerAgentId: listing.sellerAgentId,
         successUrl: input.successUrl,
         cancelUrl: input.cancelUrl,
+        idempotencyKey: `checkout_intent_stripe_${checkoutIntent.id}`,
       });
 
       const updatedIntent = await prisma.checkoutIntent.update({
@@ -65,7 +78,7 @@ export class CheckoutService {
         data: { status: 'failed' },
       });
       throw new AppError(
-        'PAYMENT_SESSION_FAILED',
+        'CHECKOUT_CREATION_FAILED',
         `Failed to create checkout session: ${err.message}`,
         500
       );

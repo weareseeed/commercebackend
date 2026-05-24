@@ -10,13 +10,21 @@ export async function searchRoutes(fastify: FastifyInstance) {
     const agent = request.agent!;
     const input = SearchListingsRequestSchema.parse(request.body);
 
-    const results = await SearchService.searchListings(
+    const { results, total } = await SearchService.searchListings(
       agent.id,
       input.query,
       input.filters,
-      input.limit
+      input.limit,
+      input.offset
     );
 
-    return { results };
+    return {
+      results,
+      pagination: {
+        limit: input.limit,
+        offset: input.offset,
+        total,
+      },
+    };
   });
 }

@@ -11,9 +11,40 @@ import { checkoutRoutes } from './routes/checkout-intents';
 import { webhookRoutes } from './routes/webhooks-stripe';
 import { orderRoutes } from './routes/orders';
 
+import crypto from 'crypto';
+
 export function buildApp() {
   const app = fastify({
-    logger: process.env.NODE_ENV !== 'test',
+    logger: process.env.NODE_ENV !== 'test' ? {
+      redact: {
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'req.headers["stripe-signature"]',
+          'req.headers.Authorization',
+          'req.headers["Stripe-Signature"]',
+          'req.headers["stripe_signature"]',
+          'apiKey',
+          'apiKeyHash',
+          '*.apiKey',
+          '*.apiKeyHash',
+        ],
+        censor: '[REDACTED]',
+      },
+    } : false,
+    requestIdHeader: 'x-request-id',
+    genReqId: (req) => {
+      const header = req.headers['x-request-id'];
+      if (header) {
+        return Array.isArray(header) ? header[0] : header;
+      }
+      return `req_${crypto.randomUUID()}`;
+    },
+  });
+
+  // Inject Request ID in response headers
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('x-request-id', request.id);
   });
 
   // CORS Configuration

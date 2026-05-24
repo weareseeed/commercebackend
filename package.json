@@ -3,11 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter api dev",
-    "build": "pnpm --filter @commercebackend/db exec prisma generate && pnpm -r build",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "dev": "pnpm --filter @commercebackend/api dev",
+    "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "selftest": "pnpm --filter @commercebackend/api selftest",
+    "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
+    "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
+    "db:migrate": "pnpm --filter @commercebackend/db migrate",
+    "db:reset": "pnpm --filter @commercebackend/db reset",
+    "db:seed": "pnpm --filter @commercebackend/db seed",
     "format": "prettier --write \"**/*.{ts,json,md,yml,yaml}\""
   },
   "devDependencies": {

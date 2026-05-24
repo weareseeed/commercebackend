@@ -17,8 +17,11 @@ export class AgentsService {
       },
     });
 
+    const agentWithoutHash = { ...agent };
+    delete (agentWithoutHash as any).apiKeyHash;
+
     return {
-      agent,
+      agent: agentWithoutHash,
       apiKey,
     };
   }
@@ -30,6 +33,8 @@ export class AgentsService {
     if (!agent) {
       throw new AppError('AGENT_NOT_FOUND', 'Agent not found', 404);
     }
-    return agent;
+    const agentWithoutHash = { ...agent };
+    delete (agentWithoutHash as any).apiKeyHash;
+    return agentWithoutHash;
   }
 }

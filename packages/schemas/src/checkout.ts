@@ -6,6 +6,7 @@ export const CheckoutIntentStatusSchema = z.enum([
   'expired',
   'cancelled',
   'failed',
+  'payment_inventory_conflict',
 ]);
 
 export const CreateCheckoutIntentSchema = z.object({

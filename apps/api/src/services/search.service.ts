@@ -7,12 +7,17 @@ export interface SearchResult {
   score: number;
 }
 
+export interface SearchProviderResult {
+  results: SearchResult[];
+  total: number;
+}
+
 export interface SearchProvider {
-  search(query: string, filters: SearchFilters, limit: number): Promise<SearchResult[]>;
+  search(query: string, filters: SearchFilters, limit: number, offset: number): Promise<SearchProviderResult>;
 }
 
 export class PostgresSearchProvider implements SearchProvider {
-  async search(query: string, filters: SearchFilters, limit: number): Promise<SearchResult[]> {
+  async search(query: string, filters: SearchFilters, limit: number, offset: number): Promise<SearchProviderResult> {
     const status = filters.status ?? 'active';
     const type = filters.type;
     const currency = filters.currency;
@@ -29,11 +34,12 @@ export class PostgresSearchProvider implements SearchProvider {
     });
 
     if (!query) {
-      return listings.slice(0, limit).map((listing) => ({
+      const sliced = listings.slice(offset, offset + limit).map((listing) => ({
         listing,
         matchReason: 'Listing matches search filters.',
         score: 1.0,
       }));
+      return { results: sliced, total: listings.length };
     }
 
     const queryKeywords = query
@@ -42,11 +48,12 @@ export class PostgresSearchProvider implements SearchProvider {
       .filter((k) => k.length > 0);
 
     if (queryKeywords.length === 0) {
-      return listings.slice(0, limit).map((listing) => ({
+      const sliced = listings.slice(offset, offset + limit).map((listing) => ({
         listing,
         matchReason: 'Listing matches search filters.',
         score: 1.0,
       }));
+      return { results: sliced, total: listings.length };
     }
 
     const results: SearchResult[] = [];
@@ -99,7 +106,8 @@ export class PostgresSearchProvider implements SearchProvider {
 
     results.sort((a, b) => b.score - a.score);
 
-    return results.slice(0, limit);
+    const sliced = results.slice(offset, offset + limit);
+    return { results: sliced, total: results.length };
   }
 }
 
@@ -114,9 +122,10 @@ export class SearchService {
     agentId: string,
     query: string,
     filters: SearchFilters,
-    limit: number
+    limit: number,
+    offset: number
   ) {
-    const results = await this.provider.search(query, filters, limit);
+    const { results, total } = await this.provider.search(query, filters, limit, offset);
 
     await prisma.agentQueryLog.create({
       data: {
@@ -127,6 +136,6 @@ export class SearchService {
       },
     });
 
-    return results;
+    return { results, total };
   }
 }

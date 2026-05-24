@@ -12,7 +12,7 @@ model Agent {
   name        String
   type        AgentType
   ownerEmail  String
-  apiKeyHash  String
+  apiKeyHash  String   @unique
   status      AgentStatus @default(active)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -52,6 +52,9 @@ model Listing {
   updatedAt               DateTime @updatedAt
   checkoutIntents CheckoutIntent[]
   orders          Order[]
+
+  @@index([sellerAgentId])
+  @@index([status])
 }
 
 enum ListingType {
@@ -82,12 +85,16 @@ model CheckoutIntent {
   amountTotal             Int
   currency                String
   status                  CheckoutIntentStatus @default(open)
-  stripeCheckoutSessionId String?
+  stripeCheckoutSessionId String? @unique
   stripePaymentIntentId   String?
   checkoutUrl             String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   order Order?
+
+  @@index([stripeCheckoutSessionId])
+  @@index([buyerAgentId])
+  @@index([sellerAgentId])
 }
 
 enum CheckoutIntentStatus {
@@ -96,6 +103,7 @@ enum CheckoutIntentStatus {
   expired
   cancelled
   failed
+  payment_inventory_conflict
 }
 
 model Order {
@@ -116,6 +124,9 @@ model Order {
   fulfillmentNote   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([buyerAgentId])
+  @@index([sellerAgentId])
 }
 
 enum PaymentStatus {
@@ -139,4 +150,6 @@ model AgentQueryLog {
   filters     Json
   resultCount Int
   createdAt   DateTime @default(now())
+
+  @@index([agentId])
 }

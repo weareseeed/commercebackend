@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: commercebackend
+          POSTGRES_PASSWORD: commercebackend
+          POSTGRES_DB: commercebackend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run DB reset
+        run: pnpm db:reset
+        env:
+          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
+
+      - name: Run DB seed
+        run: pnpm db:seed
+        env:
+          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run typecheck
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
+          STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
+          NODE_ENV: test
+
+      - name: Run selftest mock
+        run: pnpm selftest:mock
+        env:
+          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
+          STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
+          NODE_ENV: development
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
+          STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345

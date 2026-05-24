@@ -5,11 +5,14 @@
   "main": "./dist/client.js",
   "types": "./dist/client.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "seed": "tsx src/seed.ts"
+    "migrate": "prisma migrate deploy",
+    "reset": "prisma migrate reset --force --skip-seed",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2"

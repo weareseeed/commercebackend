@@ -87,7 +87,7 @@ export class ListingsService {
     }
 
     if (listing.quantityAvailable <= 0) {
-      throw new AppError('INVALID_STATE', 'Cannot activate listing with 0 quantity', 400);
+      throw new AppError('VALIDATION_ERROR', 'Cannot activate listing with zero inventory', 400);
     }
 
     const updatedListing = await prisma.listing.update({

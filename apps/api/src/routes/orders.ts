@@ -9,14 +9,40 @@ export async function orderRoutes(fastify: FastifyInstance) {
 
   fastify.get('/v1/orders', async (request, reply) => {
     const agent = request.agent!;
-    const { role } = request.query as { role?: 'buyer' | 'seller' };
+    const { role, limit: limitQuery, offset: offsetQuery } = request.query as {
+      role?: 'buyer' | 'seller';
+      limit?: string;
+      offset?: string;
+    };
 
     if (role && role !== 'buyer' && role !== 'seller') {
       throw new AppError('BAD_REQUEST', "Role must be either 'buyer' or 'seller'", 400);
     }
 
-    const orders = await OrdersService.getOrders(agent.id, role);
-    return { orders };
+    if (role === 'seller' && agent.type !== 'seller' && agent.type !== 'both') {
+      throw new AppError('FORBIDDEN', 'Only seller agents can view orders as seller', 403);
+    }
+    if (role === 'buyer' && agent.type !== 'buyer' && agent.type !== 'both') {
+      throw new AppError('FORBIDDEN', 'Only buyer agents can view orders as buyer', 403);
+    }
+
+    // Default limit: 20, max limit: 100
+    const rawLimit = limitQuery ? parseInt(limitQuery, 10) : 20;
+    const rawOffset = offsetQuery ? parseInt(offsetQuery, 10) : 0;
+
+    const limit = Math.min(100, Math.max(1, isNaN(rawLimit) ? 20 : rawLimit));
+    const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+
+    const { orders, total } = await OrdersService.getOrders(agent.id, role, limit, offset);
+
+    return {
+      orders,
+      pagination: {
+        limit,
+        offset,
+        total,
+      },
+    };
   });
 
   fastify.get('/v1/orders/:id', async (request, reply) => {

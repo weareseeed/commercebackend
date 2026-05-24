@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { prisma } from '@commercebackend/db';
 
 // --- IN-MEMORY DB STORE ---
 const mockDb = {
@@ -141,6 +142,20 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(order, data);
         return order;
       }),
+      count: vi.fn(async ({ where }) => {
+        return mockDb.orders.filter((o) => {
+          if (where?.buyerAgentId && o.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && o.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.OR) {
+            return where.OR.some((cond: any) => {
+              if (cond.buyerAgentId && o.buyerAgentId === cond.buyerAgentId) return true;
+              if (cond.sellerAgentId && o.sellerAgentId === cond.sellerAgentId) return true;
+              return false;
+            });
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     agentQueryLog: {
@@ -156,6 +171,17 @@ vi.mock('@commercebackend/db', () => {
       deleteMany: vi.fn(),
     },
     $transaction: vi.fn(async (cb) => cb(prismaMock)),
+    $queryRawUnsafe: vi.fn(async (query, ...params) => {
+      if (query.includes('SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE') || query.includes('FOR UPDATE')) {
+        const id = params[0];
+        const listing = mockDb.listings.find((l) => l.id === id);
+        return listing ? [listing] : [];
+      }
+      return [];
+    }),
+    $queryRaw: vi.fn(async (query, ...params) => {
+      return [1];
+    }),
   };
 
   return {
@@ -653,7 +679,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
 
       expect(response.statusCode).toBe(400);
       const data = JSON.parse(response.body);
-      expect(data.error.code).toBe('INSUFFICIENT_STOCK');
+      expect(data.error.code).toBe('INSUFFICIENT_INVENTORY');
     });
   });
 
@@ -918,6 +944,376 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const order = mockDb.orders.find((o) => o.id === orderId);
       expect(order.fulfillmentStatus).toBe('fulfilled');
       expect(order.fulfillmentNote).toBe('QR tickets emailed to buyer.');
+    });
+  });
+
+  describe('Hardening, Concurrency & Health Endpoints', () => {
+    let localBuyerKey: string;
+    let localBuyerId: string;
+    let localSellerKey: string;
+    let localSellerId: string;
+    let localListingId: string;
+
+    beforeEach(async () => {
+      // Create seller agent
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Hardening Seller', type: 'seller', ownerEmail: 'hseller@test.com' },
+      });
+      const sellerBody = JSON.parse(resSeller.body);
+      localSellerKey = sellerBody.apiKey;
+      localSellerId = sellerBody.agent.id;
+
+      // Create buyer agent
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Hardening Buyer', type: 'buyer', ownerEmail: 'hbuyer@test.com' },
+      });
+      const buyerBody = JSON.parse(resBuyer.body);
+      localBuyerKey = buyerBody.apiKey;
+      localBuyerId = buyerBody.agent.id;
+
+      // Create listing
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${localSellerKey}` },
+        payload: {
+          title: 'Hardening Test Item',
+          type: 'physical_good',
+          priceAmount: 500,
+          quantityAvailable: 10,
+        },
+      });
+      localListingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    it('should return correct health and readiness status', async () => {
+      const resHealth = await app.inject({ method: 'GET', url: '/health' });
+      expect(resHealth.statusCode).toBe(200);
+      expect(JSON.parse(resHealth.body)).toEqual({
+        ok: true,
+        service: 'commercebackend-api',
+        version: '0.1.0',
+      });
+
+      const resReady = await app.inject({ method: 'GET', url: '/ready' });
+      expect(resReady.statusCode).toBe(200);
+      expect(JSON.parse(resReady.body).ok).toBe(true);
+      expect(JSON.parse(resReady.body).checks.database).toBe('ok');
+    });
+
+    it('should verify Stripe session is created after checkout intent row exists', async () => {
+      const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
+      const spy = vi.mocked(createStripeCheckoutSession);
+      spy.mockImplementationOnce(async (input) => {
+        // Assert that checkout intent row exists in mock db at this moment
+        const intentExists = mockDb.checkoutIntents.some((c) => c.id === input.checkoutIntentId);
+        expect(intentExists).toBe(true);
+        return { id: 'cs_success', url: 'https://checkout.stripe.com/pay/success' };
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${localBuyerKey}` },
+        payload: {
+          listingId: localListingId,
+          quantity: 1,
+          successUrl: 'http://localhost/success',
+          cancelUrl: 'http://localhost/cancel',
+        },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('should mark checkout intent failed if Stripe session creation fails', async () => {
+      const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
+      vi.mocked(createStripeCheckoutSession).mockRejectedValueOnce(new Error('Stripe API Error'));
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${localBuyerKey}` },
+        payload: {
+          listingId: localListingId,
+          quantity: 1,
+          successUrl: 'http://localhost/success',
+          cancelUrl: 'http://localhost/cancel',
+        },
+      });
+
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).error.code).toBe('CHECKOUT_CREATION_FAILED');
+
+      // Verify it was marked failed in DB
+      const failedIntent = mockDb.checkoutIntents.find((c) => c.status === 'failed');
+      expect(failedIntent).toBeDefined();
+    });
+
+    it('should process duplicate webhooks idempotently without creating duplicate orders or double-decrementing stock', async () => {
+      // 1. Create a listing with quantity 2
+      const listing = await prisma.listing.create({
+        data: {
+          sellerAgentId: localSellerId,
+          title: 'Limited Stock Item',
+          description: 'A limited stock item.',
+          type: 'physical_good',
+          priceAmount: 100,
+          currency: 'USD',
+          quantityAvailable: 2,
+          attributes: {},
+        },
+      });
+      mockDb.listings.push(listing);
+
+      // 2. Create checkout intent
+      const intent = await prisma.checkoutIntent.create({
+        data: {
+          listingId: listing.id,
+          buyerAgentId: localBuyerId,
+          sellerAgentId: localSellerId,
+          quantity: 1,
+          amountSubtotal: 100,
+          amountTotal: 100,
+          currency: 'USD',
+          status: 'open',
+          stripeCheckoutSessionId: 'cs_dup_test',
+        },
+      });
+      mockDb.checkoutIntents.push(intent);
+
+      const webhookPayload = {
+        id: 'evt_dup_test',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_dup_test',
+            payment_intent: 'pi_dup_test',
+            metadata: { checkoutIntentId: intent.id },
+          },
+        },
+      };
+
+      // 1st webhook call
+      const res1 = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify(webhookPayload),
+      });
+      expect(res1.statusCode).toBe(200);
+
+      // Check orders and inventory
+      const orderCount1 = mockDb.orders.filter((o) => o.checkoutIntentId === intent.id).length;
+      expect(orderCount1).toBe(1);
+      const updatedListing = mockDb.listings.find((l) => l.id === listing.id);
+      expect(updatedListing.quantityAvailable).toBe(1);
+
+      // 2nd duplicate webhook call
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify(webhookPayload),
+      });
+      expect(res2.statusCode).toBe(200);
+
+      // Check again
+      const orderCount2 = mockDb.orders.filter((o) => o.checkoutIntentId === intent.id).length;
+      expect(orderCount2).toBe(1); // Still 1 order
+      expect(updatedListing.quantityAvailable).toBe(1); // Still 1 quantity
+    });
+
+    it('should handle payment_inventory_conflict if stock is insufficient at webhook processing time', async () => {
+      // 1. Create a listing with quantity 1
+      const listing = await prisma.listing.create({
+        data: {
+          sellerAgentId: localSellerId,
+          title: 'Single Stock Item',
+          description: 'A single stock item.',
+          type: 'physical_good',
+          priceAmount: 100,
+          currency: 'USD',
+          quantityAvailable: 1,
+          attributes: {},
+        },
+      });
+      mockDb.listings.push(listing);
+
+      // 2. Create checkout intent A
+      const intentA = await prisma.checkoutIntent.create({
+        data: {
+          listingId: listing.id,
+          buyerAgentId: localBuyerId,
+          sellerAgentId: localSellerId,
+          quantity: 1,
+          amountSubtotal: 100,
+          amountTotal: 100,
+          currency: 'USD',
+          status: 'open',
+          stripeCheckoutSessionId: 'cs_intent_a',
+        },
+      });
+      mockDb.checkoutIntents.push(intentA);
+
+      // 3. Create checkout intent B
+      const intentB = await prisma.checkoutIntent.create({
+        data: {
+          listingId: listing.id,
+          buyerAgentId: localBuyerId,
+          sellerAgentId: localSellerId,
+          quantity: 1,
+          amountSubtotal: 100,
+          amountTotal: 100,
+          currency: 'USD',
+          status: 'open',
+          stripeCheckoutSessionId: 'cs_intent_b',
+        },
+      });
+      mockDb.checkoutIntents.push(intentB);
+
+      // 4. Webhook for Intent A succeeds
+      const resA = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify({
+          id: 'evt_a',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_intent_a',
+              payment_intent: 'pi_a',
+              metadata: { checkoutIntentId: intentA.id },
+            },
+          },
+        }),
+      });
+      expect(resA.statusCode).toBe(200);
+      expect(mockDb.orders.some((o) => o.checkoutIntentId === intentA.id)).toBe(true);
+      expect(mockDb.listings.find((l) => l.id === listing.id).quantityAvailable).toBe(0);
+
+      // 5. Webhook for Intent B processed (no stock left)
+      const resB = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify({
+          id: 'evt_b',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_intent_b',
+              payment_intent: 'pi_b',
+              metadata: { checkoutIntentId: intentB.id },
+            },
+          },
+        }),
+      });
+      expect(resB.statusCode).toBe(200);
+
+      // Verify intent B status is payment_inventory_conflict
+      const updatedB = mockDb.checkoutIntents.find((c) => c.id === intentB.id);
+      expect(updatedB.status).toBe('payment_inventory_conflict');
+
+      // Verify order was NOT created for intent B
+      expect(mockDb.orders.some((o) => o.checkoutIntentId === intentB.id)).toBe(false);
+
+      // Verify inventory is still 0 (never negative)
+      const finalListing = mockDb.listings.find((l) => l.id === listing.id);
+      expect(finalListing.quantityAvailable).toBe(0);
+
+      // Verify idempotency of payment_inventory_conflict webhook retry
+      const resBRetry = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify({
+          id: 'evt_b',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_intent_b',
+              payment_intent: 'pi_b',
+              metadata: { checkoutIntentId: intentB.id },
+            },
+          },
+        }),
+      });
+      expect(resBRetry.statusCode).toBe(200);
+    });
+
+    it('should reject invalid Stripe signatures', async () => {
+      const { constructStripeEvent } = await import('@commercebackend/payments-stripe');
+      const spy = vi.mocked(constructStripeEvent);
+      spy.mockImplementationOnce(() => {
+        throw new Error('No value found for signature');
+      });
+
+      // Temporarily bypass node env check for webhook route
+      const oldNodeEnv = process.env.NODE_ENV;
+      const oldBypass = process.env.BYPASS_STRIPE_SIGNATURE;
+      process.env.NODE_ENV = 'production';
+      process.env.BYPASS_STRIPE_SIGNATURE = 'false';
+
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/webhooks/stripe',
+          headers: {
+            'stripe-signature': 'invalid_sig',
+            'content-type': 'application/json',
+          },
+          payload: JSON.stringify({ id: 'evt_invalid' }),
+        });
+
+        expect(response.statusCode).toBe(400);
+        const data = JSON.parse(response.body);
+        expect(data.error.code).toBe('STRIPE_WEBHOOK_INVALID_SIGNATURE');
+        expect(data.error.message).toContain('Webhook verification failed');
+      } finally {
+        process.env.NODE_ENV = oldNodeEnv;
+        process.env.BYPASS_STRIPE_SIGNATURE = oldBypass;
+      }
+    });
+
+    it('should verify apiKeyHash is redacted from agent payloads', async () => {
+      // Creation response
+      const resCreate = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Redact Test', type: 'buyer', ownerEmail: 'redact@test.com' },
+      });
+      const bodyCreate = JSON.parse(resCreate.body);
+      expect(bodyCreate.agent.apiKeyHash).toBeUndefined();
+      expect(bodyCreate.apiKey).toBeDefined();
+
+      // GET /v1/agents/me response
+      const resMe = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${bodyCreate.apiKey}` },
+      });
+      const bodyMe = JSON.parse(resMe.body);
+      expect(bodyMe.agent.apiKeyHash).toBeUndefined();
     });
   });
 });
