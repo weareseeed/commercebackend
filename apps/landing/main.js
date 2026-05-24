@@ -28,9 +28,11 @@ console.<span class="code-function">log</span>(<span class="code-string">\`Listi
   buyer: `// Initialize the SDK Client
 <span class="code-keyword">import</span> { CommerceBackendClient } <span class="code-keyword">from</span> <span class="code-string">'@commercebackend/sdk-js'</span>;
 
+<span class="code-keyword">const</span> baseUrl = <span class="code-string">'https://api.commercebackend.com'</span>;
+<span class="code-keyword">const</span> apiKey = <span class="code-string">'cb_test_buyer_3d9e4a...'</span>;
 <span class="code-keyword">const</span> client = <span class="code-keyword">new</span> <span class="code-function">CommerceBackendClient</span>({
-  baseUrl: <span class="code-string">'https://api.commercebackend.com'</span>,
-  apiKey: <span class="code-string">'cb_test_buyer_3d9e4a...'</span>
+  baseUrl,
+  apiKey
 });
 
 <span class="code-comment">// 1. Search for catalog items matching keywords</span>
@@ -38,10 +40,28 @@ console.<span class="code-function">log</span>(<span class="code-string">\`Listi
 <span class="code-keyword">const</span> bestMatch = results[<span class="code-keyword">0</span>];
 console.<span class="code-function">log</span>(<span class="code-string">\`Matched with score: \${bestMatch.score}\`</span>);
 
-<span class="code-comment">// 2. Initiate Stripe Checkout hosted payment redirect</span>
+<span class="code-comment">// 2. Submit an offer before checkout</span>
+<span class="code-keyword">const</span> { offer } = <span class="code-keyword">await</span> <span class="code-function">fetch</span>(
+  <span class="code-string">\`${baseUrl}/v1/listings/\${bestMatch.listing.id}/offers\`</span>,
+  {
+    method: <span class="code-string">'POST'</span>,
+    headers: {
+      authorization: <span class="code-string">\`Bearer \${apiKey}\`</span>,
+      <span class="code-string">'content-type'</span>: <span class="code-string">'application/json'</span>
+    },
+    body: JSON.<span class="code-function">stringify</span>({
+      quantity: <span class="code-keyword">1</span>,
+      priceAmount: <span class="code-keyword">12500</span>,
+      expiresAt: <span class="code-string">'2026-06-30T23:59:59Z'</span>
+    })
+  }
+).<span class="code-function">then</span>(res =&gt; res.<span class="code-function">json</span>());
+
+<span class="code-comment">// 3. Checkout uses accepted offer terms</span>
 <span class="code-keyword">const</span> { checkoutIntent } = <span class="code-keyword">await</span> client.<span class="code-function">createCheckoutIntent</span>({
   listingId: bestMatch.listing.id,
-  quantity: <span class="code-keyword">1</span>,
+  offerId: offer.id,
+  quantity: offer.quantity,
   successUrl: <span class="code-string">'https://my-agent.com/success?id={CHECKOUT_INTENT_ID}'</span>,
   cancelUrl: <span class="code-string">'https://my-agent.com/cancel'</span>
 });
@@ -87,9 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const githubLink = document.getElementById('github-link');
   if (githubLink) {
     // Check local storage or document metadata for a configured repository URL
-    const customRepoUrl = window.localStorage.getItem('CB_GITHUB_REPO_URL');
-    if (customRepoUrl) {
-      githubLink.href = customRepoUrl;
-    }
+    githubLink.href = 'https://github.com/weareseeed/commercebackend';
   }
 });
