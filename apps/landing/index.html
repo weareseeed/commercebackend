@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CommerceBackend - Open-Source Agentic Commerce API Infrastructure</title>
+    <meta name="description" content="CommerceBackend is the open-source infrastructure for agentic marketplaces. Let AI agents and merchants list, discover, buy, and sell products using Stripe." />
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Background Gradients -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="header">
+      <div class="header-container">
+        <a href="#" class="logo">
+          <span class="logo-icon"><i class="fa-solid fa-robot"></i></span>
+          <span class="logo-text">Commerce<span class="logo-accent">Backend</span></span>
+        </a>
+        <nav class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#loop">Agent Loop</a>
+          <a href="#code">API Code</a>
+          <a href="#docs">Docs</a>
+        </nav>
+        <div class="header-actions">
+          <a href="https://github.com" target="_blank" class="btn btn-secondary btn-icon" id="github-link">
+            <i class="fa-brands fa-github"></i> <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-container">
+        <div class="badge-container">
+          <span class="badge"><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.1 Release</span>
+        </div>
+        <h1 class="hero-title">
+          The API Infrastructure for <span class="gradient-text">Agentic Commerce</span>
+        </h1>
+        <p class="hero-subtitle">
+          CommerceBackend is an open-source, developer-first commerce engine that enables autonomous AI agents to list, discover, buy, and sell products programmatically using Stripe Checkout.
+        </p>
+        <div class="hero-actions">
+          <a href="#docs" class="btn btn-primary">Get Started Now</a>
+          <a href="#code" class="btn btn-secondary">Explore API Reference</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Loop Workflow Section -->
+    <section id="loop" class="loop-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">The Atomic Agent-Commerce Loop</h2>
+          <p class="section-subtitle">
+            How CommerceBackend orchestrates programmatic commerce between buyer agents, seller agents, and payment processors.
+          </p>
+        </div>
+        
+        <!-- Workflow Diagram Cards -->
+        <div class="loop-container">
+          <div class="loop-step" data-step="1">
+            <div class="step-num">01</div>
+            <div class="step-icon"><i class="fa-solid fa-store"></i></div>
+            <h3 class="step-title">Seller Registers</h3>
+            <p class="step-desc">Seller Agent registers and receives an API Key, storing only a SHA-256 hash in PostgreSQL.</p>
+          </div>
+          <div class="loop-step" data-step="2">
+            <div class="step-num">02</div>
+            <div class="step-icon"><i class="fa-solid fa-tags"></i></div>
+            <h3 class="step-title">Lists Products</h3>
+            <p class="step-desc">Seller publishes fixed-price listings with attributes, stock parameters, and fulfillment rules.</p>
+          </div>
+          <div class="loop-step" data-step="3">
+            <div class="step-num">03</div>
+            <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <h3 class="step-title">Buyer Discovers</h3>
+            <p class="step-desc">Buyer Agent searches listings using a queries scoring match relevance across titles & details.</p>
+          </div>
+          <div class="loop-step" data-step="4">
+            <div class="step-num">04</div>
+            <div class="step-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+            <h3 class="step-title">Checkout Intent</h3>
+            <p class="step-desc">Buyer initiates purchase intent, returning a Stripe Checkout hosted URL session.</p>
+          </div>
+          <div class="loop-step" data-step="5">
+            <div class="step-num">05</div>
+            <div class="step-icon"><i class="fa-solid fa-credit-card"></i></div>
+            <h3 class="step-title">Stripe Payment</h3>
+            <p class="step-desc">Stripe Checkout hosted page processes credit card details securely. Card data is never stored internally.</p>
+          </div>
+          <div class="loop-step" data-step="6">
+            <div class="step-num">06</div>
+            <div class="step-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+            <h3 class="step-title">Fulfillment</h3>
+            <p class="step-desc">Stripe Webhook triggers order generation, inventory decrement, and seller notification.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Features Section -->
+    <section id="features" class="features-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Engineered Specifically For Agents</h2>
+          <p class="section-subtitle">
+            An API-first model completely decoupled from web browser interfaces and cart complexities.
+          </p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+            <h3 class="feature-title">API-First & Agent-Centric</h3>
+            <p class="feature-desc">
+              Designed exclusively for programmatic connections. Strict Zod validations on all requests ensure predictable inputs and outputs.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3 class="feature-title">Secure Credentials</h3>
+            <p class="feature-desc">
+              All agent authentication is tenant/agent scoped. API keys are generated once and stored in the database only as SHA-256 hashes.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-code-fork"></i></div>
+            <h3 class="feature-title">Protocol Mappers</h3>
+            <p class="feature-desc">
+              Includes adapter stubs mapping internal listing representations to Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
+            <h3 class="feature-title">PostgreSQL & Prisma</h3>
+            <p class="feature-desc">
+              Prisma schemas model database records with transactional safety, guaranteeing stock integrity during high-concurrency checkouts.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Code Playground Section -->
+    <section id="code" class="code-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Developer SDK Integration</h2>
+          <p class="section-subtitle">
+            Integrate agents in minutes using our lightweight JavaScript SDK.
+          </p>
+        </div>
+
+        <div class="code-playground-container">
+          <div class="code-sidebar">
+            <button class="tab-btn active" data-tab="seller">
+              <span class="tab-icon"><i class="fa-solid fa-store"></i></span>
+              <span class="tab-text">Seller Agent Example</span>
+            </button>
+            <button class="tab-btn" data-tab="buyer">
+              <span class="tab-icon"><i class="fa-solid fa-cart-shopping"></i></span>
+              <span class="tab-text">Buyer Agent Example</span>
+            </button>
+          </div>
+          <div class="code-panel">
+            <div class="code-panel-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="code-file-title" id="file-title">seller-agent.ts</span>
+            </div>
+            <pre class="code-pre"><code class="code-content" id="code-content">// Loading...</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting Started Docs Section -->
+    <section id="docs" class="docs-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Quick Start Guide</h2>
+          <p class="section-subtitle">
+            Spin up the entire system locally in under 3 minutes.
+          </p>
+        </div>
+        
+        <div class="docs-grid">
+          <div class="docs-step-card">
+            <div class="step-badge">Step 1</div>
+            <h3>Install Dependencies</h3>
+            <pre><code>pnpm install</code></pre>
+          </div>
+          <div class="docs-step-card">
+            <div class="step-badge">Step 2</div>
+            <h3>Configure Environment</h3>
+            <pre><code>cp .env.example .env</code></pre>
+          </div>
+          <div class="docs-step-card">
+            <div class="step-badge">Step 3</div>
+            <h3>Database & Migrations</h3>
+            <pre><code>docker compose -f infra/docker-compose.yml up -d
+pnpm --filter @commercebackend/db exec prisma generate
+pnpm --filter @commercebackend/db exec prisma db push</code></pre>
+          </div>
+          <div class="docs-step-card">
+            <div class="step-badge">Step 4</div>
+            <h3>Start API Server</h3>
+            <pre><code>pnpm dev</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-info">
+          <div class="logo">
+            <span class="logo-icon"><i class="fa-solid fa-robot"></i></span>
+            <span class="logo-text">Commerce<span class="logo-accent">Backend</span></span>
+          </div>
+          <p>
+            An open-source, API-first commerce core engine designed for programmatic integrations and autonomous AI agents.
+          </p>
+        </div>
+        <div class="footer-links">
+          <a href="#features">Features</a>
+          <a href="#loop">Agent Loop</a>
+          <a href="#code">Developer SDK</a>
+          <a href="https://vercel.com" target="_blank">Deploy on Vercel</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 CommerceBackend. Open source project released under MIT License.</p>
+      </div>
+    </footer>
+
+    <!-- Custom Script -->
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
