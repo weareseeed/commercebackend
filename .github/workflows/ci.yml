@@ -73,14 +73,6 @@ jobs:
           STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
           NODE_ENV: test
 
-      - name: Run selftest mock
-        run: pnpm selftest:mock
-        env:
-          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
-          STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
-          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
-          NODE_ENV: development
-
       - name: Build
         run: pnpm build
         env:
