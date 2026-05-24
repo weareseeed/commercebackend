@@ -5,6 +5,18 @@
   "author": "Seeed LLC",
   "license": "Apache-2.0",
   "homepage": "https://github.com/weareseeed/commercebackend",
+  "keywords": [
+    "commerce",
+    "agentic-commerce",
+    "ai-agents",
+    "ai-commerce",
+    "stripe",
+    "typescript",
+    "marketplace",
+    "open-source",
+    "api",
+    "commercebackend"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/weareseeed/commercebackend.git"

@@ -1,4 +1,4 @@
-# CommerceBackend v0.1
+# CommerceBackend v0.2.0
 
 CommerceBackend is an open-source, agent-first commerce backend. It allows AI agents to list, discover, buy, and sell products through APIs, with Stripe Checkout facilitating payments.
 
@@ -126,7 +126,7 @@ All endpoints conform to the standard error response layout and require request 
 
 | Method  | Endpoint                     | Auth   | Description                                            |
 | ------- | ---------------------------- | ------ | ------------------------------------------------------ |
-| `GET`   | `/health`                    | Public | Liveness status (version `0.1.0`)                      |
+| `GET`   | `/health`                    | Public | Liveness status (version `0.2.0`)                      |
 | `GET`   | `/ready`                     | Public | Readiness status (verifies database & Stripe config)    |
 | `POST`  | `/v1/agents`                 | Public | Register a buyer/seller agent (returns API key once)   |
 | `GET`   | `/v1/agents/me`              | Bearer | Get details of authenticated agent                     |
@@ -135,8 +135,16 @@ All endpoints conform to the standard error response layout and require request 
 | `PATCH` | `/v1/listings/:id`           | Bearer | Update listing properties (Owner only)                 |
 | `POST`  | `/v1/listings/:id/pause`     | Bearer | Pause a listing (Owner only)                           |
 | `POST`  | `/v1/listings/:id/activate`  | Bearer | Re-activate a listing (Owner only)                     |
+| `POST`  | `/v1/listings/:id/offers`    | Bearer | Submit an offer on a listing (Buyers only)             |
 | `POST`  | `/v1/search`                 | Bearer | Query catalog matching search terms and filters        |
-| `POST`  | `/v1/checkout-intents`       | Bearer | Initiate checkout session for a listing (Buyers only)  |
+| `GET`   | `/v1/offers`                 | Bearer | List offers associated with the agent (filter by role) |
+| `GET`   | `/v1/offers/:id`             | Bearer | View specific offer details and audit trail           |
+| `POST`  | `/v1/offers/:id/accept`      | Bearer | Accept offer terms (Listing owner/sellers only)        |
+| `POST`  | `/v1/offers/:id/reject`      | Bearer | Reject offer/counter-offer terms                       |
+| `POST`  | `/v1/offers/:id/counter`     | Bearer | Submit a counter offer (Listing owner/sellers only)    |
+| `POST`  | `/v1/offers/:id/accept-counter`| Bearer | Accept seller's counter-offer (Buyers only)          |
+| `POST`  | `/v1/offers/:id/cancel`      | Bearer | Cancel pending/countered offer (Buyers only)           |
+| `POST`  | `/v1/checkout-intents`       | Bearer | Initiate checkout session for a listing/offer (Buyers) |
 | `POST`  | `/v1/webhooks/stripe`        | Public | Webhook verifying payment sessions and creating orders |
 | `GET`   | `/v1/orders`                 | Bearer | Query list of orders for the agent (filtered by role)  |
 | `GET`   | `/v1/orders/:id`             | Bearer | Read specific order details (Buyer or Seller only)     |
@@ -155,6 +163,15 @@ All endpoints conform to the standard error response layout and require request 
 - **ACP/UCP Stubs**: Adapters are placeholder mapping templates and are not production-ready.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.
 - **Fulfillment**: Fulfillment is status-only; no shipping labels, tracking APIs, or digital delivery automation.
+
+---
+
+## Agent Discovery
+
+To assist autonomous AI agents in discovering, understanding, and integrating with this API system, we publish canonical metadata:
+* **LLM Metadata Context**: [/llms.txt](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/llms.txt)
+* **Machine-Readable Specifications**: [/.well-known/commercebackend.json](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/.well-known/commercebackend.json)
+* **Agent Integration Guide**: [Agent Discovery Guide](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/agent-discovery.md)
 
 ---
 
