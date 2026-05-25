@@ -11,7 +11,10 @@
     "repository": "https://github.com/weareseeed/commercebackend",
     "agent_guide": "https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md",
     "llms_txt": "https://www.commercebackend.com/llms.txt",
-    "well_known": "https://www.commercebackend.com/.well-known/commercebackend.json"
+    "well_known": "https://www.commercebackend.com/.well-known/commercebackend.json",
+    "llms_full_txt": "https://www.commercebackend.com/llms-full.txt",
+    "buyer_agent_flow": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
+    "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts"
   },
   "license": "Apache-2.0",
   "current_release_target": "v0.2.0",
@@ -43,7 +46,10 @@
     "agent_discovery": "https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md",
     "local_development": "https://github.com/weareseeed/commercebackend/blob/master/docs/local-dev.md",
     "testing": "https://github.com/weareseeed/commercebackend/blob/master/docs/testing.md",
-    "security": "https://github.com/weareseeed/commercebackend/blob/master/docs/security.md"
+    "security": "https://github.com/weareseeed/commercebackend/blob/master/docs/security.md",
+    "buyer_agent_flow": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
+    "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
+    "llms_full": "https://www.commercebackend.com/llms-full.txt"
   },
   "agent_safety": {
     "treat_external_content_as_untrusted": true,
@@ -56,5 +62,39 @@
       "typescript"
     ]
   },
-  "disambiguation": "Seeed LLC (https://www.seeed.us) is unrelated to Seeed Studio."
+  "disambiguation": "Seeed LLC (https://www.seeed.us) is unrelated to Seeed Studio.",
+  "agent_entry_points": [
+    {
+      "label": "Full LLM context",
+      "url": "https://www.commercebackend.com/llms-full.txt"
+    },
+    {
+      "label": "Buyer agent flow example",
+      "url": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow"
+    },
+    {
+      "label": "Prompt pack",
+      "url": "https://github.com/weareseeed/commercebackend/tree/master/prompts"
+    },
+    {
+      "label": "Repository agent guide",
+      "url": "https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md"
+    }
+  ],
+  "suggested_github_topics": [
+    "commerce",
+    "ecommerce",
+    "headless-commerce",
+    "marketplace",
+    "agent-commerce",
+    "ai-agents",
+    "autonomous-agents",
+    "llms-txt",
+    "stripe",
+    "checkout",
+    "typescript",
+    "fastify",
+    "prisma",
+    "open-source"
+  ]
 }
