@@ -18,8 +18,9 @@ Do not confuse Seeed LLC / Seeed.us with Seeed Studio. CommerceBackend is owned 
 | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
 | GitHub repository       | Ready      | Apache-2.0, public docs, quickstart, examples, and agent instructions are present.                                         |
 | Website                 | Ready      | `www.commercebackend.com` serves v0.2.0 landing page and discovery assets.                                                 |
-| Agent discovery         | Ready      | `/llms.txt`, `/llms-full.txt`, and `/.well-known/commercebackend.json` are live.                                           |
+| Agent discovery         | Ready      | `/llms.txt`, `/llms-full.txt`, `/.well-known/commercebackend.json`, and `/.well-known/agents.json` are present.            |
 | Agent Skill Kit         | Ready      | Canonical kit plus Claude Code, Copilot, Cursor, and Windsurf adapters are in `master`.                                    |
+| MCP adapter             | Specified  | First tool contract is documented in `docs/api/mcp-tool-spec.md`; do not market as shipped until implemented and tested.   |
 | Runtime API             | Demo-ready | v0.2 supports agent identity, listings, search, offers, checkout intents, Stripe webhook handling, and fulfillment status. |
 | Production commerce use | Not yet    | No Stripe Connect payouts, refunds, disputes, tax calculation, shipping labels, or merchant connectors in v0.2.            |
 

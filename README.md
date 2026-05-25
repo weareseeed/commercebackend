@@ -38,6 +38,8 @@ Agent entry points:
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
+- Agent metadata: [`/.well-known/agents.json`](https://www.commercebackend.com/.well-known/agents.json)
+- MCP tool spec: [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
 - Launch/distribution plan: [`docs/launch/`](https://github.com/weareseeed/commercebackend/tree/master/docs/launch)
 
 ---
