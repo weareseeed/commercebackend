@@ -4,20 +4,57 @@ CommerceBackend is an open-source, agent-first commerce backend. It allows AI ag
 
 Think "eBay or Amazon for agents," rather than a human-first storefront layout.
 
-## Supported in v0.1 (Atomic Agent-Commerce Loop)
+## Quickstart for Developers and Agents
+
+Use this path when you want the fastest local signal before making changes:
+
+```bash
+git clone https://github.com/weareseeed/commercebackend.git
+cd commercebackend
+pnpm install
+cp .env.example .env
+NODE_ENV=test pnpm test
+pnpm build
+```
+
+Run the local API and seed data:
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+pnpm dev
+```
+
+Run the buyer-agent walkthrough after the API is available at `http://localhost:4000`:
+
+```bash
+node examples/agent-buyer-flow/buyer-offer-flow.mjs
+```
+
+Agent entry points:
+
+- Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
+- Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
+- Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
+
+---
+
+## Supported in v0.2 (Agent-Commerce Loop)
 
 - **Agent Identity**: Registration and bearer API key credentials (raw keys returned once, only SHA-256 hashes stored, hashes are unique).
 - **Fixed-price Listings**: Listing CRUD, pausing, activating, and inventory tracking.
 - **Listing Search**: Score-based search matching terms across title, description, and JSON attributes. Logs queries to `AgentQueryLog`. Supports pagination.
-- **Checkout Intents**: Initiating Stripe-backed hosted payment sessions (persisted first, using Stripe idempotency keys, fails gracefully on API error).
+- **Offers and Counteroffers**: Buyer/seller negotiation with pending, accepted, countered, rejected, expired, cancelled, and checkout-pending states.
+- **Checkout Intents**: Initiating Stripe-backed hosted payment sessions for listings or accepted offers (persisted first, using Stripe idempotency keys, fails gracefully on API error).
 - **Stripe Checkout Webhook**: Webhook processing (`checkout.session.completed`) using transaction row-level locking, signature checking, duplicate idempotency, and inventory checks.
 - **Fulfillment**: Seller agents can retrieve orders and update fulfillment status, and buyer agents can track status.
 - **ACP & UCP protocol stubs**: Initial mapping logic for Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
 
-## Explicitly NOT Supported in v0.1
+## Explicitly NOT Supported in v0.2
 
 - Human storefront layouts or marketplace search browsing UIs.
-- Auctions, offers, counteroffers, or buyer/seller price negotiations.
+- Auctions.
 - Multi-seller shopping carts.
 - Refunds, disputes, platform fees, or tax calculation.
 - Stripe Connect seller payouts.
@@ -59,12 +96,14 @@ Seller Agent                Buyer Agent
 We maintain standard commands in the root workspace to manage compilation, quality checks, migrations, seeding, and execution:
 
 ### 1. Installation & Environment Configuration
+
 ```bash
 pnpm install
 cp .env.example .env
 ```
 
 ### 2. Database Migrations & Seeds
+
 ```bash
 # Run Postgres database migrations
 pnpm db:migrate
@@ -77,17 +116,20 @@ pnpm db:seed
 ```
 
 ### 3. Local Development API Server
+
 ```bash
 pnpm dev
 ```
 
 ### 4. Integration Tests
+
 ```bash
 # Run unit and integration tests (with Stripe mocks)
-pnpm test
+NODE_ENV=test pnpm test
 ```
 
 ### 5. Code Quality & Formatting
+
 ```bash
 # Check code style with ESLint
 pnpm lint
@@ -97,6 +139,7 @@ pnpm typecheck
 ```
 
 ### 6. Compilation & Build
+
 ```bash
 # Compile and build all monorepo workspaces
 pnpm build
@@ -124,40 +167,40 @@ pnpm selftest:stripe
 
 All endpoints conform to the standard error response layout and require request IDs.
 
-| Method  | Endpoint                     | Auth   | Description                                            |
-| ------- | ---------------------------- | ------ | ------------------------------------------------------ |
-| `GET`   | `/health`                    | Public | Liveness status (version `0.2.0`)                      |
-| `GET`   | `/ready`                     | Public | Readiness status (verifies database & Stripe config)    |
-| `POST`  | `/v1/agents`                 | Public | Register a buyer/seller agent (returns API key once)   |
-| `GET`   | `/v1/agents/me`              | Bearer | Get details of authenticated agent                     |
-| `POST`  | `/v1/listings`               | Bearer | Create a fixed-price listing (Sellers only)            |
-| `GET`   | `/v1/listings/:id`           | Bearer | Read listing details                                   |
-| `PATCH` | `/v1/listings/:id`           | Bearer | Update listing properties (Owner only)                 |
-| `POST`  | `/v1/listings/:id/pause`     | Bearer | Pause a listing (Owner only)                           |
-| `POST`  | `/v1/listings/:id/activate`  | Bearer | Re-activate a listing (Owner only)                     |
-| `POST`  | `/v1/listings/:id/offers`    | Bearer | Submit an offer on a listing (Buyers only)             |
-| `POST`  | `/v1/search`                 | Bearer | Query catalog matching search terms and filters        |
-| `GET`   | `/v1/offers`                 | Bearer | List offers associated with the agent (filter by role) |
-| `GET`   | `/v1/offers/:id`             | Bearer | View specific offer details and audit trail           |
-| `POST`  | `/v1/offers/:id/accept`      | Bearer | Accept offer terms (Listing owner/sellers only)        |
-| `POST`  | `/v1/offers/:id/reject`      | Bearer | Reject offer/counter-offer terms                       |
-| `POST`  | `/v1/offers/:id/counter`     | Bearer | Submit a counter offer (Listing owner/sellers only)    |
-| `POST`  | `/v1/offers/:id/accept-counter`| Bearer | Accept seller's counter-offer (Buyers only)          |
-| `POST`  | `/v1/offers/:id/cancel`      | Bearer | Cancel pending/countered offer (Buyers only)           |
-| `POST`  | `/v1/checkout-intents`       | Bearer | Initiate checkout session for a listing/offer (Buyers) |
-| `POST`  | `/v1/webhooks/stripe`        | Public | Webhook verifying payment sessions and creating orders |
-| `GET`   | `/v1/orders`                 | Bearer | Query list of orders for the agent (filtered by role)  |
-| `GET`   | `/v1/orders/:id`             | Bearer | Read specific order details (Buyer or Seller only)     |
-| `POST`  | `/v1/orders/:id/fulfillment` | Bearer | Update order fulfillment status (Seller only)          |
+| Method  | Endpoint                        | Auth   | Description                                            |
+| ------- | ------------------------------- | ------ | ------------------------------------------------------ |
+| `GET`   | `/health`                       | Public | Liveness status (version `0.2.0`)                      |
+| `GET`   | `/ready`                        | Public | Readiness status (verifies database & Stripe config)   |
+| `POST`  | `/v1/agents`                    | Public | Register a buyer/seller agent (returns API key once)   |
+| `GET`   | `/v1/agents/me`                 | Bearer | Get details of authenticated agent                     |
+| `POST`  | `/v1/listings`                  | Bearer | Create a fixed-price listing (Sellers only)            |
+| `GET`   | `/v1/listings/:id`              | Bearer | Read listing details                                   |
+| `PATCH` | `/v1/listings/:id`              | Bearer | Update listing properties (Owner only)                 |
+| `POST`  | `/v1/listings/:id/pause`        | Bearer | Pause a listing (Owner only)                           |
+| `POST`  | `/v1/listings/:id/activate`     | Bearer | Re-activate a listing (Owner only)                     |
+| `POST`  | `/v1/listings/:id/offers`       | Bearer | Submit an offer on a listing (Buyers only)             |
+| `POST`  | `/v1/search`                    | Bearer | Query catalog matching search terms and filters        |
+| `GET`   | `/v1/offers`                    | Bearer | List offers associated with the agent (filter by role) |
+| `GET`   | `/v1/offers/:id`                | Bearer | View specific offer details and audit trail            |
+| `POST`  | `/v1/offers/:id/accept`         | Bearer | Accept offer terms (Listing owner/sellers only)        |
+| `POST`  | `/v1/offers/:id/reject`         | Bearer | Reject offer/counter-offer terms                       |
+| `POST`  | `/v1/offers/:id/counter`        | Bearer | Submit a counter offer (Listing owner/sellers only)    |
+| `POST`  | `/v1/offers/:id/accept-counter` | Bearer | Accept seller's counter-offer (Buyers only)            |
+| `POST`  | `/v1/offers/:id/cancel`         | Bearer | Cancel pending/countered offer (Buyers only)           |
+| `POST`  | `/v1/checkout-intents`          | Bearer | Initiate checkout session for a listing/offer (Buyers) |
+| `POST`  | `/v1/webhooks/stripe`           | Public | Webhook verifying payment sessions and creating orders |
+| `GET`   | `/v1/orders`                    | Bearer | Query list of orders for the agent (filtered by role)  |
+| `GET`   | `/v1/orders/:id`                | Bearer | Read specific order details (Buyer or Seller only)     |
+| `POST`  | `/v1/orders/:id/fulfillment`    | Bearer | Update order fulfillment status (Seller only)          |
 
 ---
 
-## Known v0.1 Limitations
+## Known v0.2 Limitations
 
 - **No Stripe Connect**: Seller payouts must be processed manually outside the system.
 - **No refunds or disputes**: Payments are one-way only; refunds are not supported via the API.
 - **No tax calculation**: Tax collection is omitted in this version.
-- **No auctions or price negotiation**: Only fixed-price catalogs are supported.
+- **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
 - **No merchant connectors**: No Shopify, BigCommerce, WooCommerce, or Square sync.
 - **ACP/UCP Stubs**: Adapters are placeholder mapping templates and are not production-ready.
@@ -172,9 +215,12 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
 
 1. Read [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md) for contribution rules, safety boundaries, and the architecture map.
 2. Read the canonical discovery files:
-   * **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
-   * **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
-   * **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
+   - **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
+   - **Full LLM Context**: [/llms-full.txt](https://www.commercebackend.com/llms-full.txt)
+   - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+   - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
+   - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+   - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 3. Inspect the native API contract before generating integration code: [`docs/api/native-api.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md).
 4. Verify local changes with:
 
@@ -182,7 +228,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
 pnpm lint
 pnpm typecheck
 pnpm build
-pnpm test
+NODE_ENV=test pnpm test
 ```
 
 Agent safety notes:
@@ -197,16 +243,21 @@ Agent safety notes:
 ## Agent Discovery
 
 To assist autonomous AI agents in discovering, understanding, and integrating with this API system, we publish canonical metadata:
-* **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
-* **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
-* **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
-* **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
+
+- **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
+- **Full LLM Context**: [/llms-full.txt](https://www.commercebackend.com/llms-full.txt)
+- **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+- **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
+- **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
+- **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 
 ---
 
 ## Further Documentation
 
 Detailed documentation on development guides, security, testing, and payment setups:
+
 - [Local Development Setup](https://github.com/weareseeed/commercebackend/blob/master/docs/local-dev.md)
 - [Testing Guidelines](https://github.com/weareseeed/commercebackend/blob/master/docs/testing.md)
 - [Security Auditing](https://github.com/weareseeed/commercebackend/blob/master/docs/security.md)

@@ -15,7 +15,15 @@
     "marketplace",
     "open-source",
     "api",
-    "commercebackend"
+    "commercebackend",
+    "headless-commerce",
+    "marketplace-api",
+    "agent-commerce",
+    "autonomous-agents",
+    "llms-txt",
+    "fastify",
+    "prisma",
+    "checkout"
   ],
   "repository": {
     "type": "git",
