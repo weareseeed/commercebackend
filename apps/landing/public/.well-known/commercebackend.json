@@ -1,0 +1,29 @@
+{
+  "name": "CommerceBackend",
+  "description": "Open-source agent-first commerce backend.",
+  "owner": "Seeed LLC",
+  "project_links": {
+    "website": "https://commercebackend.com",
+    "repository": "https://github.com/weareseeed/commercebackend"
+  },
+  "license": "Apache-2.0",
+  "current_release_target": "v0.2.0",
+  "current_capabilities": [
+    "listings",
+    "discovery",
+    "checkout_intents",
+    "hardening",
+    "offers"
+  ],
+  "planned_capabilities": [
+    "connectors",
+    "acp_adapters",
+    "ucp_adapters"
+  ],
+  "docs_links": {
+    "overview": "https://github.com/weareseeed/commercebackend/blob/master/docs/architecture/overview.md",
+    "api_reference": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md",
+    "agent_discovery": "https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md"
+  },
+  "disambiguation": "Seeed LLC (https://www.seeed.us) is unrelated to Seeed Studio."
+}

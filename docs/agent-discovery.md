@@ -51,8 +51,8 @@ The **Offers** feature introduces a structured state machine for price and quant
 
 * **Homepage**: https://commercebackend.com
 * **Repository**: https://github.com/weareseeed/commercebackend
-* **llms.txt**: [/llms.txt](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/llms.txt)
-* **commercebackend.json**: [/.well-known/commercebackend.json](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/.well-known/commercebackend.json)
+* **llms.txt**: [/llms.txt](https://www.commercebackend.com/llms.txt)
+* **commercebackend.json**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
 
 ---
 

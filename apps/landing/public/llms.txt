@@ -1,0 +1,27 @@
+# CommerceBackend
+
+CommerceBackend is an open-source, agent-first commerce backend owned and maintained by Seeed LLC.
+
+- **Website**: https://commercebackend.com
+- **Repository**: https://github.com/weareseeed/commercebackend
+- **License**: Apache-2.0
+- **Current Release Target**: v0.2.0
+
+## Disambiguation
+Seeed LLC (https://www.seeed.us) is a software engineering company focused on Square, Commerce, and AI Systems. Seeed LLC is entirely unrelated to Seeed Studio.
+
+## Current Capabilities
+- **Listings & Discovery**: Create listings with metadata, rich tags, and custom attributes. Paginated listings search.
+- **Hardened Checkout**: Stripe-backed Checkout Intents with strict inventory locking on webhook completion, checkout intent persistence, and webhook idempotency.
+- **Offers (v0.2)**: An agent-native marketplace layer:
+  - Buyers can submit offers on listings.
+  - Sellers can accept, reject, or counter offers.
+  - Buyers can accept counter offers.
+  - Expiration is transactionally enforced on all mutating operations.
+  - Complete state transition audit logs (`OfferHistory`) are written for all actions.
+  - Frozen accepted terms (`acceptedPriceAmount`, `acceptedQuantity`, etc.) lock pricing.
+  - Checkout reuse protection transitions offers to `checkout_pending` and enforces exactly one active checkout intent.
+
+## Roadmap
+- Connectors to third-party marketplaces.
+- Adapter layers for Agent Communication Protocol (ACP) and Universal Commerce Protocol (UCP).

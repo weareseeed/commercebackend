@@ -169,21 +169,21 @@ All endpoints conform to the standard error response layout and require request 
 ## Agent Discovery
 
 To assist autonomous AI agents in discovering, understanding, and integrating with this API system, we publish canonical metadata:
-* **LLM Metadata Context**: [/llms.txt](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/llms.txt)
-* **Machine-Readable Specifications**: [/.well-known/commercebackend.json](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/.well-known/commercebackend.json)
-* **Agent Integration Guide**: [Agent Discovery Guide](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/agent-discovery.md)
+* **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
+* **Machine-Readable Specifications**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+* **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
 
 ---
 
 ## Further Documentation
 
 Detailed documentation on development guides, security, testing, and payment setups:
-- [Local Development Setup](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/local-dev.md)
-- [Testing Guidelines](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/testing.md)
-- [Security Auditing](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/security.md)
-- [Stripe & Webhook Integration](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/stripe.md)
-- [Native API Contract Specifications](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/api/native-api.md)
-- [System Architecture](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/docs/architecture/overview.md)
+- [Local Development Setup](https://github.com/weareseeed/commercebackend/blob/master/docs/local-dev.md)
+- [Testing Guidelines](https://github.com/weareseeed/commercebackend/blob/master/docs/testing.md)
+- [Security Auditing](https://github.com/weareseeed/commercebackend/blob/master/docs/security.md)
+- [Stripe & Webhook Integration](https://github.com/weareseeed/commercebackend/blob/master/docs/stripe.md)
+- [Native API Contract Specifications](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md)
+- [System Architecture](https://github.com/weareseeed/commercebackend/blob/master/docs/architecture/overview.md)
 
 ---
 
@@ -194,4 +194,4 @@ Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
 
 ## License
 
-Licensed under the Apache License 2.0. See [LICENSE](file:///c:/Users/rsaer/OneDrive/Documents/Commerce%20backend/LICENSE) for details.
+Licensed under the Apache License 2.0. See [LICENSE](https://github.com/weareseeed/commercebackend/blob/master/LICENSE) for details.
