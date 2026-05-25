@@ -16,7 +16,7 @@
     "@commercebackend/sdk-js": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
+    "typescript": "^6.0.3",
     "tsx": "^4.7.0"
   }
 }
