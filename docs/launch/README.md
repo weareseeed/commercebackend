@@ -9,6 +9,8 @@ Before any public action, get explicit approval from Seeed LLC leadership.
 Start here:
 
 - [`phase-4-distribution-plan.md`](./phase-4-distribution-plan.md) — launch sequence, channels, risks, and approval gates.
+- [`agent-promotion-sprint.md`](./agent-promotion-sprint.md) — agent-native promotion sprint, proof stack, MCP path, and execution order.
+- [`directory-submission-copy.md`](./directory-submission-copy.md) — exact fields and snippets for low-risk directory submissions and external PRs.
 - [`public-announcement-copy.md`](./public-announcement-copy.md) — draft copy blocks for approved future publication.
 - [`technical-article-draft.md`](./technical-article-draft.md) — Builder-ready long-form technical article draft.
 - [`official-launch-article.md`](./official-launch-article.md) — official launch article package prepared for Content Studio and Builder staging.

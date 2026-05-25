@@ -7,9 +7,11 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Agent Guide**: https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md
 - **API Contract**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md
 - **Full LLM Context**: https://www.commercebackend.com/llms-full.txt
+- **Agent Metadata**: https://www.commercebackend.com/.well-known/agents.json
 - **Agent Skill Kit**: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - **Buyer Agent Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
+- **MCP Tool Spec**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
 - **License**: Apache-2.0
 - **Current Release Target**: v0.2.0
 
