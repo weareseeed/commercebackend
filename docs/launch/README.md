@@ -11,3 +11,7 @@ Start here:
 - [`phase-4-distribution-plan.md`](./phase-4-distribution-plan.md) — launch sequence, channels, risks, and approval gates.
 - [`public-announcement-copy.md`](./public-announcement-copy.md) — draft copy blocks for approved future publication.
 - [`technical-article-draft.md`](./technical-article-draft.md) — Builder-ready long-form technical article draft.
+- [`official-launch-article.md`](./official-launch-article.md) — official launch article package prepared for Content Studio and Builder staging.
+- [`linkedin-launch-package.md`](./linkedin-launch-package.md) — LinkedIn launch copy variants and image direction.
+- [`assets/commercebackend-blog-cover.png`](./assets/commercebackend-blog-cover.png) — generated 16:9 blog cover image.
+- [`assets/commercebackend-linkedin-square.png`](./assets/commercebackend-linkedin-square.png) — generated square LinkedIn image.
