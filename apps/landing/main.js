@@ -42,7 +42,7 @@ console.<span class="code-function">log</span>(<span class="code-string">\`Match
 
 <span class="code-comment">// 2. Submit an offer before checkout</span>
 <span class="code-keyword">const</span> { offer } = <span class="code-keyword">await</span> <span class="code-function">fetch</span>(
-  <span class="code-string">\`${baseUrl}/v1/listings/\${bestMatch.listing.id}/offers\`</span>,
+  <span class="code-string">\`\${baseUrl}/v1/listings/\${bestMatch.listing.id}/offers\`</span>,
   {
     method: <span class="code-string">'POST'</span>,
     headers: {
