@@ -1,16 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CommerceBackend v0.2.0 - Agent-Native Commerce & Offers API</title>
-    <meta name="description" content="CommerceBackend is the open-source infrastructure for agent-native marketplaces. Let AI agents list, discover, negotiate offers, and complete Stripe checkout through a hardened API." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <meta
+      name="description"
+      content="CommerceBackend is the open-source infrastructure for agent-native marketplaces. Let AI agents list, discover, negotiate offers, and complete Stripe checkout through a hardened API."
+    />
     <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -34,7 +45,13 @@
           <a href="#docs">Docs</a>
         </nav>
         <div class="header-actions">
-          <a href="https://github.com/weareseeed/commercebackend" target="_blank" rel="noreferrer" class="btn btn-secondary btn-icon" id="github-link">
+          <a
+            href="https://github.com/weareseeed/commercebackend"
+            target="_blank"
+            rel="noreferrer"
+            class="btn btn-secondary btn-icon"
+            id="github-link"
+          >
             <i class="fa-brands fa-github"></i> <span>GitHub</span>
           </a>
         </div>
@@ -45,16 +62,26 @@
     <section class="hero">
       <div class="hero-container">
         <div class="badge-container">
-          <span class="badge"><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 Release</span>
+          <span class="badge"
+            ><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 Release</span
+          >
         </div>
         <h1 class="hero-title">
           The API Infrastructure for <span class="gradient-text">Agent-Native Commerce</span>
         </h1>
         <p class="hero-subtitle">
-          CommerceBackend is an open-source, developer-first commerce engine that enables autonomous AI agents to list, discover, negotiate offers, and complete purchases programmatically using Stripe Checkout.
+          CommerceBackend is an open-source, developer-first commerce engine that enables autonomous
+          AI agents to list, discover, negotiate offers, and complete purchases programmatically
+          using Stripe Checkout.
         </p>
         <div class="hero-actions">
-          <a href="https://github.com/weareseeed/commercebackend/releases/tag/v0.2.0" target="_blank" rel="noreferrer" class="btn btn-primary">View v0.2.0 Release</a>
+          <a
+            href="https://github.com/weareseeed/commercebackend/releases/tag/v0.2.0"
+            target="_blank"
+            rel="noreferrer"
+            class="btn btn-primary"
+            >View v0.2.0 Release</a
+          >
           <a href="#code" class="btn btn-secondary">Explore API Examples</a>
         </div>
       </div>
@@ -66,47 +93,66 @@
         <div class="section-header">
           <h2 class="section-title">The Atomic Agent-Commerce Loop</h2>
           <p class="section-subtitle">
-            How CommerceBackend orchestrates discovery, negotiation, checkout, and fulfillment between buyer agents, seller agents, and payment processors.
+            How CommerceBackend orchestrates discovery, negotiation, checkout, and fulfillment
+            between buyer agents, seller agents, and payment processors.
           </p>
         </div>
-        
+
         <!-- Workflow Diagram Cards -->
         <div class="loop-container">
           <div class="loop-step" data-step="1">
             <div class="step-num">01</div>
             <div class="step-icon"><i class="fa-solid fa-store"></i></div>
             <h3 class="step-title">Seller Registers</h3>
-            <p class="step-desc">Seller Agent registers and receives an API Key, storing only a SHA-256 hash in PostgreSQL.</p>
+            <p class="step-desc">
+              Seller Agent registers and receives an API Key, storing only a SHA-256 hash in
+              PostgreSQL.
+            </p>
           </div>
           <div class="loop-step" data-step="2">
             <div class="step-num">02</div>
             <div class="step-icon"><i class="fa-solid fa-tags"></i></div>
             <h3 class="step-title">Lists Products</h3>
-            <p class="step-desc">Seller publishes fixed-price listings with attributes, stock parameters, and fulfillment rules.</p>
+            <p class="step-desc">
+              Seller publishes fixed-price listings with attributes, stock parameters, and
+              fulfillment rules.
+            </p>
           </div>
           <div class="loop-step" data-step="3">
             <div class="step-num">03</div>
             <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
             <h3 class="step-title">Buyer Discovers</h3>
-            <p class="step-desc">Buyer Agent searches listings using a queries scoring match relevance across titles & details.</p>
+            <p class="step-desc">
+              Buyer Agent searches listings using a queries scoring match relevance across titles &
+              details.
+            </p>
           </div>
           <div class="loop-step" data-step="4">
             <div class="step-num">04</div>
             <div class="step-icon"><i class="fa-solid fa-cart-shopping"></i></div>
             <h3 class="step-title">Offer or Checkout</h3>
-            <p class="step-desc">Buyer submits an offer for negotiation or starts checkout directly at the listing price.</p>
+            <p class="step-desc">
+              Buyer submits an offer for negotiation or starts checkout directly at the listing
+              price.
+            </p>
           </div>
           <div class="loop-step" data-step="5">
             <div class="step-num">05</div>
             <div class="step-icon"><i class="fa-solid fa-credit-card"></i></div>
             <h3 class="step-title">Accepted Terms</h3>
-            <p class="step-desc">Accepted offers lock price and quantity before Stripe Checkout, with every state change recorded in OfferHistory.</p>
+            <p class="step-desc">
+              Accepted offers lock price and quantity before Stripe Checkout, with every state
+              change recorded in OfferHistory.
+            </p>
           </div>
           <div class="loop-step" data-step="6">
             <div class="step-num">06</div>
             <div class="step-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             <h3 class="step-title">Payment & Fulfillment</h3>
-            <p class="step-desc">Stripe Webhook triggers order generation, inventory decrement, audit events, and seller fulfillment.</p>
+            <p class="step-desc">
+              Stripe Webhook triggers order generation, inventory decrement, audit events, and
+              seller fulfillment.
+            </p>
           </div>
         </div>
       </div>
@@ -118,7 +164,8 @@
         <div class="section-header">
           <h2 class="section-title">Engineered Specifically For Agents</h2>
           <p class="section-subtitle">
-            An API-first model for fixed-price checkout, negotiated offers, and machine-readable agent discovery.
+            An API-first model for fixed-price checkout, negotiated offers, and machine-readable
+            agent discovery.
           </p>
         </div>
         <div class="features-grid">
@@ -126,28 +173,32 @@
             <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
             <h3 class="feature-title">API-First & Agent-Centric</h3>
             <p class="feature-desc">
-              Designed exclusively for programmatic connections. Strict Zod validations on all requests ensure predictable inputs and outputs.
+              Designed exclusively for programmatic connections. Strict Zod validations on all
+              requests ensure predictable inputs and outputs.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
             <h3 class="feature-title">Offers & Counter-Offers</h3>
             <p class="feature-desc">
-              Buyer and seller agents can submit, accept, reject, counter, cancel, and audit negotiated terms before checkout.
+              Buyer and seller agents can submit, accept, reject, counter, cancel, and audit
+              negotiated terms before checkout.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-code-fork"></i></div>
             <h3 class="feature-title">Agent Discovery</h3>
             <p class="feature-desc">
-              Ships with llms.txt, .well-known/commercebackend.json, and docs/agent-discovery.md so agents can understand the API without scraping.
+              Ships with llms.txt, .well-known/commercebackend.json, and docs/agent-discovery.md so
+              agents can understand the API without scraping.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
             <h3 class="feature-title">Money-Path Hardening</h3>
             <p class="feature-desc">
-              Positive-price constraints, checkout_pending safeguards, and Stripe failure isolation reduce duplicate checkout and reconciliation risk.
+              Positive-price constraints, checkout_pending safeguards, and Stripe failure isolation
+              reduce duplicate checkout and reconciliation risk.
             </p>
           </div>
         </div>
@@ -160,7 +211,8 @@
         <div class="section-header">
           <h2 class="section-title">Developer SDK Integration</h2>
           <p class="section-subtitle">
-            Integrate agent listing, offer negotiation, and checkout flows using the JavaScript SDK and REST API.
+            Integrate agent listing, offer negotiation, and checkout flows using the JavaScript SDK
+            and REST API.
           </p>
         </div>
 
@@ -182,7 +234,9 @@
               <span class="dot green"></span>
               <span class="code-file-title" id="file-title">seller-agent.ts</span>
             </div>
-            <pre class="code-pre"><code class="code-content" id="code-content">// Loading...</code></pre>
+            <pre
+              class="code-pre"
+            ><code class="code-content" id="code-content">// Loading...</code></pre>
           </div>
         </div>
       </div>
@@ -193,11 +247,9 @@
       <div class="section-container">
         <div class="section-header">
           <h2 class="section-title">Quick Start Guide</h2>
-          <p class="section-subtitle">
-            Spin up the entire system locally in under 3 minutes.
-          </p>
+          <p class="section-subtitle">Spin up the entire system locally in under 3 minutes.</p>
         </div>
-        
+
         <div class="docs-grid">
           <div class="docs-step-card">
             <div class="step-badge">Step 1</div>
@@ -234,15 +286,23 @@ pnpm --filter @commercebackend/db exec prisma db push</code></pre>
             <span class="logo-text">Commerce<span class="logo-accent">Backend</span></span>
           </div>
           <p>
-            An open-source, API-first commerce core engine designed for programmatic integrations and autonomous AI agents.
+            An open-source, API-first commerce core engine designed for programmatic integrations
+            and autonomous AI agents.
           </p>
         </div>
         <div class="footer-links">
           <a href="#features">Features</a>
           <a href="#loop">Agent Loop</a>
           <a href="#code">Developer SDK</a>
-          <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md" target="_blank" rel="noreferrer">Agent Discovery</a>
-          <a href="https://github.com/weareseeed/commercebackend" target="_blank" rel="noreferrer">GitHub</a>
+          <a
+            href="https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md"
+            target="_blank"
+            rel="noreferrer"
+            >Agent Discovery</a
+          >
+          <a href="https://github.com/weareseeed/commercebackend" target="_blank" rel="noreferrer"
+            >GitHub</a
+          >
         </div>
       </div>
       <div class="footer-bottom">
@@ -250,9 +310,7 @@ pnpm --filter @commercebackend/db exec prisma db push</code></pre>
           Made with <span aria-label="love">♥️</span> by
           <a href="https://www.seeed.us" target="_blank" rel="noreferrer">Seeed</a>
         </p>
-        <p>
-          ©️ 2026 Seeed LLC. CommerceBackend is open-source software licensed under Apache 2.0.
-        </p>
+        <p>©️ 2026 Seeed LLC. CommerceBackend is open-source software licensed under Apache 2.0.</p>
       </div>
     </footer>
 
