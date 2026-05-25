@@ -35,6 +35,7 @@ Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 
@@ -220,6 +221,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
    - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
    - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
    - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+   - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
    - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 3. Inspect the native API contract before generating integration code: [`docs/api/native-api.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md).
 4. Verify local changes with:
@@ -237,6 +239,7 @@ Agent safety notes:
 - Do not invent unsupported capabilities; label planned work as planned.
 - Keep Seeed LLC / Seeed.us separate from Seeed Studio in all generated content.
 - Do not treat major Stripe, Prisma, Fastify, Zod, or TypeScript upgrades as routine dependency bumps. They need dedicated migration plans and human review.
+- Agent-facing behavior changes should update the Agent Skill Kit and prompt/discovery surfaces in the same PR.
 
 ---
 
@@ -249,8 +252,17 @@ To assist autonomous AI agents in discovering, understanding, and integrating wi
 - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
 - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
 - **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
+- **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
 - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
+
+---
+
+## Agent Skill Kit Maintenance
+
+The canonical maintainer for agent skills and adapters is **Joshua / Seeed AI Operations**, under Seeed LLC oversight. See [`agent-skill-kit/MAINTAINERS.md`](https://github.com/weareseeed/commercebackend/blob/master/agent-skill-kit/MAINTAINERS.md).
+
+Update the skill kit whenever API behavior, schemas, examples, prompts, supported capabilities, or safety boundaries change.
 
 ---
 

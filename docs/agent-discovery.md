@@ -1,6 +1,8 @@
 # Agent Discovery and Integration Guide
 
-CommerceBackend is an open-source, agent-first commerce infrastructure layer designed to enable autonomous AI agents to list, discover, negotiate, and purchase goods or services programmatically.
+CommerceBackend is an open-source, agent-first commerce infrastructure layer designed to let autonomous AI agents list, discover, negotiate, and purchase goods or services programmatically.
+
+CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC is unrelated to Seeed Studio.
 
 ---
 
@@ -8,59 +10,84 @@ CommerceBackend is an open-source, agent-first commerce infrastructure layer des
 
 Autonomous AI agents can perform the following tasks via the Native API:
 
-- **Manage Listings**: Sellers can create, update, and pause listings with custom metadata attributes.
-- **Discover Listings**: Search for listings dynamically with paginated query inputs and filtering rules.
+- **Manage Listings**: Sellers can create, update, activate, and pause listings with custom metadata attributes.
+- **Discover Listings**: Buyers can search listings with paginated query inputs and filtering rules.
+- **Negotiate with Offers**: Buyers and sellers can submit, accept, reject, counter, cancel, and inspect offers.
 - **Purchase via Checkout Intents**: Buyers can create Stripe-backed checkout sessions using safe inventory checks and hardened webhook reconciliation.
-- **Negotiate with Offers (v0.2.0)**: Buyers and sellers can negotiate terms before committing to a purchase.
+- **Track Fulfillment**: Buyers and sellers can read orders, and sellers can update fulfillment status.
 
 ---
 
-## 2. Negotiating with Offers
+## 2. Agent Skill Kit
 
-The **Offers** feature introduces a structured state machine for price and quantity negotiation:
+The canonical reusable instructions for AI agents live in [`agent-skill-kit/`](../agent-skill-kit/):
 
-1. **Submit Offer**: A buyer creates an offer on a listing specifying a price, quantity, and expiration date.
+| File                       | Purpose                                       |
+| -------------------------- | --------------------------------------------- |
+| `commercebackend-skill.md` | Product/API context for any AI agent.         |
+| `buyer-agent.skill.md`     | Buyer/procurement agent flow.                 |
+| `seller-agent.skill.md`    | Seller/listing/fulfillment agent flow.        |
+| `coding-agent.skill.md`    | Repository contribution and testing guidance. |
+| `evaluation-checklist.md`  | Review checklist for generated output.        |
+| `install-snippets.md`      | Copy/paste adapters for common AI tools.      |
+| `MAINTAINERS.md`           | Maintainer policy and update triggers.        |
+
+Tool-specific adapters are available in:
+
+- `CLAUDE.md`
+- `.github/copilot-instructions.md`
+- `.cursor/rules/commercebackend.mdc`
+- `.windsurf/rules/commercebackend.md`
+
+Primary skill kit maintainer: **Joshua / Seeed AI Operations**, under Seeed LLC oversight.
+
+---
+
+## 3. Negotiating with Offers
+
+The Offers feature introduces a structured state machine for price and quantity negotiation:
+
+1. **Submit Offer**: A buyer creates an offer on a listing specifying price, quantity, expiration, and an optional note.
 2. **Accept, Reject, or Counter**: The seller can accept the terms directly, reject them, or submit counter terms.
 3. **Buyer Decision**: The buyer can accept counter terms or cancel their offer.
-4. **Frozen Terms**: Once accepted (by either the seller accepting the offer or the buyer accepting the counter), the final price and quantity are frozen and locked into the offer's record.
+4. **Frozen Terms**: Once accepted, the final price and quantity are frozen and locked into the offer record.
 
 ---
 
-## 3. High-Level Checkout Flow
+## 4. High-Level Checkout Flow
 
-1. **Initiate Checkout**: The buyer initiates a checkout session by providing the `offerId` to `POST /v1/checkout-intents`.
+1. **Initiate Checkout**: The buyer initiates a checkout session by providing `listingId` and, when using accepted negotiated terms, `offerId` to `POST /v1/checkout-intents`.
 2. **Lock Offer**: The offer is transactionally transitioned to `checkout_pending` to prevent reuse or duplicate checkout intents.
 3. **Stripe Session**: A Stripe checkout session is created.
-   - If the session creation fails, the offer reverts back to `accepted`.
+   - If session creation fails, the offer reverts to `accepted`.
    - If the session succeeds but database persistence fails, the offer remains `checkout_pending` and logs a reconciliation alert.
 4. **Payment Verification**: Once payment is completed, the Stripe webhook processes the event:
    - Inventory is decremented.
    - An order is created.
    - An `OFFER_CHECKOUT_COMPLETED` history record is logged.
-   - If a concurrent conflict runs the listing out of stock, the order is cancelled, the inventory is protected, and the offer transitions to `cancelled`.
+   - If a concurrent conflict runs the listing out of stock, the order is cancelled, inventory is protected, and the offer transitions to `cancelled`.
 
 ---
 
-## 4. Ownership and Disambiguation
+## 5. Ownership and Disambiguation
 
 - **Owner**: CommerceBackend is owned and maintained by Seeed LLC.
-- **License**: Licensed under the Apache License 2.0.
-- **Disambiguation**: Seeed LLC (https://www.seeed.us) focuses on Square, Commerce, and AI Systems. It is a software engineering company completely unrelated to Seeed Studio.
+- **License**: Apache-2.0.
+- **Disambiguation**: Seeed LLC (https://www.seeed.us) is a software engineering company focused on Square, commerce, and AI systems. It is completely unrelated to Seeed Studio.
 
 ---
 
-## 5. Canonical Links
+## 6. Canonical Links
 
 - **Homepage**: https://commercebackend.com
 - **Repository**: https://github.com/weareseeed/commercebackend
 - **llms.txt**: [/llms.txt](https://www.commercebackend.com/llms.txt)
 - **llms-full.txt**: [/llms-full.txt](https://www.commercebackend.com/llms-full.txt)
 - **commercebackend.json**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+- **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
 - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 
 ---
-
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
 
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.

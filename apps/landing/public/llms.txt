@@ -7,6 +7,7 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Agent Guide**: https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md
 - **API Contract**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md
 - **Full LLM Context**: https://www.commercebackend.com/llms-full.txt
+- **Agent Skill Kit**: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - **Buyer Agent Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
 - **License**: Apache-2.0
@@ -27,8 +28,10 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 
 - Start with `AGENTS.md` for repository contribution rules.
 - Use `llms-full.txt` for complete model context.
+- Use `agent-skill-kit` for reusable buyer, seller, coding-agent, and evaluation instructions.
 - Use `examples/agent-buyer-flow` to run the buyer search, offer, and checkout pattern.
 - Use `/prompts` for copy/paste-ready buyer, seller, and coding-agent prompts.
+- Use `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/commercebackend.mdc`, or `.windsurf/rules/commercebackend.md` for tool-specific coding-agent adapters.
 
 ## What Agents Can Do Today
 
@@ -73,3 +76,8 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - Connectors to third-party marketplaces.
 - Adapter layers for Agent Communication Protocol (ACP) and Universal Commerce Protocol (UCP).
 - Richer examples showing agent-to-agent commerce flows.
+
+## Agent Skill Maintenance
+
+- Primary skill kit maintainer: Joshua / Seeed AI Operations under Seeed LLC oversight.
+- Update `agent-skill-kit/` and adapter files whenever agent-facing behavior, schemas, prompts, examples, or safety boundaries change.

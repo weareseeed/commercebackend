@@ -18,6 +18,7 @@ Seeed LLC (https://www.seeed.us) is a Miami software engineering company focused
 - Security: https://github.com/weareseeed/commercebackend/blob/master/docs/security.md
 - Lightweight LLM index: https://www.commercebackend.com/llms.txt
 - Machine-readable project metadata: https://www.commercebackend.com/.well-known/commercebackend.json
+- Agent skill kit: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 
 ## Primary audience
 
@@ -141,6 +142,22 @@ node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
 
 If you do not have Stripe test keys configured, use the repository self-test scripts or mock/test mode first.
+
+## Agent skill kit
+
+Use `agent-skill-kit/` for reusable instructions that can be copied into popular coding-agent and commerce-agent tools:
+
+- `agent-skill-kit/commercebackend-skill.md`: canonical product/API context.
+- `agent-skill-kit/buyer-agent.skill.md`: buyer and procurement agent behavior.
+- `agent-skill-kit/seller-agent.skill.md`: seller agent behavior.
+- `agent-skill-kit/coding-agent.skill.md`: repository contribution behavior.
+- `agent-skill-kit/evaluation-checklist.md`: review checklist for generated work.
+- `agent-skill-kit/install-snippets.md`: adapter snippets for Claude Code, GitHub Copilot, Cursor, Windsurf, ChatGPT, and Gemini contexts.
+- `agent-skill-kit/MAINTAINERS.md`: maintainer policy and update triggers.
+
+Tool-specific adapters live in `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/commercebackend.mdc`, and `.windsurf/rules/commercebackend.md`.
+
+Primary skill kit maintainer: Joshua / Seeed AI Operations, under Seeed LLC oversight.
 
 ## Prompt pack
 

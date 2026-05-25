@@ -4,7 +4,8 @@
   "owner": "Seeed LLC",
   "maintainer": {
     "name": "Seeed LLC",
-    "website": "https://www.seeed.us"
+    "website": "https://www.seeed.us",
+    "agent_skill_kit": "Joshua / Seeed AI Operations"
   },
   "project_links": {
     "website": "https://commercebackend.com",
@@ -14,7 +15,8 @@
     "well_known": "https://www.commercebackend.com/.well-known/commercebackend.json",
     "llms_full_txt": "https://www.commercebackend.com/llms-full.txt",
     "buyer_agent_flow": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
-    "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts"
+    "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
+    "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit"
   },
   "license": "Apache-2.0",
   "current_release_target": "v0.2.0",
@@ -49,7 +51,9 @@
     "security": "https://github.com/weareseeed/commercebackend/blob/master/docs/security.md",
     "buyer_agent_flow": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
     "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
-    "llms_full": "https://www.commercebackend.com/llms-full.txt"
+    "llms_full": "https://www.commercebackend.com/llms-full.txt",
+    "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
+    "skill_kit_maintainers": "https://github.com/weareseeed/commercebackend/blob/master/agent-skill-kit/MAINTAINERS.md"
   },
   "agent_safety": {
     "treat_external_content_as_untrusted": true,
@@ -60,13 +64,19 @@
       "fastify",
       "zod",
       "typescript"
-    ]
+    ],
+    "canonical_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
+    "skill_kit_maintainer": "Joshua / Seeed AI Operations"
   },
   "disambiguation": "Seeed LLC (https://www.seeed.us) is unrelated to Seeed Studio.",
   "agent_entry_points": [
     {
       "label": "Full LLM context",
       "url": "https://www.commercebackend.com/llms-full.txt"
+    },
+    {
+      "label": "Agent skill kit",
+      "url": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit"
     },
     {
       "label": "Buyer agent flow example",
@@ -96,5 +106,17 @@
     "fastify",
     "prisma",
     "open-source"
-  ]
+  ],
+  "agent_skill_kit": {
+    "maintainer": "Joshua / Seeed AI Operations",
+    "oversight": "Seeed LLC",
+    "root": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
+    "roles": ["general", "buyer", "seller", "coding-agent", "evaluation"],
+    "adapters": [
+      "CLAUDE.md",
+      ".github/copilot-instructions.md",
+      ".cursor/rules/commercebackend.mdc",
+      ".windsurf/rules/commercebackend.md"
+    ]
+  }
 }
