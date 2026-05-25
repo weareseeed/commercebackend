@@ -23,7 +23,12 @@
     "llms-txt",
     "fastify",
     "prisma",
-    "checkout"
+    "checkout",
+    "agent-skill-kit",
+    "ai-agent-instructions",
+    "copilot-instructions",
+    "claude-code",
+    "cursor-rules"
   ],
   "repository": {
     "type": "git",
