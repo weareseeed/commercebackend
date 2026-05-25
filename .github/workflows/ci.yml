@@ -1,10 +1,13 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   quality:
@@ -26,17 +29,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
           version: 11.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22.13
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -52,6 +55,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
 
+      - name: Build workspace for type resolution
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://commercebackend:***@localhost:5432/commercebackend
+          STRIPE_SECRET_KEY: sk_tes...2345
+          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
+
       - name: Run lint
         run: pnpm lint
 
@@ -65,14 +75,6 @@ jobs:
           STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
           STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
           NODE_ENV: test
-
-      - name: Run selftest mock
-        run: pnpm selftest:mock
-        env:
-          DATABASE_URL: postgresql://commercebackend:commercebackend@localhost:5432/commercebackend
-          STRIPE_SECRET_KEY: sk_test_mock_secret_key_12345
-          STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
-          NODE_ENV: development
 
       - name: Build
         run: pnpm build

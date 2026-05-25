@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CommerceBackend - Open-Source Agentic Commerce API Infrastructure</title>
-    <meta name="description" content="CommerceBackend is the open-source infrastructure for agentic marketplaces. Let AI agents and merchants list, discover, buy, and sell products using Stripe." />
+    <title>CommerceBackend v0.2.0 - Agent-Native Commerce & Offers API</title>
+    <meta name="description" content="CommerceBackend is the open-source infrastructure for agent-native marketplaces. Let AI agents list, discover, negotiate offers, and complete Stripe checkout through a hardened API." />
     <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,11 +29,12 @@
         <nav class="nav-links">
           <a href="#features">Features</a>
           <a href="#loop">Agent Loop</a>
+          <a href="#features">Offers</a>
           <a href="#code">API Code</a>
           <a href="#docs">Docs</a>
         </nav>
         <div class="header-actions">
-          <a href="https://github.com" target="_blank" class="btn btn-secondary btn-icon" id="github-link">
+          <a href="https://github.com/weareseeed/commercebackend" target="_blank" rel="noreferrer" class="btn btn-secondary btn-icon" id="github-link">
             <i class="fa-brands fa-github"></i> <span>GitHub</span>
           </a>
         </div>
@@ -44,17 +45,17 @@
     <section class="hero">
       <div class="hero-container">
         <div class="badge-container">
-          <span class="badge"><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.1 Release</span>
+          <span class="badge"><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 Release</span>
         </div>
         <h1 class="hero-title">
-          The API Infrastructure for <span class="gradient-text">Agentic Commerce</span>
+          The API Infrastructure for <span class="gradient-text">Agent-Native Commerce</span>
         </h1>
         <p class="hero-subtitle">
-          CommerceBackend is an open-source, developer-first commerce engine that enables autonomous AI agents to list, discover, buy, and sell products programmatically using Stripe Checkout.
+          CommerceBackend is an open-source, developer-first commerce engine that enables autonomous AI agents to list, discover, negotiate offers, and complete purchases programmatically using Stripe Checkout.
         </p>
         <div class="hero-actions">
-          <a href="#docs" class="btn btn-primary">Get Started Now</a>
-          <a href="#code" class="btn btn-secondary">Explore API Reference</a>
+          <a href="https://github.com/weareseeed/commercebackend/releases/tag/v0.2.0" target="_blank" rel="noreferrer" class="btn btn-primary">View v0.2.0 Release</a>
+          <a href="#code" class="btn btn-secondary">Explore API Examples</a>
         </div>
       </div>
     </section>
@@ -65,7 +66,7 @@
         <div class="section-header">
           <h2 class="section-title">The Atomic Agent-Commerce Loop</h2>
           <p class="section-subtitle">
-            How CommerceBackend orchestrates programmatic commerce between buyer agents, seller agents, and payment processors.
+            How CommerceBackend orchestrates discovery, negotiation, checkout, and fulfillment between buyer agents, seller agents, and payment processors.
           </p>
         </div>
         
@@ -92,20 +93,20 @@
           <div class="loop-step" data-step="4">
             <div class="step-num">04</div>
             <div class="step-icon"><i class="fa-solid fa-cart-shopping"></i></div>
-            <h3 class="step-title">Checkout Intent</h3>
-            <p class="step-desc">Buyer initiates purchase intent, returning a Stripe Checkout hosted URL session.</p>
+            <h3 class="step-title">Offer or Checkout</h3>
+            <p class="step-desc">Buyer submits an offer for negotiation or starts checkout directly at the listing price.</p>
           </div>
           <div class="loop-step" data-step="5">
             <div class="step-num">05</div>
             <div class="step-icon"><i class="fa-solid fa-credit-card"></i></div>
-            <h3 class="step-title">Stripe Payment</h3>
-            <p class="step-desc">Stripe Checkout hosted page processes credit card details securely. Card data is never stored internally.</p>
+            <h3 class="step-title">Accepted Terms</h3>
+            <p class="step-desc">Accepted offers lock price and quantity before Stripe Checkout, with every state change recorded in OfferHistory.</p>
           </div>
           <div class="loop-step" data-step="6">
             <div class="step-num">06</div>
             <div class="step-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
-            <h3 class="step-title">Fulfillment</h3>
-            <p class="step-desc">Stripe Webhook triggers order generation, inventory decrement, and seller notification.</p>
+            <h3 class="step-title">Payment & Fulfillment</h3>
+            <p class="step-desc">Stripe Webhook triggers order generation, inventory decrement, audit events, and seller fulfillment.</p>
           </div>
         </div>
       </div>
@@ -117,7 +118,7 @@
         <div class="section-header">
           <h2 class="section-title">Engineered Specifically For Agents</h2>
           <p class="section-subtitle">
-            An API-first model completely decoupled from web browser interfaces and cart complexities.
+            An API-first model for fixed-price checkout, negotiated offers, and machine-readable agent discovery.
           </p>
         </div>
         <div class="features-grid">
@@ -130,23 +131,23 @@
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
-            <h3 class="feature-title">Secure Credentials</h3>
+            <h3 class="feature-title">Offers & Counter-Offers</h3>
             <p class="feature-desc">
-              All agent authentication is tenant/agent scoped. API keys are generated once and stored in the database only as SHA-256 hashes.
+              Buyer and seller agents can submit, accept, reject, counter, cancel, and audit negotiated terms before checkout.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-code-fork"></i></div>
-            <h3 class="feature-title">Protocol Mappers</h3>
+            <h3 class="feature-title">Agent Discovery</h3>
             <p class="feature-desc">
-              Includes adapter stubs mapping internal listing representations to Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
+              Ships with llms.txt, .well-known/commercebackend.json, and docs/agent-discovery.md so agents can understand the API without scraping.
             </p>
           </div>
           <div class="feature-card">
             <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
-            <h3 class="feature-title">PostgreSQL & Prisma</h3>
+            <h3 class="feature-title">Money-Path Hardening</h3>
             <p class="feature-desc">
-              Prisma schemas model database records with transactional safety, guaranteeing stock integrity during high-concurrency checkouts.
+              Positive-price constraints, checkout_pending safeguards, and Stripe failure isolation reduce duplicate checkout and reconciliation risk.
             </p>
           </div>
         </div>
@@ -159,7 +160,7 @@
         <div class="section-header">
           <h2 class="section-title">Developer SDK Integration</h2>
           <p class="section-subtitle">
-            Integrate agents in minutes using our lightweight JavaScript SDK.
+            Integrate agent listing, offer negotiation, and checkout flows using the JavaScript SDK and REST API.
           </p>
         </div>
 
@@ -240,7 +241,8 @@ pnpm --filter @commercebackend/db exec prisma db push</code></pre>
           <a href="#features">Features</a>
           <a href="#loop">Agent Loop</a>
           <a href="#code">Developer SDK</a>
-          <a href="https://vercel.com" target="_blank">Deploy on Vercel</a>
+          <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md" target="_blank" rel="noreferrer">Agent Discovery</a>
+          <a href="https://github.com/weareseeed/commercebackend" target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </div>
       <div class="footer-bottom">

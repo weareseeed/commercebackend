@@ -11,7 +11,9 @@ export function generateApiKey(prefix: string = 'cb_test_'): {
 }
 
 export function hashApiKey(apiKey: string): string {
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
+  // API keys are high-entropy bearer tokens, but use a memory-hard KDF so
+  // stored hashes are still expensive to brute force if the database leaks.
+  return crypto.scryptSync(apiKey, 'commercebackend-api-key-v1', 32).toString('hex');
 }
 
 export function timingSafeCompare(a: string, b: string): boolean {

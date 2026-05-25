@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma, generateApiKey } from '@commercebackend/db';
 
 export function authHeader(apiKey: string) {
@@ -10,9 +11,9 @@ export async function createTestAgent(type: 'buyer' | 'seller' | 'both', overrid
 
   const agent = await prisma.agent.create({
     data: {
-      name: overrides.name || `${type.toUpperCase()} Agent ${Math.random().toString(36).substring(2, 6)}`,
+      name: overrides.name || `${type.toUpperCase()} Agent ${crypto.randomBytes(3).toString('hex')}`,
       type,
-      ownerEmail: overrides.ownerEmail || `agent-${Math.random().toString(36).substring(2, 6)}@test.com`,
+      ownerEmail: overrides.ownerEmail || `agent-${crypto.randomBytes(3).toString('hex')}@test.com`,
       apiKeyHash,
       status: overrides.status || 'active',
     },
@@ -64,8 +65,8 @@ export async function createCheckoutIntent(buyerAgentId: string, sellerAgentId: 
       amountTotal: overrides.amountTotal || 1000,
       currency: overrides.currency || 'USD',
       status: overrides.status || 'open',
-      stripeCheckoutSessionId: overrides.stripeCheckoutSessionId || `cs_${Math.random().toString(36).substring(2, 9)}`,
-      checkoutUrl: overrides.checkoutUrl || `https://checkout.stripe.com/pay/${Math.random().toString(36).substring(2, 9)}`,
+      stripeCheckoutSessionId: overrides.stripeCheckoutSessionId || `cs_${crypto.randomBytes(5).toString('hex')}`,
+      checkoutUrl: overrides.checkoutUrl || `https://checkout.stripe.com/pay/${crypto.randomBytes(5).toString('hex')}`,
     },
   });
   return intent;
