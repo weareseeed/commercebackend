@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CommerceBackend favicon">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14231f" />
+      <stop offset="1" stop-color="#07110e" />
+    </linearGradient>
+    <linearGradient id="mark" x1="18" y1="16" x2="48" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9cff7a" />
+      <stop offset="1" stop-color="#23d18b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)" />
+  <path
+    d="M39.9 46.4c-2.3 1.1-4.8 1.6-7.6 1.6-9.5 0-16.3-6.7-16.3-16s6.8-16 16.3-16c2.8 0 5.4.5 7.6 1.6v7.1c-2-1.7-4.4-2.6-7.2-2.6-5.6 0-9.5 4.1-9.5 9.9s3.9 9.9 9.5 9.9c2.8 0 5.2-.9 7.2-2.6v7.1Z"
+    fill="url(#mark)"
+  />
+  <path d="M39 20h7.5c4.5 0 7.5 2.4 7.5 6.2 0 2.2-1.1 4-3.1 5 2.5.9 4.1 3 4.1 5.9 0 4.4-3.3 7-8.4 7H39V20Zm6.8 9.1c1.8 0 2.9-.8 2.9-2.2s-1-2.2-2.9-2.2h-1.1v4.4h1.1Zm.4 10.2c2.2 0 3.4-.9 3.4-2.6s-1.2-2.6-3.4-2.6h-1.5v5.2h1.5Z" fill="#eafff4" />
+  <circle cx="48" cy="16" r="4" fill="#9cff7a" />
+</svg>
