@@ -43,7 +43,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
       const stripePaymentIntentId =
         typeof session.payment_intent === 'string' ? session.payment_intent : null;
 
-      await OrdersService.handleSuccessfulPayment(checkoutIntentId, stripePaymentIntentId);
+      await OrdersService.handleSuccessfulPayment(checkoutIntentId, stripePaymentIntentId, session.id);
     } else if (event.type === 'checkout.session.expired') {
       const session = event.data.object as any;
       const checkoutIntentId = session.metadata?.checkoutIntentId;
@@ -53,7 +53,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
         return reply.status(200).send({ received: true, ignored: true });
       }
 
-      await OrdersService.handleExpiredPayment(checkoutIntentId);
+      await OrdersService.handleExpiredPayment(checkoutIntentId, session.id);
     }
 
     return reply.status(200).send({ received: true });

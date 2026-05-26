@@ -17,6 +17,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
   BYPASS_STRIPE_SIGNATURE: z.string().optional(),
+  OPERATOR_API_KEY: isTest ? z.string().default('operator_test_key') : z.string().optional(),
 });
 
 // Run raw parse first
@@ -52,6 +53,9 @@ if (validatedEnv.NODE_ENV === 'production') {
   }
   if (validatedEnv.BYPASS_STRIPE_SIGNATURE === 'true') {
     errors.push('BYPASS_STRIPE_SIGNATURE cannot be true in production');
+  }
+  if (!validatedEnv.OPERATOR_API_KEY || isPlaceholder(validatedEnv.OPERATOR_API_KEY)) {
+    errors.push('OPERATOR_API_KEY is required in production and cannot be a placeholder');
   }
   if (errors.length > 0) {
     console.error('❌ Production startup failed due to invalid Stripe configuration:');

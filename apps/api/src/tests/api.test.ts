@@ -8,6 +8,7 @@ const mockDb = {
   checkoutIntents: [] as any[],
   orders: [] as any[],
   queryLogs: [] as any[],
+  purchasePolicies: [] as any[],
   offers: [] as any[],
   offerHistories: [] as any[],
   reset() {
@@ -16,6 +17,7 @@ const mockDb = {
     this.checkoutIntents = [];
     this.orders = [];
     this.queryLogs = [];
+    this.purchasePolicies = [];
     this.offers = [];
     this.offerHistories = [];
   },
@@ -174,6 +176,38 @@ vi.mock('@commercebackend/db', () => {
       }),
       deleteMany: vi.fn(),
     },
+    purchasePolicy: {
+      create: vi.fn(async ({ data }) => {
+        const newPolicy = {
+          id: `pol_${Math.random().toString(36).substring(2, 11)}`,
+          enabled: true,
+          allowedListingTypes: [],
+          allowedSellerAgentIds: [],
+          requireHumanApprovalForOffers: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data,
+        };
+        mockDb.purchasePolicies.push(newPolicy);
+        return newPolicy;
+      }),
+      findFirst: vi.fn(async ({ where }) => {
+        const policies = mockDb.purchasePolicies.filter((p) => {
+          if (where?.buyerAgentId && p.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.enabled !== undefined && p.enabled !== where.enabled) return false;
+          if (where?.currency && p.currency !== where.currency) return false;
+          return true;
+        });
+        return policies[policies.length - 1] || null;
+      }),
+      findMany: vi.fn(async ({ where }) => {
+        return mockDb.purchasePolicies.filter((p) => {
+          if (where?.buyerAgentId && p.buyerAgentId !== where.buyerAgentId) return false;
+          return true;
+        });
+      }),
+      deleteMany: vi.fn(),
+    },
     offer: {
       create: vi.fn(async ({ data }) => {
         const newOffer = {
@@ -286,6 +320,25 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
   let sellerKey: string;
   let sellerId: string;
   let testListingId: string;
+
+  const operatorHeaders = { 'x-operator-key': 'operator_test_key' };
+
+  const seedAutoApprovePolicy = (agentId: string, maxAmount = 1_000_000) => {
+    mockDb.purchasePolicies.push({
+      id: `pol_${Math.random().toString(36).substring(2, 11)}`,
+      buyerAgentId: agentId,
+      name: 'Test auto-approval policy',
+      enabled: true,
+      maxAutoApproveAmount: maxAmount,
+      currency: 'USD',
+      allowedListingTypes: [],
+      allowedSellerAgentIds: [],
+      requireHumanApprovalAboveAmount: maxAmount,
+      requireHumanApprovalForOffers: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  };
 
   beforeEach(() => {
     mockDb.reset();
@@ -690,7 +743,9 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       testListingId = JSON.parse(resListing.body).listing.id;
     });
 
-    it('should allow buyer agents to initiate a checkout intent with Stripe redirect', async () => {
+    it('should allow buyer agents to initiate a checkout intent with Stripe redirect when policy permits it', async () => {
+      seedAutoApprovePolicy(buyerId);
+
       const response = await app.inject({
         method: 'POST',
         url: '/v1/checkout-intents',
@@ -747,6 +802,259 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const data = JSON.parse(response.body);
       expect(data.error.code).toBe('INSUFFICIENT_INVENTORY');
     });
+
+
+    it('should require human approval when no purchase policy exists', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const data = JSON.parse(response.body);
+      expect(data.checkoutIntent.status).toBe('human_approval_required');
+      expect(data.checkoutIntent.policyDecision).toBe('human_approval_required');
+      expect(data.checkoutIntent.purchasePolicyId).toBeNull();
+      expect(data.checkoutIntent.checkoutUrl).toBeNull();
+    });
+
+    it('should reject buyer-agent attempts to create their own purchase policies', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          name: 'Self-escalation policy',
+          maxAutoApproveAmount: 1_000_000,
+          currency: 'USD',
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(mockDb.purchasePolicies).toHaveLength(0);
+    });
+
+    it('should let operators create purchase policies with approval thresholds', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Low-risk ticket policy',
+          maxAutoApproveAmount: 7500,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 7500,
+          requireHumanApprovalForOffers: true,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const data = JSON.parse(response.body);
+      expect(data.purchasePolicy.buyerAgentId).toBe(buyerId);
+      expect(data.purchasePolicy.maxAutoApproveAmount).toBe(7500);
+      expect(data.purchasePolicy.allowedListingTypes).toEqual(['event_ticket']);
+      expect(data.purchasePolicy.enabled).toBe(true);
+    });
+
+    it('should auto-approve checkout when purchase policy allows the total', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Auto approve small purchases',
+          maxAutoApproveAmount: 10000,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 10000,
+        },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const data = JSON.parse(response.body);
+      expect(data.checkoutIntent.status).toBe('open');
+      expect(data.checkoutIntent.policyDecision).toBe('policy_approved');
+      expect(data.checkoutIntent.purchasePolicyId).toBeDefined();
+      expect(data.checkoutIntent.stripeCheckoutSessionId).toContain('cs_');
+      expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+    });
+
+    it('should require approval and not create Stripe session when purchase policy threshold is exceeded', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Approval required above $25',
+          maxAutoApproveAmount: 2500,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 2500,
+        },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const data = JSON.parse(response.body);
+      expect(data.checkoutIntent.status).toBe('human_approval_required');
+      expect(data.checkoutIntent.policyDecision).toBe('human_approval_required');
+      expect(data.checkoutIntent.checkoutUrl).toBeNull();
+      expect(data.checkoutIntent.stripeCheckoutSessionId).toBeNull();
+    });
+
+    it('should reject buyer-agent attempts to approve their own approval-required checkout intent', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Approval required above $25',
+          maxAutoApproveAmount: 2500,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 2500,
+        },
+      });
+
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+      const checkoutIntentId = JSON.parse(createResponse.body).checkoutIntent.id;
+
+      const approveResponse = await app.inject({
+        method: 'POST',
+        url: `/v1/checkout-intents/${checkoutIntentId}/approve`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+      });
+
+      expect(approveResponse.statusCode).toBe(401);
+      const intent = mockDb.checkoutIntents.find((c) => c.id === checkoutIntentId);
+      expect(intent.status).toBe('human_approval_required');
+      expect(intent.stripeCheckoutSessionId).toBeNull();
+    });
+
+    it('should approve a human-approval-required checkout intent before creating Stripe session', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Approval required above $25',
+          maxAutoApproveAmount: 2500,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 2500,
+        },
+      });
+
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+      const checkoutIntentId = JSON.parse(createResponse.body).checkoutIntent.id;
+
+      const approveResponse = await app.inject({
+        method: 'POST',
+        url: `/v1/checkout-intents/${checkoutIntentId}/approve`,
+        headers: operatorHeaders,
+      });
+
+      expect(approveResponse.statusCode).toBe(200);
+      const data = JSON.parse(approveResponse.body);
+      expect(data.checkoutIntent.status).toBe('human_approved');
+      expect(data.checkoutIntent.humanApprovedAt).toBeDefined();
+      expect(data.checkoutIntent.stripeCheckoutSessionId).toContain('cs_');
+      expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+    });
+
+    it('should reject a human-approval-required checkout intent without creating Stripe session', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Approval required above $25',
+          maxAutoApproveAmount: 2500,
+          currency: 'USD',
+          allowedListingTypes: ['event_ticket'],
+          requireHumanApprovalAboveAmount: 2500,
+        },
+      });
+
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId: testListingId,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+      const checkoutIntentId = JSON.parse(createResponse.body).checkoutIntent.id;
+
+      const rejectResponse = await app.inject({
+        method: 'POST',
+        url: `/v1/checkout-intents/${checkoutIntentId}/reject`,
+        headers: operatorHeaders,
+        payload: { reason: 'Human declined purchase.' },
+      });
+
+      expect(rejectResponse.statusCode).toBe(200);
+      const data = JSON.parse(rejectResponse.body);
+      expect(data.checkoutIntent.status).toBe('human_rejected');
+      expect(data.checkoutIntent.humanRejectedAt).toBeDefined();
+      expect(data.checkoutIntent.approvalRejectionReason).toBe('Human declined purchase.');
+      expect(data.checkoutIntent.stripeCheckoutSessionId).toBeNull();
+      expect(data.checkoutIntent.checkoutUrl).toBeNull();
+    });
   });
 
   describe('Stripe Webhook Processing & Orders', () => {
@@ -784,6 +1092,8 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         },
       });
       testListingId = JSON.parse(resListing.body).listing.id;
+
+      seedAutoApprovePolicy(buyerId);
 
       // Create checkout intent for 2 items (empties the stock on payment)
       const resIntent = await app.inject({
@@ -845,6 +1155,72 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const listing = mockDb.listings.find((l) => l.id === testListingId);
       expect(listing.quantityAvailable).toBe(0);
       expect(listing.status).toBe('sold_out');
+    });
+
+    it('should ignore completed webhooks for approval-required intents without a Stripe session', async () => {
+      const intent = await prisma.checkoutIntent.create({
+        data: {
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 3000,
+          amountTotal: 3000,
+          currency: 'USD',
+          status: 'human_approval_required',
+          stripeCheckoutSessionId: null,
+        },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify({
+          id: 'evt_unapproved',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_unapproved',
+              payment_intent: 'pi_unapproved',
+              metadata: { checkoutIntentId: intent.id },
+            },
+          },
+        }),
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(mockDb.orders.some((o) => o.checkoutIntentId === intent.id)).toBe(false);
+      expect(mockDb.checkoutIntents.find((i) => i.id === intent.id).status).toBe('human_approval_required');
+    });
+
+    it('should ignore completed webhooks when Stripe session id does not match the checkout intent', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/webhooks/stripe',
+        headers: {
+          'stripe-signature': 'sig',
+          'content-type': 'application/json',
+        },
+        payload: JSON.stringify({
+          id: 'evt_wrong_session',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_wrong_session',
+              payment_intent: 'pi_wrong_session',
+              metadata: { checkoutIntentId },
+            },
+          },
+        }),
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(mockDb.orders.some((o) => o.checkoutIntentId === checkoutIntentId)).toBe(false);
+      expect(mockDb.checkoutIntents.find((i) => i.id === checkoutIntentId).status).toBe('open');
     });
 
     it('should process webhook idempotently and not create duplicate orders', async () => {
@@ -1096,8 +1472,11 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
     });
 
     it('should mark checkout intent failed if Stripe session creation fails', async () => {
+      seedAutoApprovePolicy(localBuyerId);
       const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
-      vi.mocked(createStripeCheckoutSession).mockRejectedValueOnce(new Error('Stripe API Error'));
+      const stripeMock = vi.mocked(createStripeCheckoutSession);
+      stripeMock.mockReset();
+      stripeMock.mockRejectedValueOnce(new Error('Stripe API Error'));
 
       const res = await app.inject({
         method: 'POST',
@@ -1406,6 +1785,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const buyerData = JSON.parse(resBuyer.body);
       buyerKey = buyerData.apiKey;
+      buyerId = buyerData.agent.id;
 
       // Create listing (price 10000, quantity 10)
       const resListing = await app.inject({
@@ -1587,6 +1967,67 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(resCheckout2.statusCode).toBe(400); // Already checked out (checkout_pending)
     });
 
+    it('should reject approval-required offer checkout and revert offer to accepted', async () => {
+      await app.inject({
+        method: 'POST',
+        url: `/v1/agents/${buyerId}/purchase-policies`,
+        headers: operatorHeaders,
+        payload: {
+          name: 'Offers require approval',
+          maxAutoApproveAmount: 1_000_000,
+          currency: 'USD',
+          allowedListingTypes: ['physical_good'],
+          requireHumanApprovalAboveAmount: 1_000_000,
+          requireHumanApprovalForOffers: true,
+        },
+      });
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const resOffer = await app.inject({
+        method: 'POST',
+        url: `/v1/listings/${listingId}/offers`,
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: { priceAmount: 7500, quantity: 2, expiresAt },
+      });
+      const offerId = JSON.parse(resOffer.body).offer.id;
+
+      await app.inject({
+        method: 'POST',
+        url: `/v1/offers/${offerId}/accept`,
+        headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      const resCheckout = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${buyerKey}` },
+        payload: {
+          listingId,
+          quantity: 2,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+          offerId,
+        },
+      });
+      expect(resCheckout.statusCode).toBe(201);
+      const checkoutIntent = JSON.parse(resCheckout.body).checkoutIntent;
+      expect(checkoutIntent.status).toBe('human_approval_required');
+      expect(mockDb.offers.find((o) => o.id === offerId).status).toBe('checkout_pending');
+
+      const resReject = await app.inject({
+        method: 'POST',
+        url: `/v1/checkout-intents/${checkoutIntent.id}/reject`,
+        headers: operatorHeaders,
+        payload: { reason: 'Offer purchase declined.' },
+      });
+
+      expect(resReject.statusCode).toBe(200);
+      expect(JSON.parse(resReject.body).checkoutIntent.status).toBe('human_rejected');
+      expect(mockDb.offers.find((o) => o.id === offerId).status).toBe('accepted');
+      const offerHist = mockDb.offerHistories.filter((h) => h.offerId === offerId);
+      expect(offerHist.some((h) => h.event === 'OFFER_REVERTED_APPROVAL_REJECTED')).toBe(true);
+    });
+
     it('should forbid other sellers from mutating an offer', async () => {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const resOffer = await app.inject({
@@ -1660,6 +2101,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
     });
 
     it('should revert offer from checkout_pending back to accepted if Stripe session creation fails before session exists', async () => {
+      seedAutoApprovePolicy(buyerId);
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const resOffer = await app.inject({
         method: 'POST',
@@ -1677,6 +2119,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
 
       const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
       const stripeMock = vi.mocked(createStripeCheckoutSession);
+      stripeMock.mockReset();
       stripeMock.mockRejectedValueOnce(new Error('Stripe API network failure'));
 
       const resCheckout = await app.inject({
@@ -1702,6 +2145,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
     });
 
     it('should NOT revert offer to accepted if Stripe session exists but DB persistence fails, preventing checkout again', async () => {
+      seedAutoApprovePolicy(buyerId);
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const resOffer = await app.inject({
         method: 'POST',
@@ -1715,6 +2159,14 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         method: 'POST',
         url: `/v1/offers/${offerId}/accept`,
         headers: { authorization: `Bearer ${sellerKey}` },
+      });
+
+      const { createStripeCheckoutSession } = await import('@commercebackend/payments-stripe');
+      const stripeMock = vi.mocked(createStripeCheckoutSession);
+      stripeMock.mockReset();
+      stripeMock.mockResolvedValueOnce({
+        id: 'cs_persistence_failure',
+        url: 'https://checkout.stripe.com/pay/persistence_failure',
       });
 
       const spyUpdate = vi.mocked(prisma.checkoutIntent.update);

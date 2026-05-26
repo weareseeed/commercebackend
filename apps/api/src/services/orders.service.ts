@@ -4,7 +4,8 @@ import { AppError } from '../plugins/error-handler';
 export class OrdersService {
   static async handleSuccessfulPayment(
     checkoutIntentId: string,
-    stripePaymentIntentId: string | null
+    stripePaymentIntentId: string | null,
+    stripeCheckoutSessionId: string | null
   ) {
     return await prisma.$transaction(async (tx) => {
       const intent = await tx.checkoutIntent.findUnique({
@@ -22,7 +23,15 @@ export class OrdersService {
         return existingOrder || null;
       }
 
-      if (intent.status === 'payment_inventory_conflict') {
+      if (intent.status !== 'open' && intent.status !== 'human_approved') {
+        return null;
+      }
+
+      if (
+        stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId !== stripeCheckoutSessionId
+      ) {
         return null;
       }
 
@@ -128,13 +137,21 @@ export class OrdersService {
     });
   }
 
-  static async handleExpiredPayment(checkoutIntentId: string) {
+  static async handleExpiredPayment(checkoutIntentId: string, stripeCheckoutSessionId: string | null = null) {
     return await prisma.$transaction(async (tx) => {
       const intent = await tx.checkoutIntent.findUnique({
         where: { id: checkoutIntentId },
       });
 
-      if (!intent || intent.status !== 'open') {
+      if (!intent || (intent.status !== 'open' && intent.status !== 'human_approved')) {
+        return;
+      }
+
+      if (
+        stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId !== stripeCheckoutSessionId
+      ) {
         return;
       }
 
