@@ -34,12 +34,15 @@ Current release:
 
 - `v0.2.1` — post-v0.2 hardening and discovery verification.
 
-## v0.3 — Connector imports and search correctness
+## v0.3 — Connector imports, search correctness, and controlled checkout design
 
-Goal: let external commerce catalogs enter CommerceBackend while keeping the native agent marketplace model as the internal source of truth.
+Goal: let external commerce catalogs enter CommerceBackend while keeping the native agent marketplace model as the internal source of truth, and design the policy/approval layer agents need before money moves.
 
 Planned work:
 
+- Purchase-policy design for buyer agents: spending limits, listing/seller constraints, and human-approval thresholds.
+- Approval-state checkout-intent design for `human_approval_required`, `human_approved`, and `human_rejected` flows.
+- Checkout event ledger design for policy evaluation, approval, Stripe session creation, webhook completion, order creation, and inventory state transitions.
 - Connector abstraction for imported catalogs.
 - Initial Shopify connector spike.
 - Initial Square connector spike.
@@ -69,6 +72,8 @@ Planned work:
 - Seeded buyer and seller agents.
 - Seeded demo listings.
 - Stripe test-mode checkout path.
+- Purchase-policy demo showing bounded auto-approval vs. human approval required.
+- Checkout event ledger for policy evaluation, approval, Stripe handoff, webhook completion, order creation, and inventory changes.
 - Webhook receiver and replay guidance.
 - Demo database reset policy.
 - Rate limiting and abuse controls.

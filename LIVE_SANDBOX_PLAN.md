@@ -12,10 +12,11 @@ A successful sandbox lets a developer or agent:
 2. Hit a hosted API.
 3. Browse seeded listings.
 4. Create or inspect an offer.
-5. Create a Stripe test-mode checkout intent.
-6. Complete checkout with Stripe test cards.
-7. Observe order creation and inventory decrement.
-8. Understand what is safe to build on today.
+5. See whether purchase policy allows auto-approval or requires human approval.
+6. Create a Stripe test-mode checkout intent.
+7. Complete checkout with Stripe test cards.
+8. Observe order creation, inventory decrement, and checkout event history.
+9. Understand what is safe to build on today.
 
 ## Recommended first live shape
 
@@ -71,6 +72,9 @@ Seed at least:
 - One accepted offer fixture.
 - One expired offer fixture.
 - One low-inventory listing.
+- One buyer-agent purchase policy that auto-approves a low-value checkout.
+- One buyer-agent purchase policy that requires human approval above a threshold.
+- One checkout-intent fixture in `human_approval_required` state once that state exists.
 
 Seed data must be safe, fictional, and Stripe-compatible. Avoid restricted goods, regulated products, medical claims, weapons, adult content, or anything that would make payment policy review spicy in the bad way.
 
@@ -89,22 +93,29 @@ Expected proof:
 - Agent can discover listings without a browser.
 - Search results include enough structured detail for an agent to reason about purchase suitability.
 
-### Flow 2 — Fixed-price checkout
+### Flow 2 — Fixed-price checkout with policy evaluation
 
 ```text
 POST /checkout-intents
+Policy evaluates buyer-agent purchase authority
+If auto-approved: create Stripe Checkout session
+If human approval required: create approval request before Stripe session
 Redirect user to Stripe Checkout test mode
 Stripe webhook returns
 Order is created
 Inventory decrements
+Checkout events are visible
 ```
 
 Expected proof:
 
 - Checkout intent is persisted before Stripe session creation.
+- Buyer-agent policy is evaluated before payment handoff.
+- Human approval can approve or reject a bounded purchase before money moves.
 - Stripe webhook signature verification remains enabled.
 - Order creation is idempotent.
 - Inventory changes are visible after checkout.
+- Event history links policy, approval, Stripe session, order, and inventory transitions.
 
 ### Flow 3 — Offer negotiation
 
@@ -186,6 +197,9 @@ Before calling the sandbox live:
 - Seed script is idempotent.
 - Stripe webhook test passes.
 - Fixed-price checkout creates exactly one order.
+- Purchase-policy evaluation is recorded before checkout handoff.
+- Human-approval-required checkout cannot create a Stripe session until approved.
+- Rejected approval leaves a terminal/auditable state and does not create a Stripe session.
 - Offer checkout uses accepted terms.
 - Expired offer checkout fails.
 - Low-inventory path behaves correctly.
