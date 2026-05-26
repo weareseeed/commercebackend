@@ -195,7 +195,14 @@ export class CheckoutService {
       return updatedIntent;
     } catch (err: any) {
       console.error(
-        `CRITICAL RECONCILIATION NEEDED: Stripe session ${stripeSession.id} was created for CheckoutIntent ${checkoutIntent.id} (Offer: ${input.offerId || 'none'}), but updating CheckoutIntent in DB failed: ${err.message}`
+        JSON.stringify({
+          level: 'critical',
+          code: 'CHECKOUT_PERSISTENCE_FAILED',
+          stripeSessionId: stripeSession.id,
+          checkoutIntentId: checkoutIntent.id,
+          offerId: input.offerId || null,
+          error: err.message,
+        })
       );
 
       try {

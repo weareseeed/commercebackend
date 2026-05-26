@@ -23,7 +23,7 @@ export class PostgresSearchProvider implements SearchProvider {
     const currency = filters.currency;
     const maxPriceAmount = filters.maxPriceAmount;
 
-    // Fetch listings matching structural filters
+    // Temporary safety cap for the in-memory scan until v0.3 moves search to DB-level indexing.
     const listings = await prisma.listing.findMany({
       where: {
         status,
@@ -31,6 +31,7 @@ export class PostgresSearchProvider implements SearchProvider {
         currency,
         priceAmount: maxPriceAmount ? { lte: maxPriceAmount } : undefined,
       },
+      take: 1000,
     });
 
     if (!query) {
@@ -132,7 +133,7 @@ export class SearchService {
         agentId,
         query,
         filters: filters as any,
-        resultCount: results.length,
+        resultCount: total,
       },
     });
 
