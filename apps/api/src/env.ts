@@ -16,6 +16,7 @@ const EnvSchema = z.object({
   API_BASE_URL: z.string().url().default('http://localhost:4000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
+  BYPASS_STRIPE_SIGNATURE: z.string().optional(),
 });
 
 // Run raw parse first
@@ -48,6 +49,9 @@ if (validatedEnv.NODE_ENV === 'production') {
   }
   if (isPlaceholder(validatedEnv.STRIPE_WEBHOOK_SECRET)) {
     errors.push('STRIPE_WEBHOOK_SECRET is a placeholder or mock value');
+  }
+  if (validatedEnv.BYPASS_STRIPE_SIGNATURE === 'true') {
+    errors.push('BYPASS_STRIPE_SIGNATURE cannot be true in production');
   }
   if (errors.length > 0) {
     console.error('❌ Production startup failed due to invalid Stripe configuration:');
