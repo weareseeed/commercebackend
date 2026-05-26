@@ -4,7 +4,174 @@ import { createStripeCheckoutSession } from '@commercebackend/payments-stripe';
 import { ListingsService } from './listings.service';
 import { AppError } from '../plugins/error-handler';
 
+type PolicyDecision = 'policy_approved' | 'human_approval_required' | 'no_policy';
+
+type CheckoutIntentWithApproval = {
+  id: string;
+  listingId: string;
+  buyerAgentId: string;
+  sellerAgentId: string;
+  quantity: number;
+  amountTotal: number;
+  currency: string;
+  offerId?: string | null;
+  successUrl?: string | null;
+  cancelUrl?: string | null;
+};
+
 export class CheckoutService {
+  private static async evaluatePurchasePolicy(
+    buyerAgentId: string,
+    listing: any,
+    amountTotal: number,
+    hasOffer: boolean
+  ): Promise<{ purchasePolicyId: string | null; policyDecision: PolicyDecision }> {
+    const purchasePolicy = await prisma.purchasePolicy.findFirst({
+      where: {
+        buyerAgentId,
+        enabled: true,
+        currency: listing.currency,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!purchasePolicy) {
+      return { purchasePolicyId: null, policyDecision: 'human_approval_required' };
+    }
+
+    const listingTypeAllowed =
+      purchasePolicy.allowedListingTypes.length === 0 ||
+      purchasePolicy.allowedListingTypes.includes(listing.type);
+    const sellerAllowed =
+      purchasePolicy.allowedSellerAgentIds.length === 0 ||
+      purchasePolicy.allowedSellerAgentIds.includes(listing.sellerAgentId);
+    const offerRequiresApproval = hasOffer && purchasePolicy.requireHumanApprovalForOffers;
+    const amountRequiresApproval =
+      amountTotal > purchasePolicy.maxAutoApproveAmount ||
+      amountTotal > purchasePolicy.requireHumanApprovalAboveAmount;
+
+    if (!listingTypeAllowed || !sellerAllowed || offerRequiresApproval || amountRequiresApproval) {
+      return {
+        purchasePolicyId: purchasePolicy.id,
+        policyDecision: 'human_approval_required',
+      };
+    }
+
+    return { purchasePolicyId: purchasePolicy.id, policyDecision: 'policy_approved' };
+  }
+
+  private static async createAndPersistStripeSession(
+    checkoutIntent: CheckoutIntentWithApproval,
+    listing: any,
+    priceAmount: number,
+    successUrl: string,
+    cancelUrl: string,
+    statusAfterSession: 'open' | 'human_approved'
+  ) {
+    let stripeSession: any = null;
+    try {
+      stripeSession = await createStripeCheckoutSession({
+        checkoutIntentId: checkoutIntent.id,
+        listingId: listing.id,
+        title: listing.title,
+        priceAmount,
+        quantity: checkoutIntent.quantity,
+        currency: listing.currency,
+        buyerAgentId: checkoutIntent.buyerAgentId,
+        sellerAgentId: listing.sellerAgentId,
+        successUrl,
+        cancelUrl,
+        idempotencyKey: `checkout_intent_stripe_${checkoutIntent.id}`,
+      });
+    } catch (err: any) {
+      await CheckoutService.markCheckoutFailedAndMaybeRevertOffer(
+        checkoutIntent.id,
+        checkoutIntent.offerId || null,
+        checkoutIntent.buyerAgentId,
+        `Stripe checkout creation failure: ${err.message}`
+      );
+
+      throw new AppError(
+        'CHECKOUT_CREATION_FAILED',
+        `Failed to create checkout session: ${err.message}`,
+        500
+      );
+    }
+
+    try {
+      return await prisma.checkoutIntent.update({
+        where: { id: checkoutIntent.id },
+        data: {
+          status: statusAfterSession,
+          stripeCheckoutSessionId: stripeSession.id,
+          checkoutUrl: stripeSession.url,
+          ...(statusAfterSession === 'human_approved' ? { humanApprovedAt: new Date() } : {}),
+        },
+      });
+    } catch (err: any) {
+      console.error(
+        JSON.stringify({
+          level: 'critical',
+          code: 'CHECKOUT_PERSISTENCE_FAILED',
+          stripeSessionId: stripeSession.id,
+          checkoutIntentId: checkoutIntent.id,
+          offerId: checkoutIntent.offerId || null,
+          error: err.message,
+        })
+      );
+
+      try {
+        await prisma.checkoutIntent.update({
+          where: { id: checkoutIntent.id },
+          data: {
+            status: 'failed',
+            stripeCheckoutSessionId: stripeSession.id,
+          },
+        });
+      } catch (innerDbErr: any) {
+        console.error(`Failed to mark checkout intent as failed: ${innerDbErr.message}`);
+      }
+
+      throw new AppError(
+        'CHECKOUT_PERSISTENCE_FAILED',
+        `Stripe session created successfully (${stripeSession.id}) but failed to update checkout intent database state. Offer remains in checkout_pending state. Error: ${err.message}`,
+        500
+      );
+    }
+  }
+
+  private static async markCheckoutFailedAndMaybeRevertOffer(
+    checkoutIntentId: string,
+    offerId: string | null,
+    buyerAgentId: string,
+    note: string
+  ) {
+    await prisma.$transaction(async (tx) => {
+      await tx.checkoutIntent.update({
+        where: { id: checkoutIntentId },
+        data: { status: 'failed' },
+      });
+
+      if (offerId) {
+        await tx.offer.update({
+          where: { id: offerId },
+          data: { status: 'accepted' },
+        });
+
+        await tx.offerHistory.create({
+          data: {
+            offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'accepted',
+            event: 'OFFER_REVERTED_STRIPE_FAILED',
+            actorId: buyerAgentId,
+            note: `Reverted to accepted due to ${note}`,
+          },
+        });
+      }
+    });
+  }
+
   static async createCheckoutIntent(buyerAgentId: string, input: CreateCheckoutIntentInput) {
     const listing = await ListingsService.getListingById(input.listingId);
 
@@ -47,9 +214,8 @@ export class CheckoutService {
           throw new AppError('VALIDATION_ERROR', 'Offer listing mismatch', 400);
         }
 
-        // Transactional expiration check
         const now = new Date();
-        const isExpired = 
+        const isExpired =
           (offer.status === 'pending' && offer.expiresAt < now) ||
           (offer.status === 'countered' && offer.counterExpiresAt && offer.counterExpiresAt < now);
 
@@ -86,7 +252,6 @@ export class CheckoutService {
 
         price = offer.acceptedPriceAmount!;
 
-        // Transition offer to checkout_pending
         await tx.offer.update({
           where: { id: offer.id },
           data: { status: 'checkout_pending' },
@@ -106,7 +271,6 @@ export class CheckoutService {
 
       const amountTotal = price * input.quantity;
 
-      // Lock listing for update to check inventory safely
       const listingRows = await tx.$queryRawUnsafe<any[]>(
         'SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE',
         listing.id
@@ -120,6 +284,13 @@ export class CheckoutService {
         throw new AppError('INSUFFICIENT_INVENTORY', 'Requested quantity exceeds available stock', 400);
       }
 
+      const policyEvaluation = await CheckoutService.evaluatePurchasePolicy(
+        buyerAgentId,
+        listing,
+        amountTotal,
+        Boolean(input.offerId)
+      );
+
       return await tx.checkoutIntent.create({
         data: {
           listingId: listing.id,
@@ -129,100 +300,107 @@ export class CheckoutService {
           amountSubtotal: amountTotal,
           amountTotal,
           currency: listing.currency,
-          status: 'open',
+          status:
+            policyEvaluation.policyDecision === 'human_approval_required'
+              ? 'human_approval_required'
+              : 'open',
+          stripeCheckoutSessionId: null,
+          checkoutUrl: null,
+          successUrl: input.successUrl,
+          cancelUrl: input.cancelUrl,
+          purchasePolicyId: policyEvaluation.purchasePolicyId,
+          policyDecision: policyEvaluation.policyDecision,
+          approvalRequestedAt:
+            policyEvaluation.policyDecision === 'human_approval_required' ? new Date() : null,
           offerId: input.offerId || null,
         },
       });
     });
 
-    let stripeSession: any = null;
-    try {
-      stripeSession = await createStripeCheckoutSession({
-        checkoutIntentId: checkoutIntent.id,
-        listingId: listing.id,
-        title: listing.title,
-        priceAmount: price,
-        quantity: input.quantity,
-        currency: listing.currency,
-        buyerAgentId,
-        sellerAgentId: listing.sellerAgentId,
-        successUrl: input.successUrl,
-        cancelUrl: input.cancelUrl,
-        idempotencyKey: `checkout_intent_stripe_${checkoutIntent.id}`,
-      });
-    } catch (err: any) {
-      await prisma.$transaction(async (tx) => {
-        await tx.checkoutIntent.update({
-          where: { id: checkoutIntent.id },
-          data: { status: 'failed' },
-        });
-
-        if (input.offerId) {
-          await tx.offer.update({
-            where: { id: input.offerId },
-            data: { status: 'accepted' },
-          });
-
-          await tx.offerHistory.create({
-            data: {
-              offerId: input.offerId,
-              fromStatus: 'checkout_pending',
-              toStatus: 'accepted',
-              event: 'OFFER_REVERTED_STRIPE_FAILED',
-              actorId: buyerAgentId,
-              note: `Reverted to accepted due to Stripe checkout creation failure: ${err.message}`,
-            },
-          });
-        }
-      });
-
-      throw new AppError(
-        'CHECKOUT_CREATION_FAILED',
-        `Failed to create checkout session: ${err.message}`,
-        500
-      );
+    if (checkoutIntent.status === 'human_approval_required') {
+      return checkoutIntent;
     }
 
-    try {
-      const updatedIntent = await prisma.checkoutIntent.update({
-        where: { id: checkoutIntent.id },
+    return CheckoutService.createAndPersistStripeSession(
+      checkoutIntent,
+      listing,
+      price,
+      input.successUrl,
+      input.cancelUrl,
+      'open'
+    );
+  }
+
+  static async approveCheckoutIntent(id: string) {
+    const intent = await prisma.checkoutIntent.findUnique({ where: { id } });
+    if (!intent) {
+      throw new AppError('CHECKOUT_INTENT_NOT_FOUND', 'Checkout intent not found', 404);
+    }
+    if (intent.status !== 'human_approval_required') {
+      throw new AppError('INVALID_CHECKOUT_STATUS', `Cannot approve checkout intent with status ${intent.status}`, 400);
+    }
+    if (!intent.successUrl || !intent.cancelUrl) {
+      throw new AppError('CHECKOUT_APPROVAL_NOT_READY', 'Checkout intent is missing redirect URLs', 400);
+    }
+
+    const listing = await ListingsService.getListingById(intent.listingId);
+    if (listing.status !== 'active') {
+      throw new AppError('LISTING_NOT_ACTIVE', 'Listing is not active', 400);
+    }
+    if (listing.quantityAvailable < intent.quantity) {
+      throw new AppError('INSUFFICIENT_INVENTORY', 'Requested quantity exceeds available stock', 400);
+    }
+    const priceAmount = Math.floor(intent.amountTotal / intent.quantity);
+
+    return CheckoutService.createAndPersistStripeSession(
+      intent,
+      listing,
+      priceAmount,
+      intent.successUrl,
+      intent.cancelUrl,
+      'human_approved'
+    );
+  }
+
+  static async rejectCheckoutIntent(id: string, reason?: string) {
+    const intent = await prisma.checkoutIntent.findUnique({ where: { id } });
+    if (!intent) {
+      throw new AppError('CHECKOUT_INTENT_NOT_FOUND', 'Checkout intent not found', 404);
+    }
+    if (intent.status !== 'human_approval_required') {
+      throw new AppError('INVALID_CHECKOUT_STATUS', `Cannot reject checkout intent with status ${intent.status}`, 400);
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedIntent = await tx.checkoutIntent.update({
+        where: { id },
         data: {
-          stripeCheckoutSessionId: stripeSession.id,
-          checkoutUrl: stripeSession.url,
+          status: 'human_rejected',
+          humanRejectedAt: new Date(),
+          approvalRejectionReason: reason || null,
         },
       });
 
-      return updatedIntent;
-    } catch (err: any) {
-      console.error(
-        JSON.stringify({
-          level: 'critical',
-          code: 'CHECKOUT_PERSISTENCE_FAILED',
-          stripeSessionId: stripeSession.id,
-          checkoutIntentId: checkoutIntent.id,
-          offerId: input.offerId || null,
-          error: err.message,
-        })
-      );
+      if (intent.offerId) {
+        await tx.offer.update({
+          where: { id: intent.offerId },
+          data: { status: 'accepted' },
+        });
 
-      try {
-        await prisma.checkoutIntent.update({
-          where: { id: checkoutIntent.id },
+        await tx.offerHistory.create({
           data: {
-            status: 'failed',
-            stripeCheckoutSessionId: stripeSession.id,
+            offerId: intent.offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'accepted',
+            event: 'OFFER_REVERTED_APPROVAL_REJECTED',
+            actorId: 'operator',
+            note: reason || 'Checkout approval rejected.',
           },
         });
-      } catch (innerDbErr: any) {
-        console.error(`Failed to mark checkout intent as failed: ${innerDbErr.message}`);
       }
 
-      throw new AppError(
-        'CHECKOUT_PERSISTENCE_FAILED',
-        `Stripe session created successfully (${stripeSession.id}) but failed to update checkout intent database state. Offer remains in checkout_pending state. Error: ${err.message}`,
-        500
-      );
-    }
+      return updatedIntent;
+    });
   }
 
   static async getCheckoutIntentById(id: string) {

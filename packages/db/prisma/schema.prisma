@@ -22,6 +22,7 @@ model Agent {
   ordersAsBuyer Order[] @relation("BuyerOrders")
   ordersAsSeller Order[] @relation("SellerOrders")
   queryLogs AgentQueryLog[]
+  purchasePolicies PurchasePolicy[] @relation("BuyerPurchasePolicies")
 }
 
 enum AgentType {
@@ -89,6 +90,15 @@ model CheckoutIntent {
   stripeCheckoutSessionId String? @unique
   stripePaymentIntentId   String?
   checkoutUrl             String?
+  successUrl              String?
+  cancelUrl               String?
+  purchasePolicyId        String?
+  purchasePolicy          PurchasePolicy? @relation(fields: [purchasePolicyId], references: [id], onDelete: SetNull)
+  policyDecision          PurchasePolicyDecision?
+  approvalRequestedAt     DateTime?
+  humanApprovedAt         DateTime?
+  humanRejectedAt         DateTime?
+  approvalRejectionReason String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   order Order?
@@ -99,15 +109,46 @@ model CheckoutIntent {
   @@index([buyerAgentId])
   @@index([sellerAgentId])
   @@index([offerId])
+  @@index([purchasePolicyId])
 }
 
 enum CheckoutIntentStatus {
   open
+  human_approval_required
+  human_approved
+  human_rejected
   paid
   expired
   cancelled
   failed
   payment_inventory_conflict
+}
+
+
+enum PurchasePolicyDecision {
+  policy_approved
+  human_approval_required
+  no_policy
+}
+
+model PurchasePolicy {
+  id                              String   @id @default(cuid())
+  buyerAgentId                    String
+  buyerAgent                      Agent    @relation("BuyerPurchasePolicies", fields: [buyerAgentId], references: [id], onDelete: Cascade)
+  name                            String
+  enabled                         Boolean  @default(true)
+  maxAutoApproveAmount            Int
+  currency                        String   @default("USD")
+  allowedListingTypes             String[] @default([])
+  allowedSellerAgentIds           String[] @default([])
+  requireHumanApprovalAboveAmount Int
+  requireHumanApprovalForOffers   Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+  checkoutIntents                 CheckoutIntent[]
+
+  @@index([buyerAgentId])
+  @@index([enabled])
 }
 
 model Order {

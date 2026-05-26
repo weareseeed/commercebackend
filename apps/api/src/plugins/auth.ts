@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { prisma, Agent, hashApiKey } from '@commercebackend/db';
 import { AppError } from './error-handler';
+import { env } from '../env';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -37,6 +38,13 @@ export async function authenticateAgent(request: FastifyRequest, reply: FastifyR
   const agentWithoutHash = { ...agent };
   delete (agentWithoutHash as any).apiKeyHash;
   request.agent = agentWithoutHash;
+}
+
+export async function authenticateOperator(request: FastifyRequest, reply: FastifyReply) {
+  const operatorKey = request.headers['x-operator-key'];
+  if (!operatorKey || Array.isArray(operatorKey) || operatorKey !== env.OPERATOR_API_KEY) {
+    throw new AppError('UNAUTHORIZED', 'Valid X-Operator-Key header is required', 401);
+  }
 }
 
 export function registerAuthPlugin(fastify: FastifyInstance) {

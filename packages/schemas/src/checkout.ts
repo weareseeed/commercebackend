@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 export const CheckoutIntentStatusSchema = z.enum([
   'open',
+  'human_approval_required',
+  'human_approved',
+  'human_rejected',
   'paid',
   'expired',
   'cancelled',
@@ -28,9 +31,20 @@ export const CheckoutIntentResponseSchema = z.object({
   currency: z.string(),
   status: CheckoutIntentStatusSchema,
   checkoutUrl: z.string().nullable(),
+  stripeCheckoutSessionId: z.string().nullable().optional(),
+  purchasePolicyId: z.string().nullable().optional(),
+  policyDecision: z.enum(['policy_approved', 'human_approval_required', 'no_policy']).nullable().optional(),
+  approvalRequestedAt: z.date().or(z.string()).nullable().optional(),
+  humanApprovedAt: z.date().or(z.string()).nullable().optional(),
+  humanRejectedAt: z.date().or(z.string()).nullable().optional(),
+  approvalRejectionReason: z.string().nullable().optional(),
   offerId: z.string().nullable().optional(),
   createdAt: z.date().or(z.string()),
   updatedAt: z.date().or(z.string()),
+});
+
+export const RejectCheckoutIntentApprovalSchema = z.object({
+  reason: z.string().max(500).optional(),
 });
 
 export const CreateCheckoutIntentResponseSchema = z.object({
