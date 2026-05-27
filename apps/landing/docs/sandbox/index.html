@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CommerceBackend Sandbox Quickstart</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: #0e1b2f;
+        --panel-2: #13233b;
+        --text: #edf3ff;
+        --muted: #9eb0cd;
+        --accent: #6aa8ff;
+        --accent-2: #7bf0d0;
+        --border: rgba(255, 255, 255, 0.1);
+        --code: #091423;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #102543 0%, var(--bg) 45%, #050b15 100%);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      h1, h2, h3 { line-height: 1.15; }
+      h1 {
+        font-size: clamp(2.2rem, 5vw, 4rem);
+        margin: 0 0 16px;
+      }
+      p, li { color: var(--muted); }
+      .lede {
+        max-width: 760px;
+        font-size: 1.08rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 28px 0;
+      }
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        backdrop-filter: blur(8px);
+      }
+      .card h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(123, 240, 208, 0.12);
+        color: var(--accent-2);
+        margin-bottom: 16px;
+      }
+      pre {
+        overflow-x: auto;
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        color: var(--text);
+      }
+      code { font-family: "SFMono-Regular", Consolas, monospace; }
+      a { color: var(--accent); }
+      ul { padding-left: 20px; }
+      .section { margin-top: 38px; }
+      .callout {
+        border-left: 4px solid var(--accent-2);
+        padding: 14px 16px;
+        background: rgba(123, 240, 208, 0.06);
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="back" href="/">← Back to CommerceBackend</a>
+      <div class="badge">Hosted sandbox · Stripe test mode only</div>
+      <h1>Sandbox Quickstart</h1>
+      <p class="lede">
+        CommerceBackend’s public proof surface is a hosted sandbox for agent-native commerce flows.
+        Use it to inspect seeded listings, create offers, evaluate purchase-policy behavior, and run
+        checkout in Stripe test mode without touching production money.
+      </p>
+
+      <div class="grid">
+        <section class="card">
+          <h3>What works now</h3>
+          <ul>
+            <li>Agent-facing discovery files</li>
+            <li>Seeded listing search and listing inspection</li>
+            <li>Offer creation and accepted-offer checkout flow</li>
+            <li>Purchase-policy evaluation before checkout</li>
+            <li>Stripe test-mode checkout sessions</li>
+          </ul>
+        </section>
+        <section class="card">
+          <h3>What this is not</h3>
+          <ul>
+            <li>Not a production marketplace</li>
+            <li>Not real-card processing</li>
+            <li>Not seller payouts or Stripe Connect</li>
+            <li>Not refunds, disputes, taxes, or multi-seller carts</li>
+            <li>Not merchant connector sync</li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="section">
+        <h2>Base URLs</h2>
+        <pre><code>Landing: https://www.commercebackend.com
+Sandbox API: https://api.demo.commercebackend.com
+Health: https://api.demo.commercebackend.com/health</code></pre>
+        <p>Use the demo API hostname above once it is approved and promoted. Until then, treat it as the canonical public target shape.</p>
+      </section>
+
+      <section class="section">
+        <h2>Minimal request shape</h2>
+        <pre><code>Authorization: Bearer &lt;demo buyer api key&gt;
+Content-Type: application/json
+X-Request-Id: sandbox-demo-001</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Fastest builder flow</h2>
+        <pre><code>1. Read llms.txt / llms-full.txt
+2. Fetch or search seeded listings
+3. Create an offer or checkout intent
+4. Observe whether policy auto-approves or requires operator approval
+5. Complete Stripe test checkout
+6. Inspect the resulting order state</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Example calls</h2>
+        <pre><code>curl https://api.demo.commercebackend.com/health
+
+curl -X POST https://api.demo.commercebackend.com/v1/search \
+  -H "authorization: Bearer &lt;demo buyer api key&gt;" \
+  -H "content-type: application/json" \
+  -H "x-request-id: sandbox-search-001" \
+  -d '{"query":"devkit"}'</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Stripe test-mode reminder</h2>
+        <div class="callout">
+          <strong>Test mode only.</strong>
+          Never enter a real payment card in the sandbox. Use Stripe’s published test cards and assume all sandbox checkout flows are non-production.
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Limits and safety boundaries</h2>
+        <ul>
+          <li>Demo data is seeded and may reset.</li>
+          <li>Write endpoints may be rate limited.</li>
+          <li>Approval-required checkouts should not create a Stripe session before approval.</li>
+          <li>Agent keys should be treated as demo credentials, not durable identities.</li>
+          <li>Real merchant onboarding and payouts are out of scope.</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Discovery and reference links</h2>
+        <ul>
+          <li><a href="/llms.txt">llms.txt</a></li>
+          <li><a href="/llms-full.txt">llms-full.txt</a></li>
+          <li><a href="/.well-known/commercebackend.json">/.well-known/commercebackend.json</a></li>
+          <li><a href="https://github.com/weareseeed/commercebackend/blob/master/README.md">README.md</a></li>
+          <li><a href="https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md">Native API reference</a></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
