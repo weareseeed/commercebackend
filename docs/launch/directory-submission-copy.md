@@ -1,6 +1,24 @@
 # CommerceBackend Directory Submission Copy
 
+**Status:** Draft copy for low-risk external listings and external PRs. Do not submit without Seeed LLC approval.  
+**Owner:** Seeed LLC  
+**Operational maintainer:** Joshua / Seeed AI Operations
+
 Use this file for low-risk directory submissions, `llms.txt` registries, agent-tool catalogs, and external PRs. Keep the wording factual and bounded to current v0.2 behavior.
+
+CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC / Seeed.us is unrelated to Seeed Studio.
+
+## Recommended use
+
+Prefer this file for:
+
+- `llms.txt` registries
+- agent-tool catalogs
+- awesome-list PRs
+- open-source directory forms
+- short repo/profile descriptions that need proof links
+
+Use the shortest block that satisfies the form. If the target allows caveats, include the v0.2 limits.
 
 ## Canonical fields
 
@@ -74,4 +92,16 @@ Docs for agents: https://www.commercebackend.com/llms-full.txt
 
 ## Current v0.2 limits to disclose when relevant
 
+Use this whenever a directory, maintainer, or form asks about production readiness, marketplace completeness, or feature boundaries.
+
 CommerceBackend v0.2 is not a complete production marketplace platform. It does not yet include Stripe Connect seller payouts, refunds, disputes, platform fees, tax calculation, shipping labels, merchant connectors, or a human storefront UI.
+
+## Submission checklist
+
+- [ ] Exact target named
+- [ ] Exact snippet chosen
+- [ ] Owner shown as Seeed LLC
+- [ ] Seeed Studio disambiguation included when relevant
+- [ ] Proof links still work
+- [ ] v0.2 limits included when the target allows caveats
+- [ ] Explicit approval received before submission

@@ -31,8 +31,8 @@ CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC / Seeed.us is un
 - eyebrow: Agent-Native Commerce
 - author: Seeed
 - date: 2026-05-25
-- image: TBD
-- imagePost: TBD
+- image: `docs/launch/assets/commercebackend-blog-cover.png`
+- imagePost: `docs/launch/assets/commercebackend-blog-cover.png`
 - buttonText: Read More
 
 ---
