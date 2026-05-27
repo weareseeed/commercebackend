@@ -8,6 +8,21 @@ These copy blocks are drafts. Do not publish, submit, email, or post them extern
 
 CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC / Seeed.us is unrelated to Seeed Studio.
 
+## Recommended use
+
+Use this file when preparing approval packets for public-facing launch copy.
+
+Best-fit sections:
+
+- `One-line description` — repo summary, social preview, short directory fields
+- `Short description` — website/product profile blocks, directory forms, intro blurbs
+- `Show HN draft` — technical community launch review
+- `LinkedIn / Seeed post draft` — social review draft
+- `Dev.to / technical article outline` — longer technical article setup
+- `Product Hunt draft` — only if approved later in the launch sequence
+
+Do not treat every block as ready for the same channel. Pick the smallest matching block and keep the v0.2 limits visible.
+
 ---
 
 ## One-line description
@@ -157,6 +172,23 @@ Full LLM context: https://www.commercebackend.com/llms-full.txt
 Agent Skill Kit: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 Owner: Seeed LLC, unrelated to Seeed Studio.
 ```
+
+## Current v0.2 limits to disclose when relevant
+
+Use this whenever a directory, form, or maintainer asks whether CommerceBackend is production-ready or full-featured.
+
+CommerceBackend v0.2 is not a complete production marketplace platform. It does not yet include Stripe Connect seller payouts, refunds, disputes, platform fees, tax calculation, shipping labels, merchant connectors, or a human storefront UI.
+
+## Submission rules
+
+Before using any block above:
+
+- confirm the target accepts open-source infrastructure projects like this one
+- prefer the shortest block that answers the form cleanly
+- keep the owner listed as **Seeed LLC**
+- keep the Seeed Studio disambiguation if there is any chance of brand confusion
+- include the v0.2 limits when the target allows caveats or maturity notes
+- do not submit to external sites or PRs without explicit approval from Seeed LLC leadership
 
 ---
 
