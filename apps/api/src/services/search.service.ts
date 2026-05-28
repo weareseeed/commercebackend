@@ -120,7 +120,7 @@ export class SearchService {
   }
 
   static async searchListings(
-    agentId: string,
+    agentId: string | null,
     query: string,
     filters: SearchFilters,
     limit: number,
@@ -128,14 +128,16 @@ export class SearchService {
   ) {
     const { results, total } = await this.provider.search(query, filters, limit, offset);
 
-    await prisma.agentQueryLog.create({
-      data: {
-        agentId,
-        query,
-        filters: filters as any,
-        resultCount: total,
-      },
-    });
+    if (agentId) {
+      await prisma.agentQueryLog.create({
+        data: {
+          agentId,
+          query,
+          filters: filters as any,
+          resultCount: total,
+        },
+      });
+    }
 
     return { results, total };
   }

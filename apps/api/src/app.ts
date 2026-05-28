@@ -12,6 +12,7 @@ import { webhookRoutes } from './routes/webhooks-stripe';
 import { orderRoutes } from './routes/orders';
 import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
+import { sandboxRoutes } from './routes/sandbox';
 
 import crypto from 'crypto';
 
@@ -76,6 +77,7 @@ export function buildApp() {
   app.register(orderRoutes);
   app.register(offersRoutes);
   app.register(purchasePolicyRoutes);
+  app.register(sandboxRoutes);
 
   return app;
 }
