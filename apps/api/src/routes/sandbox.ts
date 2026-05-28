@@ -45,7 +45,14 @@ export async function sandboxRoutes(fastify: FastifyInstance) {
     return { listing };
   });
 
-  fastify.post('/v1/public/search', async (request) => {
+  fastify.post('/v1/public/search', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request) => {
     assertSandboxEnabled();
     const input = SearchListingsRequestSchema.parse(request.body ?? {});
     const { results, total } = await SearchService.searchListings(
@@ -95,7 +102,15 @@ export async function sandboxRoutes(fastify: FastifyInstance) {
     };
   });
 
-  fastify.post('/v1/sandbox/reset', { preHandler: authenticateOperator }, async () => {
+  fastify.post('/v1/sandbox/reset', {
+    preHandler: authenticateOperator,
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async () => {
     assertSandboxEnabled();
     const result = await resetAndSeedSandbox();
     return {
@@ -105,7 +120,15 @@ export async function sandboxRoutes(fastify: FastifyInstance) {
     };
   });
 
-  fastify.post('/v1/sandbox/checkout-intents/:id/simulate-complete', { preHandler: authenticateOperator }, async (request) => {
+  fastify.post('/v1/sandbox/checkout-intents/:id/simulate-complete', {
+    preHandler: authenticateOperator,
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request) => {
     assertSandboxEnabled();
     const { id } = request.params as { id: string };
 

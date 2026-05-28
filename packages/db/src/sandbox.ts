@@ -117,7 +117,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     },
   });
 
-  const vipTicket = await prisma.listing.create({
+  await prisma.listing.create({
     data: {
       id: sandboxFixtureIds.listings.vipTicket,
       sellerAgentId: sellerAgent.id,
@@ -140,7 +140,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     },
   });
 
-  const pdfGuide = await prisma.listing.create({
+  await prisma.listing.create({
     data: {
       id: sandboxFixtureIds.listings.pdfGuide,
       sellerAgentId: sellerAgent.id,
@@ -206,7 +206,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     },
   });
 
-  const lowInventoryBundle = await prisma.listing.create({
+  await prisma.listing.create({
     data: {
       id: sandboxFixtureIds.listings.lowInventoryBundle,
       sellerAgentId: sellerAgent.id,
@@ -227,7 +227,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     },
   });
 
-  const autoApprovePolicy = await prisma.purchasePolicy.create({
+  await prisma.purchasePolicy.create({
     data: {
       id: sandboxFixtureIds.purchasePolicies.autoApproveLowValue,
       buyerAgentId: autoBuyerAgent.id,

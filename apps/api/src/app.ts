@@ -1,5 +1,6 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
 import { registerErrorHandler } from './plugins/error-handler';
 import { registerAuthPlugin } from './plugins/auth';
@@ -53,6 +54,11 @@ export function buildApp() {
   // CORS Configuration
   app.register(cors, {
     origin: '*',
+  });
+
+  app.register(rateLimit, {
+    global: false,
+    keyGenerator: (request) => request.ip,
   });
 
   // Raw body configuration (specifically for stripe webhook signature checks)
