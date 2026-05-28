@@ -1,0 +1,67 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="1" stop-color="#0D1B2A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="242" y1="131" x2="1181" y2="727" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#36CFFF"/>
+      <stop offset="1" stop-color="#22D3A6"/>
+    </linearGradient>
+    <filter id="blur" x="-200" y="-200" width="2000" height="1300" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="80"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" rx="32" fill="url(#bg)"/>
+  <g opacity="0.35" filter="url(#blur)">
+    <circle cx="1240" cy="162" r="140" fill="#36CFFF"/>
+    <circle cx="1320" cy="680" r="180" fill="#22D3A6"/>
+    <circle cx="310" cy="740" r="160" fill="#1D4ED8"/>
+  </g>
+  <rect x="84" y="84" width="1432" height="732" rx="28" fill="#091423" stroke="rgba(255,255,255,0.08)"/>
+  <g opacity="0.15">
+    <path d="M84 218H1516" stroke="#9BDCF8"/>
+    <path d="M84 352H1516" stroke="#9BDCF8"/>
+    <path d="M84 486H1516" stroke="#9BDCF8"/>
+    <path d="M84 620H1516" stroke="#9BDCF8"/>
+    <path d="M84 754H1516" stroke="#9BDCF8"/>
+    <path d="M278 84V816" stroke="#9BDCF8"/>
+    <path d="M566 84V816" stroke="#9BDCF8"/>
+    <path d="M854 84V816" stroke="#9BDCF8"/>
+    <path d="M1142 84V816" stroke="#9BDCF8"/>
+  </g>
+  <rect x="140" y="136" width="282" height="46" rx="23" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="164" y="166" fill="#9BDCF8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="600">Seeed LLC • launch update</text>
+  <text x="140" y="284" fill="white" font-family="Outfit, Inter, Arial, sans-serif" font-size="84" font-weight="800">CommerceBackend</text>
+  <text x="140" y="372" fill="url(#accent)" font-family="Outfit, Inter, Arial, sans-serif" font-size="84" font-weight="800">Public Sandbox</text>
+  <text x="140" y="448" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500">Hosted agent-commerce demo with deterministic fixtures,</text>
+  <text x="140" y="494" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500">public listing discovery, and Stripe test-mode checkout.</text>
+  <g>
+    <rect x="140" y="560" width="310" height="74" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+    <text x="176" y="605" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">v0.2.0 release</text>
+    <text x="176" y="632" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="18">plus hosted sandbox access</text>
+  </g>
+  <g>
+    <rect x="486" y="560" width="338" height="74" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+    <text x="522" y="605" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">Stripe test mode</text>
+    <text x="522" y="632" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="18">webhook-backed checkout flow</text>
+  </g>
+  <g>
+    <rect x="860" y="560" width="356" height="74" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+    <text x="896" y="605" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">Sandbox docs live</text>
+    <text x="896" y="632" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="18">commercebackend.com/docs/sandbox</text>
+  </g>
+  <g opacity="0.95">
+    <circle cx="1244" cy="300" r="20" fill="#36CFFF"/>
+    <circle cx="1344" cy="220" r="20" fill="#22D3A6"/>
+    <circle cx="1440" cy="324" r="20" fill="#36CFFF"/>
+    <circle cx="1338" cy="410" r="20" fill="#22D3A6"/>
+    <circle cx="1224" cy="456" r="20" fill="#36CFFF"/>
+    <path d="M1244 300L1344 220L1440 324L1338 410L1224 456L1244 300Z" stroke="url(#accent)" stroke-width="4"/>
+    <rect x="1188" y="516" width="296" height="164" rx="24" fill="#0D1D31" stroke="#1E3A5F"/>
+    <text x="1220" y="562" fill="#9BDCF8" font-family="Fira Code, monospace" font-size="20">GET /v1/public/listings</text>
+    <text x="1220" y="602" fill="#9BDCF8" font-family="Fira Code, monospace" font-size="20">POST /v1/public/search</text>
+    <text x="1220" y="642" fill="#9BDCF8" font-family="Fira Code, monospace" font-size="20">POST /v1/checkout-intents</text>
+  </g>
+  <text x="140" y="764" fill="#7EA4C2" font-family="Inter, Arial, sans-serif" font-size="22">Owned and maintained by Seeed LLC</text>
+</svg>

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CommerceBackend v0.2.0 - Agent-Native Commerce & Offers API</title>
+    <title>CommerceBackend v0.2.0 + Public Sandbox - Agent-Native Commerce API</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <meta
       name="description"
-      content="CommerceBackend is the open-source infrastructure for agent-native marketplaces. Let AI agents list, discover, negotiate offers, and complete Stripe checkout through a hardened API."
+      content="CommerceBackend is the open-source infrastructure for agent-native marketplaces. Use the public sandbox to test listings, offers, and Stripe test-mode checkout through a hardened API."
     />
     <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -63,7 +63,7 @@
       <div class="hero-container">
         <div class="badge-container">
           <span class="badge"
-            ><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 Release</span
+            ><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 + Public Sandbox Live</span
           >
         </div>
         <h1 class="hero-title">
@@ -71,8 +71,9 @@
         </h1>
         <p class="hero-subtitle">
           CommerceBackend is an open-source, developer-first commerce engine that enables autonomous
-          AI agents to list, discover, negotiate offers, and complete purchases programmatically
-          using Stripe Checkout.
+          AI agents to list, discover, negotiate offers, and complete purchases programmatically.
+          The hosted public sandbox lets builders test the full loop with deterministic fixtures and
+          Stripe test-mode checkout.
         </p>
         <div class="hero-actions">
           <a
@@ -82,8 +83,9 @@
             class="btn btn-primary"
             >View v0.2.0 Release</a
           >
-          <a href="/docs/sandbox/" class="btn btn-secondary">Sandbox Quickstart</a>
+          <a href="/docs/sandbox/" class="btn btn-secondary">Open Sandbox Guide</a>
           <a href="#code" class="btn btn-secondary">Explore API Examples</a>
+          <a href="/llms-full.txt" class="btn btn-secondary">Read llms-full.txt</a>
           <a
             href="https://github.com/weareseeed/commercebackend/tree/master/docs/launch"
             target="_blank"
@@ -263,9 +265,9 @@
         <div class="docs-grid">
           <div class="docs-step-card">
             <div class="step-badge">Hosted</div>
-            <h3>Use the Sandbox</h3>
+            <h3>Use the Hosted Sandbox</h3>
             <pre><code>Open /docs/sandbox/
-Use seeded buyer credentials
+Inspect public fixtures
 Run Stripe in test mode only</code></pre>
           </div>
           <div class="docs-step-card">
@@ -276,19 +278,21 @@ Run Stripe in test mode only</code></pre>
           <div class="docs-step-card">
             <div class="step-badge">Step 2</div>
             <h3>Configure Environment</h3>
-            <pre><code>cp .env.example .env</code></pre>
+            <pre><code>cp .env.sandbox.example .env</code></pre>
           </div>
           <div class="docs-step-card">
             <div class="step-badge">Step 3</div>
             <h3>Database & Migrations</h3>
             <pre><code>docker compose -f infra/docker-compose.yml up -d
-pnpm --filter @commercebackend/db exec prisma generate
-pnpm --filter @commercebackend/db exec prisma db push</code></pre>
+pnpm db:migrate
+pnpm db:seed</code></pre>
           </div>
           <div class="docs-step-card">
             <div class="step-badge">Step 4</div>
-            <h3>Start API Server</h3>
-            <pre><code>pnpm dev</code></pre>
+            <h3>Start API + Verify</h3>
+            <pre><code>pnpm dev
+pnpm sandbox:reset
+pnpm sandbox:smoke</code></pre>
           </div>
         </div>
 

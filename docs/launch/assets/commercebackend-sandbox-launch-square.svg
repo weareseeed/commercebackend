@@ -1,0 +1,39 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1080" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="1" stop-color="#0B1726"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="170" y1="210" x2="870" y2="858" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#36CFFF"/>
+      <stop offset="1" stop-color="#22D3A6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" rx="44" fill="url(#bg)"/>
+  <circle cx="818" cy="188" r="132" fill="#143052" opacity="0.9"/>
+  <circle cx="886" cy="828" r="180" fill="#10263E" opacity="0.9"/>
+  <circle cx="206" cy="854" r="150" fill="#122B46" opacity="0.85"/>
+  <rect x="86" y="86" width="908" height="908" rx="34" fill="#091423" stroke="#173255"/>
+  <rect x="126" y="126" width="296" height="44" rx="22" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="150" y="154" fill="#9BDCF8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="600">Seeed LLC • launch</text>
+  <text x="126" y="324" fill="#FFFFFF" font-family="Outfit, Inter, Arial, sans-serif" font-size="88" font-weight="800">CommerceBackend</text>
+  <text x="126" y="412" fill="url(#accent)" font-family="Outfit, Inter, Arial, sans-serif" font-size="88" font-weight="800">Sandbox Live</text>
+  <text x="126" y="492" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="500">Hosted demo for agent commerce</text>
+  <text x="126" y="534" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="500">with Stripe test-mode checkout</text>
+  <rect x="126" y="616" width="370" height="92" rx="22" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="162" y="670" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700">Public fixtures</text>
+  <text x="162" y="700" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="20">seeded agents, listings, offers</text>
+  <rect x="126" y="740" width="370" height="92" rx="22" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="162" y="794" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700">Stripe webhooks</text>
+  <text x="162" y="824" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="20">test-mode checkout verification</text>
+  <rect x="126" y="864" width="470" height="92" rx="22" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="162" y="918" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="700">docs/sandbox</text>
+  <text x="162" y="948" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="20">commercebackend.com/docs/sandbox</text>
+  <circle cx="760" cy="396" r="22" fill="#36CFFF"/>
+  <circle cx="858" cy="318" r="22" fill="#22D3A6"/>
+  <circle cx="938" cy="420" r="22" fill="#36CFFF"/>
+  <circle cx="844" cy="504" r="22" fill="#22D3A6"/>
+  <circle cx="746" cy="560" r="22" fill="#36CFFF"/>
+  <path d="M760 396L858 318L938 420L844 504L746 560L760 396Z" stroke="url(#accent)" stroke-width="4"/>
+  <text x="126" y="1018" fill="#7EA4C2" font-family="Inter, Arial, sans-serif" font-size="22">Owned and maintained by Seeed LLC</text>
+</svg>
