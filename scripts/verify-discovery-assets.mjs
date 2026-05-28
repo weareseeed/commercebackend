@@ -41,8 +41,12 @@ const baseUrl = (baseUrlArg?.split('=').slice(1).join('=') || DEFAULT_BASE_URL).
 const verifyPublic = args.has('--public');
 const strictParity = args.has('--strict-parity');
 
+function normalizeLineEndings(content) {
+  return content.replace(/\r\n/g, '\n');
+}
+
 function sha256(content) {
-  return createHash('sha256').update(content).digest('hex');
+  return createHash('sha256').update(normalizeLineEndings(content)).digest('hex');
 }
 
 function assertNeedles(label, text, needles) {

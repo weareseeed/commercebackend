@@ -62,6 +62,9 @@ jobs:
           STRIPE_SECRET_KEY: sk_tes...2345
           STRIPE_WEBHOOK_SECRET: whsec_mock_webhook_secret_12345
 
+      - name: Verify discovery assets
+        run: pnpm verify:discovery
+
       - name: Run lint
         run: pnpm lint
 
