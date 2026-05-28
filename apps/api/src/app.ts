@@ -1,5 +1,6 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
 import { registerErrorHandler } from './plugins/error-handler';
 import { registerAuthPlugin } from './plugins/auth';
@@ -12,6 +13,7 @@ import { webhookRoutes } from './routes/webhooks-stripe';
 import { orderRoutes } from './routes/orders';
 import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
+import { sandboxRoutes } from './routes/sandbox';
 
 import crypto from 'crypto';
 
@@ -54,6 +56,11 @@ export function buildApp() {
     origin: '*',
   });
 
+  app.register(rateLimit, {
+    global: false,
+    keyGenerator: (request) => request.ip,
+  });
+
   // Raw body configuration (specifically for stripe webhook signature checks)
   app.register(fastifyRawBody, {
     field: 'rawBody',
@@ -76,6 +83,7 @@ export function buildApp() {
   app.register(orderRoutes);
   app.register(offersRoutes);
   app.register(purchasePolicyRoutes);
+  app.register(sandboxRoutes);
 
   return app;
 }

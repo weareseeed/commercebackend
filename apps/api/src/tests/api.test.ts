@@ -284,6 +284,244 @@ vi.mock('@commercebackend/db', () => {
     }),
   };
 
+  const sandboxFixtureIds = {
+    sellerAgentId: 'sandbox_agent_seller_primary',
+    autoBuyerAgentId: 'sandbox_agent_buyer_auto',
+    approvalBuyerAgentId: 'sandbox_agent_buyer_approval',
+    listings: {
+      vipTicket: 'sandbox_listing_vip_jazz_ticket',
+      pdfGuide: 'sandbox_listing_agentic_pdf_guide',
+      devkit: 'sandbox_listing_autonomous_devkit',
+      negotiationWorkshop: 'sandbox_listing_custom_workshop',
+      lowInventoryBundle: 'sandbox_listing_low_inventory_bundle',
+    },
+    purchasePolicies: {
+      autoApproveLowValue: 'sandbox_policy_auto_low_value',
+      approvalRequired: 'sandbox_policy_human_approval',
+    },
+    offers: {
+      acceptedWorkshopOffer: 'sandbox_offer_accepted_workshop',
+      expiredWorkshopOffer: 'sandbox_offer_expired_workshop',
+    },
+    checkoutIntents: {
+      approvalRequiredDevkit: 'sandbox_checkout_human_approval_devkit',
+    },
+  };
+
+  const resetAndSeedSandbox = vi.fn(async () => {
+    mockDb.reset();
+    const sellerApiKey = 'cb_test_sandbox_seller';
+    const autoBuyerApiKey = 'cb_test_sandbox_auto';
+    const approvalBuyerApiKey = 'cb_test_sandbox_approval';
+
+    mockDb.agents.push(
+      {
+        id: sandboxFixtureIds.sellerAgentId,
+        name: 'Sandbox Seller Agent',
+        type: 'seller',
+        ownerEmail: 'sandbox-seller@commercebackend.test',
+        apiKeyHash: hashKey(sellerApiKey),
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.autoBuyerAgentId,
+        name: 'Sandbox Buyer Agent (Auto Approval)',
+        type: 'buyer',
+        ownerEmail: 'sandbox-buyer-auto@commercebackend.test',
+        apiKeyHash: hashKey(autoBuyerApiKey),
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.approvalBuyerAgentId,
+        name: 'Sandbox Buyer Agent (Approval Required)',
+        type: 'buyer',
+        ownerEmail: 'sandbox-buyer-approval@commercebackend.test',
+        apiKeyHash: hashKey(approvalBuyerApiKey),
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    );
+
+    mockDb.listings.push(
+      {
+        id: sandboxFixtureIds.listings.vipTicket,
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        title: 'VIP Jazz Night Ticket',
+        description: 'Sandbox listing',
+        type: 'event_ticket',
+        status: 'active',
+        priceAmount: 4200,
+        currency: 'USD',
+        quantityAvailable: 24,
+        attributes: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.listings.pdfGuide,
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        title: 'Agentic Commerce PDF Guide',
+        description: 'Sandbox listing',
+        type: 'digital_good',
+        status: 'active',
+        priceAmount: 1900,
+        currency: 'USD',
+        quantityAvailable: 500,
+        attributes: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.listings.devkit,
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        title: 'Autonomous Agent Hardware DevKit',
+        description: 'Sandbox listing',
+        type: 'physical_good',
+        status: 'active',
+        priceAmount: 15000,
+        currency: 'USD',
+        quantityAvailable: 8,
+        attributes: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.listings.negotiationWorkshop,
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        title: 'Custom Commerce Workflow Workshop',
+        description: 'Sandbox listing',
+        type: 'service',
+        status: 'active',
+        priceAmount: 25000,
+        currency: 'USD',
+        quantityAvailable: 6,
+        attributes: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.listings.lowInventoryBundle,
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        title: 'Low-Inventory Sensor Bundle',
+        description: 'Sandbox listing',
+        type: 'physical_good',
+        status: 'active',
+        priceAmount: 3200,
+        currency: 'USD',
+        quantityAvailable: 1,
+        attributes: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    );
+
+    mockDb.purchasePolicies.push(
+      {
+        id: sandboxFixtureIds.purchasePolicies.autoApproveLowValue,
+        buyerAgentId: sandboxFixtureIds.autoBuyerAgentId,
+        name: 'Sandbox auto-approve low-value purchases',
+        enabled: true,
+        maxAutoApproveAmount: 5000,
+        currency: 'USD',
+        allowedListingTypes: ['digital_good', 'event_ticket', 'physical_good'],
+        allowedSellerAgentIds: [sandboxFixtureIds.sellerAgentId],
+        requireHumanApprovalAboveAmount: 5000,
+        requireHumanApprovalForOffers: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.purchasePolicies.approvalRequired,
+        buyerAgentId: sandboxFixtureIds.approvalBuyerAgentId,
+        name: 'Sandbox human approval required above threshold',
+        enabled: true,
+        maxAutoApproveAmount: 5000,
+        currency: 'USD',
+        allowedListingTypes: ['physical_good', 'service'],
+        allowedSellerAgentIds: [sandboxFixtureIds.sellerAgentId],
+        requireHumanApprovalAboveAmount: 5000,
+        requireHumanApprovalForOffers: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    );
+
+    mockDb.offers.push(
+      {
+        id: sandboxFixtureIds.offers.acceptedWorkshopOffer,
+        listingId: sandboxFixtureIds.listings.negotiationWorkshop,
+        buyerAgentId: sandboxFixtureIds.approvalBuyerAgentId,
+        priceAmount: 22000,
+        quantity: 1,
+        status: 'accepted',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        acceptedPriceAmount: 23000,
+        acceptedQuantity: 1,
+        acceptedAt: new Date(),
+        acceptedByAgentId: sandboxFixtureIds.sellerAgentId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: sandboxFixtureIds.offers.expiredWorkshopOffer,
+        listingId: sandboxFixtureIds.listings.negotiationWorkshop,
+        buyerAgentId: sandboxFixtureIds.approvalBuyerAgentId,
+        priceAmount: 18000,
+        quantity: 1,
+        status: 'expired',
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    );
+
+    mockDb.checkoutIntents.push({
+      id: sandboxFixtureIds.checkoutIntents.approvalRequiredDevkit,
+      listingId: sandboxFixtureIds.listings.devkit,
+      buyerAgentId: sandboxFixtureIds.approvalBuyerAgentId,
+      sellerAgentId: sandboxFixtureIds.sellerAgentId,
+      quantity: 1,
+      amountSubtotal: 15000,
+      amountTotal: 15000,
+      currency: 'USD',
+      status: 'human_approval_required',
+      successUrl: 'https://www.commercebackend.com/docs/sandbox/?checkout=success',
+      cancelUrl: 'https://www.commercebackend.com/docs/sandbox/?checkout=cancelled',
+      purchasePolicyId: sandboxFixtureIds.purchasePolicies.approvalRequired,
+      policyDecision: 'human_approval_required',
+      approvalRequestedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return {
+      manifest: {
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        buyerAgentIds: {
+          autoApproved: sandboxFixtureIds.autoBuyerAgentId,
+          approvalRequired: sandboxFixtureIds.approvalBuyerAgentId,
+        },
+        listingIds: sandboxFixtureIds.listings,
+        purchasePolicyIds: sandboxFixtureIds.purchasePolicies,
+        offerIds: sandboxFixtureIds.offers,
+        checkoutIntentIds: sandboxFixtureIds.checkoutIntents,
+      },
+      credentials: {
+        sellerAgentId: sandboxFixtureIds.sellerAgentId,
+        sellerApiKey,
+        autoBuyerAgentId: sandboxFixtureIds.autoBuyerAgentId,
+        autoBuyerApiKey,
+        approvalBuyerAgentId: sandboxFixtureIds.approvalBuyerAgentId,
+        approvalBuyerApiKey,
+      },
+    };
+  });
+
   return {
     prisma: prismaMock,
     hashApiKey: hashKey,
@@ -291,6 +529,8 @@ vi.mock('@commercebackend/db', () => {
       const apiKey = `${prefix}mock_key_${Math.random().toString(36).substring(2, 9)}`;
       return { apiKey, apiKeyHash: hashKey(apiKey) };
     },
+    resetAndSeedSandbox,
+    sandboxFixtureIds,
   };
 });
 
@@ -311,6 +551,7 @@ vi.mock('@commercebackend/payments-stripe', () => {
 
 // Import built app for injection tests
 import { buildApp } from '../app';
+import { env } from '../env';
 
 const app = buildApp();
 
@@ -321,7 +562,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
   let sellerId: string;
   let testListingId: string;
 
-  const operatorHeaders = { 'x-operator-key': 'operator_test_key' };
+  const operatorHeaders = { 'x-operator-key': env.OPERATOR_API_KEY || 'operator_test_key' };
 
   const seedAutoApprovePolicy = (agentId: string, maxAmount = 1_000_000) => {
     mockDb.purchasePolicies.push({
@@ -605,18 +846,18 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(response.statusCode).toBe(403);
     });
   });
-
-  describe('Search API Endpoints', () => {
+  describe('Search API', () => {
     beforeEach(async () => {
-      // Seed seller
+      // Seed seller & listings for search
       const resSeller = await app.inject({
         method: 'POST',
         url: '/v1/agents',
-        payload: { name: 'Seller', type: 'seller', ownerEmail: 's@search.com' },
+        payload: { name: 'Seller', type: 'seller', ownerEmail: 'seller@search.com' },
       });
       sellerKey = JSON.parse(resSeller.body).apiKey;
+      sellerId = JSON.parse(resSeller.body).agent.id;
 
-      // Create list of listings
+      // Add listings
       await app.inject({
         method: 'POST',
         url: '/v1/listings',
@@ -706,6 +947,86 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const data = JSON.parse(response.body);
       // Electro listing was paused, so it shouldn't show up in default (active) search
       expect(data.results.length).toBe(0);
+    });
+  });
+
+  describe('Sandbox Launch Routes', () => {
+    it('should expose sandbox fixtures and public listings after operator reset', async () => {
+      const resetResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/sandbox/reset',
+        headers: operatorHeaders,
+      });
+
+      expect(resetResponse.statusCode).toBe(200);
+      const resetData = JSON.parse(resetResponse.body);
+      expect(resetData.credentials.autoBuyerApiKey).toBeDefined();
+      expect(resetData.manifest.listingIds.vipTicket).toBe('sandbox_listing_vip_jazz_ticket');
+
+      const fixturesResponse = await app.inject({
+        method: 'GET',
+        url: '/v1/sandbox/fixtures',
+      });
+      expect(fixturesResponse.statusCode).toBe(200);
+
+      const publicListingsResponse = await app.inject({
+        method: 'GET',
+        url: '/v1/public/listings',
+      });
+      expect(publicListingsResponse.statusCode).toBe(200);
+      const publicListings = JSON.parse(publicListingsResponse.body);
+      expect(publicListings.listings).toHaveLength(5);
+
+      const publicSearchResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/public/search',
+        payload: {
+          query: 'jazz miami',
+          filters: { type: 'event_ticket', status: 'active' },
+        },
+      });
+      expect(publicSearchResponse.statusCode).toBe(200);
+      const publicSearch = JSON.parse(publicSearchResponse.body);
+      expect(publicSearch.results[0].listing.id).toBe('sandbox_listing_vip_jazz_ticket');
+      expect(mockDb.queryLogs).toHaveLength(0);
+    });
+
+    it('should simulate sandbox checkout completion for auto-approved purchases', async () => {
+      const resetResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/sandbox/reset',
+        headers: operatorHeaders,
+      });
+      const resetData = JSON.parse(resetResponse.body);
+
+      const checkoutResponse = await app.inject({
+        method: 'POST',
+        url: '/v1/checkout-intents',
+        headers: { authorization: `Bearer ${resetData.credentials.autoBuyerApiKey}` },
+        payload: {
+          listingId: resetData.manifest.listingIds.lowInventoryBundle,
+          quantity: 1,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+      });
+
+      expect(checkoutResponse.statusCode).toBe(201);
+      const checkoutData = JSON.parse(checkoutResponse.body);
+      expect(checkoutData.checkoutIntent.status).toBe('open');
+
+      const simulateResponse = await app.inject({
+        method: 'POST',
+        url: `/v1/sandbox/checkout-intents/${checkoutData.checkoutIntent.id}/simulate-complete`,
+        headers: operatorHeaders,
+      });
+
+      expect(simulateResponse.statusCode).toBe(200);
+      const simulateData = JSON.parse(simulateResponse.body);
+      expect(simulateData.checkoutIntent.status).toBe('paid');
+      expect(simulateData.order.paymentStatus).toBe('paid');
+      expect(simulateData.listing.quantityAvailable).toBe(0);
+      expect(simulateData.listing.status).toBe('sold_out');
     });
   });
 
@@ -1439,12 +1760,21 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         ok: true,
         service: 'commercebackend-api',
         version: '0.1.0',
+        mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
+        stripeMode: 'mocked',
       });
 
       const resReady = await app.inject({ method: 'GET', url: '/ready' });
       expect(resReady.statusCode).toBe(200);
-      expect(JSON.parse(resReady.body).ok).toBe(true);
-      expect(JSON.parse(resReady.body).checks.database).toBe('ok');
+      expect(JSON.parse(resReady.body)).toEqual({
+        ok: true,
+        mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
+        checks: {
+          database: 'ok',
+          stripe: 'mocked',
+          stripeMode: 'mocked',
+        },
+      });
     });
 
     it('should verify Stripe session is created after checkout intent row exists', async () => {

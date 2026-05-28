@@ -6,3 +6,4 @@ export const prisma = new PrismaClient({
 
 export * from '@prisma/client';
 export * from './auth-utils';
+export * from './sandbox';

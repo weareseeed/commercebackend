@@ -17,12 +17,23 @@ NODE_ENV=test pnpm test
 pnpm build
 ```
 
-Run the local API and seed data:
+### Local sandbox quickstart
+
+Use this path when you want the deterministic sandbox fixtures, Prisma-managed PostgreSQL state, and the operator reset/smoke tooling:
 
 ```bash
+cp .env.sandbox.example .env
+docker compose -f infra/docker-compose.yml up -d
 pnpm db:migrate
 pnpm db:seed
 pnpm dev
+```
+
+In another shell, verify the sandbox end to end:
+
+```bash
+pnpm sandbox:reset
+pnpm sandbox:smoke
 ```
 
 Run the buyer-agent walkthrough after the API is available at `http://localhost:4000`:
@@ -30,6 +41,8 @@ Run the buyer-agent walkthrough after the API is available at `http://localhost:
 ```bash
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
+
+If you want to drive the sandbox from Gemini or another Google AI Studio client, set `GOOGLE_API_KEY` in your shell or local agent project. CommerceBackend itself does not require Google AI Studio to run the API; the key is only for the external agent you point at the sandbox.
 
 Agent entry points:
 

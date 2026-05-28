@@ -49,6 +49,8 @@
     "db:migrate": "pnpm --filter @commercebackend/db migrate",
     "db:reset": "pnpm --filter @commercebackend/db reset",
     "db:seed": "pnpm --filter @commercebackend/db seed",
+    "sandbox:reset": "node scripts/reset-sandbox.mjs",
+    "sandbox:smoke": "node scripts/smoke-sandbox.mjs",
     "format": "prettier --write \"**/*.{ts,json,md,yml,yaml}\""
   },
   "devDependencies": {

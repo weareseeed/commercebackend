@@ -22,11 +22,28 @@ export class ListingsService {
     return listing;
   }
 
+  static async listPublicListings(limit = 20, offset = 0) {
+    return prisma.listing.findMany({
+      where: { status: 'active' },
+      take: limit,
+      skip: offset,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   static async getListingById(id: string) {
     const listing = await prisma.listing.findUnique({
       where: { id },
     });
     if (!listing || listing.status === 'deleted') {
+      throw new AppError('LISTING_NOT_FOUND', 'Listing not found', 404);
+    }
+    return listing;
+  }
+
+  static async getPublicListingById(id: string) {
+    const listing = await this.getListingById(id);
+    if (listing.status !== 'active' && listing.status !== 'sold_out') {
       throw new AppError('LISTING_NOT_FOUND', 'Listing not found', 404);
     }
     return listing;

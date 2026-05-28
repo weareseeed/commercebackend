@@ -7,7 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const isTest = process.env.NODE_ENV === 'test';
+const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
 const EnvSchema = z.object({
   DATABASE_URL: isTest ? z.string().default('postgresql://mock') : z.string(),
@@ -18,6 +18,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(4000),
   BYPASS_STRIPE_SIGNATURE: z.string().optional(),
   OPERATOR_API_KEY: isTest ? z.string().default('operator_test_key') : z.string().optional(),
+  SANDBOX_MODE: z.coerce.boolean().default(false),
 });
 
 // Run raw parse first
@@ -41,9 +42,11 @@ const isPlaceholder = (val: string) => {
   );
 };
 
+const isStripeLiveKey = (val: string) => val.toLowerCase().startsWith('sk_live_');
+
 const validatedEnv = parsed.data;
 
-if (validatedEnv.NODE_ENV === 'production') {
+if (!isTest && validatedEnv.NODE_ENV === 'production') {
   const errors: string[] = [];
   if (isPlaceholder(validatedEnv.STRIPE_SECRET_KEY)) {
     errors.push('STRIPE_SECRET_KEY is a placeholder or mock value');
@@ -57,12 +60,15 @@ if (validatedEnv.NODE_ENV === 'production') {
   if (!validatedEnv.OPERATOR_API_KEY || isPlaceholder(validatedEnv.OPERATOR_API_KEY)) {
     errors.push('OPERATOR_API_KEY is required in production and cannot be a placeholder');
   }
+  if (validatedEnv.SANDBOX_MODE && isStripeLiveKey(validatedEnv.STRIPE_SECRET_KEY)) {
+    errors.push('SANDBOX_MODE requires Stripe test keys; live Stripe secret keys are not allowed');
+  }
   if (errors.length > 0) {
     console.error('❌ Production startup failed due to invalid Stripe configuration:');
     errors.forEach((err) => console.error(`  - ${err}`));
     process.exit(1);
   }
-} else if (validatedEnv.NODE_ENV === 'development') {
+} else if (!isTest && validatedEnv.NODE_ENV === 'development') {
   if (isPlaceholder(validatedEnv.STRIPE_SECRET_KEY)) {
     console.warn('⚠️ WARNING: STRIPE_SECRET_KEY contains a placeholder or mock value.');
   }

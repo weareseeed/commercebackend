@@ -15,18 +15,29 @@ const isPlaceholder = (val: string) => {
   );
 };
 
+const getStripeMode = (secretKey: string | undefined) => {
+  if (!secretKey) return 'missing';
+  if (isPlaceholder(secretKey)) return 'mocked';
+  if (secretKey.toLowerCase().startsWith('sk_test_')) return 'test';
+  if (secretKey.toLowerCase().startsWith('sk_live_')) return 'live';
+  return 'configured';
+};
+
 export async function healthRoutes(fastify: FastifyInstance) {
   fastify.get('/health', async (request, reply) => {
     return {
       ok: true,
       service: 'commercebackend-api',
       version: '0.1.0',
+      mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
+      stripeMode: getStripeMode(env.STRIPE_SECRET_KEY),
     };
   });
 
   fastify.get('/ready', async (request, reply) => {
     let dbStatus = 'ok';
-    let stripeStatus = 'configured';
+    const stripeMode = getStripeMode(env.STRIPE_SECRET_KEY);
+    let stripeStatus = stripeMode === 'missing' ? 'missing' : 'configured';
 
     // Verify Database
     try {
@@ -40,25 +51,31 @@ export async function healthRoutes(fastify: FastifyInstance) {
       stripeStatus = 'missing';
     } else if (env.NODE_ENV === 'test' || isPlaceholder(env.STRIPE_SECRET_KEY) || isPlaceholder(env.STRIPE_WEBHOOK_SECRET)) {
       stripeStatus = 'mocked';
+    } else if (env.SANDBOX_MODE && stripeMode !== 'test') {
+      stripeStatus = 'invalid';
     }
 
-    const ok = dbStatus === 'ok';
+    const ok = dbStatus === 'ok' && stripeStatus !== 'invalid';
 
     if (!ok) {
       return reply.status(503).send({
         ok: false,
+        mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
         checks: {
           database: dbStatus,
           stripe: stripeStatus,
+          stripeMode,
         },
       });
     }
 
     return {
       ok: true,
+      mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
       checks: {
         database: dbStatus,
         stripe: stripeStatus,
+        stripeMode,
       },
     };
   });
