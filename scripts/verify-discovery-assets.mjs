@@ -35,6 +35,11 @@ const ASSETS = [
   },
 ];
 
+const LOCAL_PARITY_FILES = [
+  ['llms.txt', 'apps/landing/public/llms.txt'],
+  ['llms-full.txt', 'apps/landing/public/llms-full.txt'],
+];
+
 const args = new Set(process.argv.slice(2));
 const baseUrlArg = process.argv.find((arg) => arg.startsWith('--base-url='));
 const baseUrl = (baseUrlArg?.split('=').slice(1).join('=') || DEFAULT_BASE_URL).replace(/\/$/, '');
@@ -43,6 +48,10 @@ const strictParity = args.has('--strict-parity');
 
 function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
+}
+
+function normalizeText(content) {
+  return content.replace(/\r\n/g, '\n');
 }
 
 function assertNeedles(label, text, needles) {
@@ -80,6 +89,33 @@ async function verifyLocal(asset) {
     content,
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
+    normalizedSha256: sha256(normalizeText(content)),
+  };
+}
+
+async function verifyLocalParity([repoPath, canonicalPath]) {
+  const [repoContent, canonicalContent] = await Promise.all([
+    readFile(join(process.cwd(), repoPath), 'utf8'),
+    readFile(join(process.cwd(), canonicalPath), 'utf8'),
+  ]);
+
+  const repoSha = sha256(repoContent);
+  const canonicalSha = sha256(canonicalContent);
+  const repoNormalizedSha = sha256(normalizeText(repoContent));
+  const canonicalNormalizedSha = sha256(normalizeText(canonicalContent));
+
+  if (repoNormalizedSha !== canonicalNormalizedSha) {
+    throw new Error(
+      `${repoPath} does not match ${canonicalPath}: repo=${repoNormalizedSha} canonical=${canonicalNormalizedSha}`
+    );
+  }
+
+  return {
+    repoPath,
+    canonicalPath,
+    bytes: Buffer.byteLength(repoContent),
+    sha256: repoSha,
+    normalizedSha256: repoNormalizedSha,
   };
 }
 
@@ -108,10 +144,23 @@ async function fetchPublic(asset) {
     contentType: response.headers.get('content-type') || 'unknown',
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
+    normalizedSha256: sha256(normalizeText(content)),
   };
 }
 
 let failures = 0;
+
+for (const parityPair of LOCAL_PARITY_FILES) {
+  try {
+    const parity = await verifyLocalParity(parityPair);
+    console.log(
+      `local parity ok ${parity.repoPath} == ${parity.canonicalPath} bytes=${parity.bytes} sha256=${parity.sha256} normalized-sha256=${parity.normalizedSha256}`
+    );
+  } catch (error) {
+    failures += 1;
+    console.error(`discovery verification failed for local parity: ${error.message}`);
+  }
+}
 
 for (const asset of ASSETS) {
   try {
@@ -121,12 +170,12 @@ for (const asset of ASSETS) {
     if (verifyPublic) {
       const remote = await fetchPublic(asset);
       console.log(
-        `public ok ${remote.url} status=${remote.status} content-type=${remote.contentType} bytes=${remote.bytes} sha256=${remote.sha256}`
+        `public ok ${remote.url} status=${remote.status} content-type=${remote.contentType} bytes=${remote.bytes} sha256=${remote.sha256} normalized-sha256=${remote.normalizedSha256}`
       );
 
-      if (strictParity && local.sha256 !== remote.sha256) {
+      if (strictParity && local.normalizedSha256 !== remote.normalizedSha256) {
         throw new Error(
-          `${remote.url} does not match ${asset.localPath}: local=${local.sha256} public=${remote.sha256}`
+          `${remote.url} does not match ${asset.localPath}: local=${local.normalizedSha256} public=${remote.normalizedSha256}`
         );
       }
     }
