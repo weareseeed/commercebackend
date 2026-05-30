@@ -1,96 +1,113 @@
 # Local Development Guide
 
-Follow these steps to set up and run CommerceBackend v0.1 locally.
+CommerceBackend is an open-source, agent-first commerce backend owned and maintained by Seeed LLC. This guide covers the current local workflow for the v0.2 line.
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- pnpm (v8 or higher)
-- Docker & Docker Compose (optional, for Postgres)
+- Node.js 22 or newer
+- pnpm 11 or newer
+- Docker Desktop or Docker Engine
+- A local `.env` file based on `.env.example` or `.env.sandbox.example`
 
-## 1. Installation
+## Fastest verification path
 
-Install monorepo dependencies:
+Use this path when you want the quickest local signal before making changes:
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm lint
+pnpm typecheck
+pnpm build
+NODE_ENV=test pnpm test
+```
+
+Use `NODE_ENV=test pnpm test` so the test suite runs with the expected mocked test configuration instead of production-style Stripe/database validation.
+
+## Sandbox workflow
+
+Use this path when you want a deterministic local API, Prisma-managed PostgreSQL state, seeded fixtures, and the sandbox smoke tools.
+
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-## 2. Environment Setup
-
-Copy the example environment file:
+### 2. Create the sandbox environment file
 
 ```bash
-cp .env.example .env
+cp .env.sandbox.example .env
 ```
 
-And adjust parameters if needed (e.g. Stripe API keys).
-
-## 3. Database setup
-
-Start the PostgreSQL container:
+### 3. Start PostgreSQL
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d
 ```
 
-Generate the Prisma Client:
+### 4. Apply migrations and seed data
 
 ```bash
-pnpm --filter @commercebackend/db exec prisma generate
+pnpm db:migrate
+pnpm db:seed
 ```
 
-Apply database migrations:
-
-```bash
-pnpm --filter @commercebackend/db exec prisma db push
-```
-
-## 4. Seeding Data
-
-Seed the database with pre-configured buyer and seller agents, and three test listings:
-
-```bash
-pnpm --filter @commercebackend/db seed
-```
-
-This prints out generated agent IDs, API keys, and listing IDs to use in manual curl tests.
-
-## 5. Starting the API Server
-
-Start the Fastify API server on `http://localhost:4000`:
+### 5. Start the API
 
 ```bash
 pnpm dev
 ```
 
-## 6. Running Tests
+The API serves locally at `http://localhost:4000` by default.
 
-Run the Vitest integration suite:
+### 6. Reset and smoke-test the sandbox
 
-```bash
-pnpm test
-```
-
-## 7. Running Example Scripts
-
-_Make sure the API server is running on port 4000 before executing examples._
-
-Run the **seller-agent** script to register a seller and post a listing:
+In another shell, run:
 
 ```bash
-pnpm --filter @commercebackend/example-seller-agent start
+pnpm sandbox:reset
+pnpm sandbox:smoke
 ```
 
-Run the **buyer-agent** script to register a buyer, search for listings, initiate checkout, and get a Stripe Checkout redirect URL:
+### 7. Run the buyer walkthrough example
+
+After the API is reachable at `http://localhost:4000`, run:
 
 ```bash
-pnpm --filter @commercebackend/example-buyer-agent start
+node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
+
+## Standard workspace commands
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+NODE_ENV=test pnpm test
+pnpm selftest:mock
+pnpm verify:discovery
+```
+
+## Discovery asset verification
+
+Use the discovery verifier when you change agent-facing metadata or want to confirm the local/public discovery surfaces are aligned.
+
+```bash
+pnpm verify:discovery
+pnpm verify:discovery:public
+pnpm verify:discovery:strict
+```
+
+`pnpm verify:discovery:strict` checks both local parity and public production parity for:
+
+- `llms.txt`
+- `llms-full.txt`
+- `/.well-known/commercebackend.json`
+- `/.well-known/agents.json`
 
 ---
 
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+CommerceBackend is owned and maintained by Seeed LLC.
 
-Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
-
+Copyright © 2026 Seeed LLC. Licensed under the Apache License 2.0.
