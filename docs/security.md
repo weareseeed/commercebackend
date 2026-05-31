@@ -1,6 +1,6 @@
-# Security Model - CommerceBackend v0.1
+# Security Model - CommerceBackend v0.2
 
-This document explains the security architecture, authorization boundaries, and key constraints implemented in CommerceBackend v0.1.
+This document explains the security architecture, authorization boundaries, and key constraints implemented in CommerceBackend v0.2.
 
 ## 1. Agent API Key Security
 
@@ -28,6 +28,12 @@ We enforce strict validation rules across the API based on the authenticated age
 - **Listing Status**: Checkout is blocked for paused, deleted, or sold-out listings.
 - **Inventory Check**: Quantity requested must be positive (`> 0`) and cannot exceed the listing's `quantityAvailable`.
 
+### Offers
+- **Creation**: Only buyer or both-type agents can submit offers on listings they do not own.
+- **Seller Actions**: Only the listing owner can accept, reject, or counter an offer.
+- **Buyer Actions**: Only the buyer who created the offer can cancel it or accept a seller counteroffer.
+- **State Guardrails**: Offer transitions are validated server-side so duplicate acceptance, stale counters, or reuse after checkout are rejected.
+
 ### Orders & Fulfillment
 - **Details Visibility**: Only the buyer agent or the seller agent involved in an order can view details (`GET /v1/orders/:id`). Unrelated agents receive `403 Forbidden`.
 - **Fulfillment Updates**: Only the seller agent of the order can change fulfillment status or add notes.
@@ -44,13 +50,22 @@ We enforce strict validation rules across the API based on the authenticated age
 
 ## 4. Webhook Concurrency & Idempotency
 
-- **Idempotency**: Webhook processes checks using unique transaction scopes. If a duplicate webhook event is received for an already `paid` or `payment_inventory_conflict` intent, the system returns a `200 OK` without creating duplicate orders or double-decrementing stock.
+- **Idempotency**: Webhook processing uses unique transaction scopes. If a duplicate webhook event is received for an already `paid` or `payment_inventory_conflict` intent, the system returns a `200 OK` without creating duplicate orders or double-decrementing stock.
 - **Row-Level Locking**: Webhook queries use a Postgres row-level lock (`SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE`) inside a transaction to prevent race conditions during concurrent payments.
 - **Inventory Conflict**: If stock becomes unavailable between checkout intent creation and payment success, the checkout intent is marked as `payment_inventory_conflict` to isolate the state for manual review/refunds.
 
+## 5. Offer Checkout Protection
+
+- **Accepted Terms Freeze**: Once a seller accepts an offer or a buyer accepts a counteroffer, the negotiated price and quantity are frozen on the offer record.
+- **Checkout Pending State**: Starting checkout for an accepted offer transitions it to `checkout_pending` to prevent the same negotiated terms from being reused concurrently.
+- **Failure Reversion**: If Stripe session creation fails, the offer reverts from `checkout_pending` back to `accepted` so the buyer can retry without manual cleanup.
+- **Completion Audit Trail**: Successful webhook reconciliation records offer checkout completion history alongside the resulting order.
+
 ---
 
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+CommerceBackend is owned and maintained by Seeed LLC.
+
+Seeed LLC is unrelated to Seeed Studio.
 
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
 

@@ -1,22 +1,24 @@
-# Stripe Integration - CommerceBackend v0.1
+# Stripe Integration - CommerceBackend v0.2
 
-This document explains the Stripe Checkout integration and webhook processing flow in CommerceBackend v0.1.
+This document explains the Stripe Checkout integration and webhook processing flow in CommerceBackend v0.2.
 
 ## 1. Stripe Checkout Flow
 
 The checkout loop is designed to prevent orphan payment sessions and ensure secure payments:
 
 1. **Checkout Intent (DB)**: The buyer agent posts to `/v1/checkout-intents`. The system validates listing active status and quantity, computes the price server-side, and creates a `CheckoutIntent` row in the database with status `open`.
-2. **Stripe Session**: The system makes a call to Stripe to create a hosted Checkout Session, passing an `idempotencyKey` derived from the `checkoutIntentId` (`checkout_intent_stripe_${checkoutIntent.id}`) to prevent double creation.
-3. **Session Persistence**:
+2. **Accepted Offer Locking**: When checkout is tied to an accepted offer, the offer transitions to `checkout_pending` before the Stripe session is created so the negotiated terms cannot be reused concurrently.
+3. **Stripe Session**: The system makes a call to Stripe to create a hosted Checkout Session, passing an `idempotencyKey` derived from the `checkoutIntentId` (`checkout_intent_stripe_${checkoutIntent.id}`) to prevent double creation.
+4. **Session Persistence**:
    - On Stripe Success: The `CheckoutIntent` row is updated with `stripeCheckoutSessionId` and `checkoutUrl`.
-   - On Stripe Failure: The `CheckoutIntent` is marked `failed` in the database, preventing orphaned checkout attempts.
-4. **Metadata**: The Stripe session is created with the following metadata structure:
+   - On Stripe Failure: The `CheckoutIntent` is marked `failed` in the database, preventing orphaned checkout attempts. If the checkout originated from an accepted offer, the offer is reverted from `checkout_pending` to `accepted`.
+5. **Metadata**: The Stripe session is created with the following metadata structure:
    - `checkoutIntentId`
    - `listingId`
    - `buyerAgentId`
    - `sellerAgentId`
    - `quantity`
+   - `offerId` (when checkout uses negotiated offer terms)
 
 ---
 
@@ -50,14 +52,16 @@ To test Stripe checkout payment loops locally, use the Stripe CLI:
 
 ---
 
-## 4. Known Payment Limitations in v0.1
+## 4. Known Payment Limitations in v0.2
 
 - **No Stripe Connect**: Payouts to sellers are not automated. Merchant balances must be managed externally.
 - **No Refunds/Disputes**: If a buyer payment triggers a `payment_inventory_conflict` (over-purchasing due to concurrency), the payment is collected by Stripe, but no order is placed. The system marks it `payment_inventory_conflict` and requires the platform operator to manually issue a refund or handle fulfillment.
 
 ---
 
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+CommerceBackend is owned and maintained by Seeed LLC.
+
+Seeed LLC is unrelated to Seeed Studio.
 
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
 
