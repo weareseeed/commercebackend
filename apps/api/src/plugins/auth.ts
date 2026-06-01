@@ -48,5 +48,5 @@ export async function authenticateOperator(request: FastifyRequest, reply: Fasti
 }
 
 export function registerAuthPlugin(fastify: FastifyInstance) {
-  fastify.decorateRequest('agent', null);
+  fastify.decorateRequest('agent', undefined);
 }
