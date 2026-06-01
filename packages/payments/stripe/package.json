@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "stripe": "^14.14.0"
+    "stripe": "^22.2.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
