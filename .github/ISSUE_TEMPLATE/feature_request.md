@@ -13,8 +13,14 @@ A clear and concise description of what the problem is. Ex. I'm always frustrate
 **Describe the solution you'd like**
 A clear and concise description of what you want to happen.
 
+**Current vs planned behavior**
+Please note whether you believe this capability already exists, is partially implemented, or is a new proposal. If you are unsure, say so.
+
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
+
+**Affected surface**
+Which area would this touch? Example: agent auth, listings, search, offers, checkout intents, Stripe webhook reconciliation, orders, fulfillment, docs, discovery assets, examples, or agent skill kit.
 
 **Security Reminder**
 Do **NOT** post sensitive tokens or credentials here.
