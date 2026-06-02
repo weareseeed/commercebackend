@@ -1,66 +1,112 @@
-# Testing Guidelines - CommerceBackend v0.1
+# Testing Guidelines
 
-This document describes how to execute and write tests for CommerceBackend v0.1.
+This document describes the current verification workflow for CommerceBackend v0.2.
 
-## 1. Automated Vitest Suite
+## Core verification commands
 
-We use Vitest for both unit and API integration testing. The test suite is fully self-contained and mocks external networks (Stripe) and databases using in-memory mocks, so no real credentials or running Postgres database are required to run them.
+For code changes, run the standard workspace checks:
 
-### Running the Tests
 ```bash
-pnpm test
+pnpm lint
+pnpm typecheck
+pnpm build
+NODE_ENV=test pnpm test
 ```
 
-### Coverage Matrix
-The test suite covers:
-- **API Key Security**: Tests key generation, SHA-256 hashing, timing-safe checks, missing/malformed auth headers, and key redaction from responses.
-- **Authorization Boundaries**: Ensures buyers cannot create/update listings, sellers cannot buy their own listings, and only listing owners can update or pause them.
-- **Order Viewing & Fulfillment**: Validates that only involved buyers and sellers can view order details, and only the seller can update fulfillment.
-- **Stripe Checkout Flow**: Asserts Stripe sessions are created with correct metadata and price, and failed sessions mark checkout intents failed.
-- **Webhook Idempotency**: Simulates duplicate Stripe events to verify exactly one order is created and stock is decremented only once.
-- **Concurrency & Stock Safety**: Verifies that under high concurrency, stock never drops below zero and excessive checkouts fall back to the `payment_inventory_conflict` state idempotently.
+Use `NODE_ENV=test pnpm test` so the suite runs with the expected mocked test configuration and does not depend on production-style Stripe validation.
 
----
+## Automated Vitest suite
 
-## 2. Local Self-Tests
+CommerceBackend uses Vitest for unit and API-level integration coverage.
 
-We provide a scripted end-to-end flow in `apps/api/scripts/selftest.ts` to test the full atomic commerce loop locally.
+### Run the test suite
 
-### Mock Mode (Default)
-Runs the self-test using Stripe mocks and signature bypass.
+```bash
+NODE_ENV=test pnpm test
+```
+
+### Coverage areas
+
+The suite covers core agent-commerce behavior, including:
+
+- API key generation, hashing, and bearer-auth enforcement
+- Buyer/seller authorization boundaries
+- Listing lifecycle and search behavior
+- Offer submission, counteroffers, acceptance, rejection, cancellation, and expiration handling
+- Checkout intent creation and idempotency protections
+- Stripe webhook reconciliation and duplicate-event handling
+- Order creation, visibility rules, and fulfillment status updates
+- Inventory safety under concurrency and payment conflict paths
+
+## Local self-tests
+
+CommerceBackend also provides scripted end-to-end self-tests for the commerce loop.
+
+### Mock mode
+
+Runs without live Stripe network calls.
+
 ```bash
 pnpm selftest
 # or
 pnpm selftest:mock
 ```
 
-### Stripe Mode
-Connects to real Stripe test APIs to create sessions.
+### Stripe mode
+
+Uses Stripe test credentials and the real Stripe test API.
+
 ```bash
 pnpm selftest:stripe
 ```
 
+Do not use production credentials, and never commit or print secrets.
+
+## Sandbox reset and smoke workflow
+
+When validating the local sandbox runtime, use:
+
+```bash
+pnpm sandbox:reset
+pnpm sandbox:smoke
+```
+
+This is useful after local schema, seed, or API behavior changes.
+
+## Database-backed verification
+
+When a change touches Prisma, migrations, seed data, or runtime flows that depend on PostgreSQL, run:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+pnpm db:migrate
+pnpm db:seed
+```
+
+If you need a fresh local database state:
+
+```bash
+pnpm db:reset
+pnpm db:seed
+```
+
+## Discovery verification
+
+If a change touches agent-facing discovery assets, also run:
+
+```bash
+pnpm verify:discovery
+```
+
+For production checks against `https://www.commercebackend.com`, run:
+
+```bash
+pnpm verify:discovery:public
+pnpm verify:discovery:strict
+```
+
 ---
 
-## 3. Database Testing
+CommerceBackend is owned and maintained by Seeed LLC.
 
-When verifying PostgreSQL schema and custom migration CHECK constraints:
-1. Ensure your local Postgres container is running:
-   ```bash
-   pnpm db:migrate
-   ```
-2. Reset the database state between tests:
-   ```bash
-   pnpm db:reset
-   ```
-3. Use the seeder to test search parameters and catalog sizes:
-   ```bash
-   pnpm db:seed
-   ```
-
----
-
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
-
-Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
-
+Copyright © 2026 Seeed LLC. Licensed under the Apache License 2.0.
