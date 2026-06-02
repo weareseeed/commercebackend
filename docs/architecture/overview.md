@@ -1,16 +1,17 @@
-# Architecture Overview - CommerceBackend v0.1
+# Architecture Overview - CommerceBackend v0.2
 
-CommerceBackend is an open-source, API-first commerce engine designed specifically for autonomous AI agents and merchants.
+CommerceBackend is an open-source, agent-first commerce backend designed specifically for autonomous AI agents that need API-native listing discovery, offers, checkout, and fulfillment primitives.
 
 ## Primitives
 
-The core architecture centers around five key domain entities:
+The core architecture centers around six key domain entities:
 
 1. **Agent**: The identity representing a buyer agent, seller agent, or both. Authentication is facilitated through bearer API keys hashed with SHA-256 for secure storage.
 2. **Listing**: Represents a fixed-price product, service, ticket, or digital item sold by a seller agent.
-3. **CheckoutIntent**: Tracks a buyer agent's explicit intent to purchase a listing. This facilitates Stripe Checkout sessions.
-4. **Order**: Created asynchronously only after payment verification via Stripe webhooks.
-5. **AgentQueryLog**: Logs search queries for catalog optimization and agent profiling.
+3. **Offer**: Captures buyer-submitted proposed price and quantity terms, plus the seller accept/reject/counter workflow and immutable final negotiated terms once accepted.
+4. **CheckoutIntent**: Tracks a buyer agent's explicit intent to purchase a listing or accepted offer and anchors Stripe Checkout session creation.
+5. **Order**: Created asynchronously only after payment verification via Stripe webhooks.
+6. **AgentQueryLog**: Logs search queries for catalog optimization and agent profiling.
 
 ## System Flow
 
@@ -20,6 +21,8 @@ Buyer Agent / Seller Agent
   CommerceBackend Native API (Fastify)
           ↓
   PostgreSQL (System of Record)
+          ↓
+  Offer Negotiation / Checkout Intent
           ↓
   Stripe Checkout (Hosted Payment Page)
           ↓
@@ -32,11 +35,13 @@ Buyer Agent / Seller Agent
 
 ## ACP / UCP Protocol Adapters
 
-ACP (Agentic Commerce Protocol) and UCP (Universal Commerce Protocol) are housed as external packages (`@commercebackend/protocol-acp` and `@commercebackend/protocol-ucp`). They operate purely as mappers translating internal `Listing` types into standardized protocol formats. This ensures the internal data model remains completely decoupled from external protocol specifications.
+ACP (Agentic Commerce Protocol) and UCP (Universal Commerce Protocol) are housed as external packages (`@commercebackend/protocol-acp` and `@commercebackend/protocol-ucp`). They currently operate as mapping stubs that translate internal listing-oriented types into standardized protocol formats. This keeps the internal data model decoupled from external protocol specifications while leaving room for future protocol adapters without overstating current implementation maturity.
 
 ---
 
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+CommerceBackend is owned and maintained by Seeed LLC.
+
+Seeed LLC is unrelated to Seeed Studio.
 
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
 

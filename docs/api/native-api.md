@@ -588,7 +588,9 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 
 ---
 
-CommerceBackend is owned and maintained by Seeed | Square, Commerce, and AI Systems.
+CommerceBackend is owned and maintained by Seeed LLC.
+
+Seeed LLC is unrelated to Seeed Studio.
 
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
 
