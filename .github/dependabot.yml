@@ -6,6 +6,29 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Major upgrades that touch the money path, request validation, or broad
+    # workspace typing stay on dedicated migration issues instead of nightly PRs.
+    ignore:
+      - dependency-name: "stripe"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fastify"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@fastify/cors"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@fastify/rate-limit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fastify-raw-body"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
