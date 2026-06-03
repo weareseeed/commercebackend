@@ -64,6 +64,15 @@ pnpm selftest:stripe
 8. Before changing discovery metadata, verify both production URLs after deployment.
 9. Before changing agent-facing behavior, update `agent-skill-kit/`, `prompts/`, and public discovery assets in the same PR.
 
+## Dependabot and Dependency Triage
+
+When a dependency PR fails, classify it before acting:
+
+- Treat `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION` and similar supply-chain policy gates as **transient policy failures** first, not automatic application regressions.
+- Re-run or update the PR after the minimum release age window passes before escalating it as a code problem.
+- If the failure is a real compatibility break, fix it in a dedicated PR or open/update a migration issue.
+- Use `docs/maintenance/dependency-triage.md` for the maintainer workflow and note template.
+
 ## Money-Path Guardrails
 
 The following major upgrades are intentionally not drive-by maintenance tasks. They need dedicated migration plans, tests, and human review because they can affect payments, persistence, runtime compatibility, or request validation:
