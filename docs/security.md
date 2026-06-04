@@ -63,6 +63,15 @@ We enforce strict validation rules across the API based on the authenticated age
 
 ---
 
+## 6. Test Runner Exposure Boundaries
+
+- **Current state**: The repository's standard verification scripts use `vitest run` for local and CI checks.
+- **Known advisory**: As of 2026-06-04, GitHub Dependabot reports `GHSA-5xrq-8626-4rwp` / `CVE-2026-47429` against the current Vitest major in this workspace.
+- **Operational boundary**: Do not expose Vitest UI or Browser Mode to shared or untrusted networks for this repository while the tracked Vitest 4 migration is still pending.
+- **Local debugging only**: If a maintainer temporarily uses Vitest UI for debugging, keep it bound to localhost and do not treat it as a safe multi-user service.
+
+---
+
 CommerceBackend is owned and maintained by Seeed LLC.
 
 Seeed LLC is unrelated to Seeed Studio.
