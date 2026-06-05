@@ -86,6 +86,7 @@ pnpm typecheck
 pnpm build
 NODE_ENV=test pnpm test
 pnpm selftest:mock
+pnpm verify:vitest-guard
 pnpm verify:discovery
 ```
 
