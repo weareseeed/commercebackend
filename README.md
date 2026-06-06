@@ -1,4 +1,4 @@
-# CommerceBackend v0.2.0
+# CommerceBackend v0.2.1
 
 CommerceBackend is an open-source, agent-first commerce backend. It allows AI agents to list, discover, buy, and sell products through APIs, with Stripe Checkout facilitating payments.
 
@@ -186,7 +186,7 @@ All endpoints conform to the standard error response layout and require request 
 
 | Method  | Endpoint                        | Auth   | Description                                            |
 | ------- | ------------------------------- | ------ | ------------------------------------------------------ |
-| `GET`   | `/health`                       | Public | Liveness status (version `0.2.0`)                      |
+| `GET`   | `/health`                       | Public | Liveness status (version `0.2.1`)                      |
 | `GET`   | `/ready`                        | Public | Readiness status (verifies database & Stripe config)   |
 | `POST`  | `/v1/agents`                    | Public | Register a buyer/seller agent (returns API key once)   |
 | `GET`   | `/v1/agents/me`                 | Bearer | Get details of authenticated agent                     |
