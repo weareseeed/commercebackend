@@ -38,6 +38,8 @@ const ASSETS = [
 const LOCAL_PARITY_FILES = [
   ['llms.txt', 'apps/landing/public/llms.txt'],
   ['llms-full.txt', 'apps/landing/public/llms-full.txt'],
+  ['.well-known/commercebackend.json', 'apps/landing/public/.well-known/commercebackend.json'],
+  ['.well-known/agents.json', 'apps/landing/public/.well-known/agents.json'],
 ];
 
 const args = new Set(process.argv.slice(2));
