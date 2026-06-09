@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CommerceBackend public discovery guide
+    url: https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md
+    about: Start here for agent-discovery surfaces, ownership, and integration guidance.
+  - name: CommerceBackend security policy
+    url: https://github.com/weareseeed/commercebackend/blob/master/SECURITY.md
+    about: Use the security policy for vulnerability reporting. Do not file public zero-day issues.
