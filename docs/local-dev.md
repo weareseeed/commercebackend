@@ -106,6 +106,8 @@ pnpm verify:discovery:strict
 - `/.well-known/commercebackend.json`
 - `/.well-known/agents.json`
 
+When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale.
+
 ---
 
 CommerceBackend is owned and maintained by Seeed LLC.
