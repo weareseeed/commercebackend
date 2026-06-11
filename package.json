@@ -39,7 +39,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest run",
+    "test": "pnpm --filter @commercebackend/api test",
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
     "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
@@ -61,7 +61,6 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
-    "tsx": "^4.7.0",
-    "vitest": "^1.2.1"
+    "tsx": "^4.7.0"
   }
 }
