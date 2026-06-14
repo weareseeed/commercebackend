@@ -113,6 +113,8 @@ pnpm verify:discovery:public
 pnpm verify:discovery:strict
 ```
 
+`pnpm verify:discovery:strict` reports the first differing text line or the JSON fields that drifted, which helps distinguish a stale repository artifact from a stale public deployment.
+
 ---
 
 CommerceBackend is owned and maintained by Seeed LLC.

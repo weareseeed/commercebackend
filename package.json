@@ -1,6 +1,6 @@
 {
   "name": "commercebackend-monorepo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "author": "Seeed LLC",
   "license": "Apache-2.0",
@@ -55,7 +55,7 @@
     "format": "prettier --write \"**/*.{ts,json,md,yml,yaml}\""
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.3",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
@@ -63,6 +63,6 @@
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
-    "vitest": "^1.2.1"
+    "vitest": "^3.2.6"
   }
 }
