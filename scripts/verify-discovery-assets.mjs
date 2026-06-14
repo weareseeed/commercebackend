@@ -38,6 +38,8 @@ const ASSETS = [
 const LOCAL_PARITY_FILES = [
   ['llms.txt', 'apps/landing/public/llms.txt'],
   ['llms-full.txt', 'apps/landing/public/llms-full.txt'],
+  ['.well-known/commercebackend.json', 'apps/landing/public/.well-known/commercebackend.json'],
+  ['.well-known/agents.json', 'apps/landing/public/.well-known/agents.json'],
 ];
 
 const args = new Set(process.argv.slice(2));
@@ -52,6 +54,89 @@ function sha256(content) {
 
 function normalizeText(content) {
   return content.replace(/\r\n/g, '\n');
+}
+
+function formatValue(value) {
+  return JSON.stringify(value);
+}
+
+function summarizeTextDiff(localContent, remoteContent) {
+  const localLines = normalizeText(localContent).split('\n');
+  const remoteLines = normalizeText(remoteContent).split('\n');
+  const maxLines = Math.max(localLines.length, remoteLines.length);
+
+  for (let index = 0; index < maxLines; index += 1) {
+    if (localLines[index] !== remoteLines[index]) {
+      return `first differing line ${index + 1}: local=${formatValue(localLines[index] ?? '')} public=${formatValue(remoteLines[index] ?? '')}`;
+    }
+  }
+
+  return null;
+}
+
+function collectJsonDiffs(localValue, remoteValue, path = '$', diffs = []) {
+  if (Object.is(localValue, remoteValue)) {
+    return diffs;
+  }
+
+  const localIsArray = Array.isArray(localValue);
+  const remoteIsArray = Array.isArray(remoteValue);
+
+  if (localIsArray || remoteIsArray) {
+    if (!localIsArray || !remoteIsArray) {
+      diffs.push(`${path}: local=${formatValue(localValue)} public=${formatValue(remoteValue)}`);
+      return diffs;
+    }
+
+    const maxLength = Math.max(localValue.length, remoteValue.length);
+    for (let index = 0; index < maxLength; index += 1) {
+      collectJsonDiffs(localValue[index], remoteValue[index], `${path}[${index}]`, diffs);
+    }
+    return diffs;
+  }
+
+  const localIsObject = localValue && typeof localValue === 'object';
+  const remoteIsObject = remoteValue && typeof remoteValue === 'object';
+
+  if (localIsObject || remoteIsObject) {
+    if (!localIsObject || !remoteIsObject) {
+      diffs.push(`${path}: local=${formatValue(localValue)} public=${formatValue(remoteValue)}`);
+      return diffs;
+    }
+
+    const keys = [...new Set([...Object.keys(localValue), ...Object.keys(remoteValue)])].sort();
+    for (const key of keys) {
+      collectJsonDiffs(localValue[key], remoteValue[key], `${path}.${key}`, diffs);
+    }
+    return diffs;
+  }
+
+  diffs.push(`${path}: local=${formatValue(localValue)} public=${formatValue(remoteValue)}`);
+  return diffs;
+}
+
+function summarizeJsonDiff(localContent, remoteContent) {
+  try {
+    const localJson = JSON.parse(localContent);
+    const remoteJson = JSON.parse(remoteContent);
+    const diffs = collectJsonDiffs(localJson, remoteJson);
+
+    if (diffs.length === 0) {
+      return null;
+    }
+
+    return `differing JSON fields: ${diffs.slice(0, 5).join('; ')}`;
+  } catch {
+    return null;
+  }
+}
+
+function summarizeParityDiff(asset, localContent, remoteContent) {
+  if (asset.json) {
+    return summarizeJsonDiff(localContent, remoteContent) || summarizeTextDiff(localContent, remoteContent);
+  }
+
+  return summarizeTextDiff(localContent, remoteContent);
 }
 
 function assertNeedles(label, text, needles) {
@@ -174,8 +259,9 @@ for (const asset of ASSETS) {
       );
 
       if (strictParity && local.normalizedSha256 !== remote.normalizedSha256) {
+        const diffSummary = summarizeParityDiff(asset, local.content, remote.content);
         throw new Error(
-          `${remote.url} does not match ${asset.localPath}: local=${local.normalizedSha256} public=${remote.normalizedSha256}`
+          `${remote.url} does not match ${asset.localPath}: local=${local.normalizedSha256} public=${remote.normalizedSha256}${diffSummary ? `; ${diffSummary}` : ''}`
         );
       }
     }

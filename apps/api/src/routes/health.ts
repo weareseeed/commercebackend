@@ -28,7 +28,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
     return {
       ok: true,
       service: 'commercebackend-api',
-      version: '0.1.0',
+      version: '0.2.1',
       mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
       stripeMode: getStripeMode(env.STRIPE_SECRET_KEY),
     };
