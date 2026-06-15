@@ -60,6 +60,25 @@ function formatValue(value) {
   return JSON.stringify(value);
 }
 
+function detectLineEndingStyle(content) {
+  const crlfCount = (content.match(/\r\n/g) || []).length;
+  const lfCount = (content.match(/(?<!\r)\n/g) || []).length;
+
+  if (crlfCount > 0 && lfCount === 0) {
+    return 'CRLF';
+  }
+
+  if (lfCount > 0 && crlfCount === 0) {
+    return 'LF';
+  }
+
+  if (crlfCount === 0 && lfCount === 0) {
+    return 'none';
+  }
+
+  return 'mixed';
+}
+
 function summarizeTextDiff(localContent, remoteContent) {
   const localLines = normalizeText(localContent).split('\n');
   const remoteLines = normalizeText(remoteContent).split('\n');
@@ -175,6 +194,7 @@ async function verifyLocal(asset) {
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
     normalizedSha256: sha256(normalizeText(content)),
+    lineEndings: detectLineEndingStyle(content),
   };
 }
 
@@ -201,6 +221,7 @@ async function verifyLocalParity([repoPath, canonicalPath]) {
     bytes: Buffer.byteLength(repoContent),
     sha256: repoSha,
     normalizedSha256: repoNormalizedSha,
+    lineEndings: detectLineEndingStyle(repoContent),
   };
 }
 
@@ -230,10 +251,12 @@ async function fetchPublic(asset) {
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
     normalizedSha256: sha256(normalizeText(content)),
+    lineEndings: detectLineEndingStyle(content),
   };
 }
 
 let failures = 0;
+let warnings = 0;
 
 for (const parityPair of LOCAL_PARITY_FILES) {
   try {
@@ -264,6 +287,17 @@ for (const asset of ASSETS) {
           `${remote.url} does not match ${asset.localPath}: local=${local.normalizedSha256} public=${remote.normalizedSha256}${diffSummary ? `; ${diffSummary}` : ''}`
         );
       }
+
+      if (
+        strictParity &&
+        local.normalizedSha256 === remote.normalizedSha256 &&
+        local.sha256 !== remote.sha256
+      ) {
+        warnings += 1;
+        console.warn(
+          `discovery verification warning for ${asset.path}: normalized content matches but raw bytes differ; local-bytes=${local.bytes} public-bytes=${remote.bytes}; local-line-endings=${local.lineEndings} public-line-endings=${remote.lineEndings}`
+        );
+      }
     }
   } catch (error) {
     failures += 1;
@@ -279,4 +313,10 @@ if (failures > 0) {
       ? `Discovery asset verification passed for local files and ${baseUrl}.`
       : 'Discovery asset verification passed for local files.'
   );
+
+  if (warnings > 0) {
+    console.log(
+      `Discovery asset verification completed with ${warnings} warning${warnings === 1 ? '' : 's'} for raw-byte drift.`
+    );
+  }
 }
