@@ -98,6 +98,14 @@ If a change touches agent-facing discovery assets, also run:
 pnpm verify:discovery
 ```
 
+If a change touches test tooling, scripts, or CI, also run:
+
+```bash
+pnpm verify:vitest-guard
+```
+
+This guard fails if a change introduces Vitest UI, Browser Mode, or network-exposed API server markers before the tracked Vitest 4 migration and human review are complete.
+
 For production checks against `https://www.commercebackend.com`, run:
 
 ```bash
