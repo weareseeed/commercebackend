@@ -39,6 +39,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
+    "verify:vitest-guard": "node scripts/verify-vitest-guard.mjs",
     "test": "vitest run",
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",

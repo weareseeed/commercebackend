@@ -86,6 +86,7 @@ pnpm typecheck
 pnpm build
 NODE_ENV=test pnpm test
 pnpm selftest:mock
+pnpm verify:vitest-guard
 pnpm verify:discovery
 ```
 
@@ -105,14 +106,14 @@ pnpm verify:discovery:public
 pnpm verify:discovery:strict
 ```
 
-`pnpm verify:discovery:strict` checks both local parity and public production parity for:
+`pnpm verify:discovery:strict` checks both local parity and public production parity for normalized content, and warns when public files only differ in raw bytes or line endings:
 
 - `llms.txt`
 - `llms-full.txt`
 - `/.well-known/commercebackend.json`
 - `/.well-known/agents.json`
 
-When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale.
+When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale. If normalized content matches but raw bytes drift, it prints a warning with byte counts and line-ending style for follow-up.
 
 ---
 

@@ -50,6 +50,14 @@ NODE_ENV=test pnpm test
 
 For docs/static-discovery-only changes, still run formatting/build checks when practical. Validate JSON with a parser and verify Markdown links that changed.
 
+If the change touches `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or the docs that describe those assets, run:
+
+```bash
+pnpm verify:discovery:strict
+```
+
+This checks repo/public discovery parity and reports the first differing text line or JSON field path when the website bytes drift from the repository.
+
 ## Money-path caution
 
 Treat the following as high-risk migrations, not routine edits:
