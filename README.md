@@ -55,6 +55,14 @@ Agent entry points:
 - MCP tool spec: [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
 - Hosted sandbox quickstart: [`/docs/sandbox/`](https://www.commercebackend.com/docs/sandbox/)
 
+If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-discovery assets, run:
+
+```bash
+pnpm verify:discovery:strict
+```
+
+This checks repository parity and public production parity for the canonical discovery files so maintainers can catch stale repo copies or stale website deployments before merge.
+
 ---
 
 ## Supported in v0.2 (Agent-Commerce Loop)
@@ -247,6 +255,12 @@ pnpm lint
 pnpm typecheck
 pnpm build
 NODE_ENV=test pnpm test
+```
+
+If you changed `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or related discovery docs, also run:
+
+```bash
+pnpm verify:discovery:strict
 ```
 
 Agent safety notes:
