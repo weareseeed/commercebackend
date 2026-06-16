@@ -63,6 +63,14 @@ We enforce strict validation rules across the API based on the authenticated age
 
 ---
 
+## 6. Temporary Vitest Exposure Guard
+
+- **Current posture**: The repository intentionally uses `vitest run` only. Vitest UI, Browser Mode, and network-exposed Vitest API server configurations are not part of the approved local or CI workflow.
+- **Guard script**: `pnpm verify:vitest-guard` scans repo configuration and CI files for markers such as `--ui`, `--browser`, `--api.host`, `@vitest/ui`, `@vitest/browser`, `allowWrite`, and `allowExec`.
+- **Why it exists**: Dependabot currently reports the open Vitest advisory tracked in the repository. Until the planned Vitest 4 migration lands and is human-reviewed, this guard reduces the risk of accidentally introducing the exposed UI/API surface into supported workflows.
+
+---
+
 CommerceBackend is owned and maintained by Seeed LLC.
 
 Seeed LLC is unrelated to Seeed Studio.

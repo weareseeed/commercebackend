@@ -39,6 +39,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
+    "verify:vitest-guard": "node scripts/verify-vitest-guard.mjs",
     "test": "vitest run",
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
@@ -54,7 +55,7 @@
     "format": "prettier --write \"**/*.{ts,json,md,yml,yaml}\""
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.3",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
