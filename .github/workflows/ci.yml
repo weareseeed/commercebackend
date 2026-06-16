@@ -65,6 +65,9 @@ jobs:
       - name: Verify discovery assets
         run: pnpm verify:discovery
 
+      - name: Verify Vitest exposure guard
+        run: pnpm verify:vitest-guard
+
       - name: Run lint
         run: pnpm lint
 

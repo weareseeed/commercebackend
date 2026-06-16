@@ -98,6 +98,14 @@ If a change touches agent-facing discovery assets, also run:
 pnpm verify:discovery
 ```
 
+If a change touches test tooling, scripts, or CI, also run:
+
+```bash
+pnpm verify:vitest-guard
+```
+
+This guard fails if a change introduces Vitest UI, Browser Mode, or network-exposed API server markers before the tracked Vitest 4 migration and human review are complete.
+
 For production checks against `https://www.commercebackend.com`, run:
 
 ```bash
@@ -105,7 +113,7 @@ pnpm verify:discovery:public
 pnpm verify:discovery:strict
 ```
 
-`pnpm verify:discovery:strict` reports the first differing text line or the JSON fields that drifted, which helps distinguish a stale repository artifact from a stale public deployment.
+`pnpm verify:discovery:strict` reports the first differing text line or the JSON fields that drifted, which helps distinguish a stale repository artifact from a stale public deployment. If normalized content matches but raw bytes drift, it also prints a warning with byte counts and line-ending style so operators can decide whether a literal-byte production follow-up is needed.
 
 ---
 
