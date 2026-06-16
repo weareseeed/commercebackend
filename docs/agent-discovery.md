@@ -90,4 +90,22 @@ The Offers feature introduces a structured state machine for price and quantity 
 
 ---
 
+## 7. Maintainer verification for discovery assets
+
+When a change touches `llms.txt`, `llms-full.txt`, `/.well-known/commercebackend.json`, `/.well-known/agents.json`, or docs that describe those surfaces, run:
+
+```bash
+pnpm verify:discovery:strict
+```
+
+This verifier checks:
+
+- repository parity between the repo-root discovery files and `apps/landing/public/`
+- required discovery text/JSON fields
+- public production parity at `https://www.commercebackend.com`
+
+If strict parity fails, the script reports the first differing text line or the JSON field path that drifted, which helps distinguish stale repository artifacts from stale production deployment bytes.
+
+---
+
 Copyright ©️ 2026 Seeed LLC. Licensed under the Apache License 2.0.
