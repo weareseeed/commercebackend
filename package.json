@@ -40,7 +40,7 @@
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
     "verify:vitest-guard": "node scripts/verify-vitest-guard.mjs",
-    "test": "vitest run",
+    "test": "pnpm --filter @commercebackend/api test",
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
     "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
@@ -62,7 +62,6 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
-    "tsx": "^4.7.0",
-    "vitest": "^3.2.6"
+    "tsx": "^4.7.0"
   }
 }
