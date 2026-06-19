@@ -16,6 +16,7 @@ Use these canonical public resources before inferring project behavior:
 
 - `https://www.commercebackend.com/llms.txt` — compact LLM context
 - `https://www.commercebackend.com/.well-known/commercebackend.json` — machine-readable project metadata
+- `https://www.commercebackend.com/.well-known/agents.json` — machine-readable agent role metadata
 - `agent-skill-kit/` — canonical reusable instructions for AI coding, buyer, and seller agents
 - `docs/agent-discovery.md` — integration and discovery notes
 - `docs/api/native-api.md` — native API contract
