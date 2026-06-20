@@ -19,7 +19,7 @@
     "migrate": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate deploy'",
     "reset": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate reset --force --skip-seed'",
     "seed": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; tsx src/seed.ts'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma generate && tsc --noEmit'"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2"
