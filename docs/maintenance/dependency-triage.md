@@ -57,7 +57,54 @@ Operator response:
    - a migration issue;
    - closing/superseding the dependency PR.
 
-## 3. Maintainer note template for transient policy failures
+## 3. Classify the execution surface before escalating
+
+Not every open advisory has the same operational importance. After you confirm the package and version, classify **where that code actually runs** in this repository:
+
+### A. Production runtime path
+
+Examples:
+
+- API request handling dependencies in `apps/api`
+- auth, checkout, webhook, order, and persistence code paths
+- packages loaded by the shipped backend server in normal operation
+
+Default response:
+
+- treat as the highest-priority bucket;
+- verify whether the vulnerable package is reachable in deployed API/runtime code;
+- open a fix PR or a migration issue immediately.
+
+### B. Development-only tooling path
+
+Examples:
+
+- Vite used for the landing-site build/dev preview
+- esbuild used underneath local build tooling
+- Vitest and related UI/browser/server features
+- YAML/glob parsing packages only used by local or CI tooling
+
+Default response:
+
+- verify whether the advisory depends on a local dev server, Windows path behavior, browser UI mode, or network exposure that is **not** part of the supported CommerceBackend workflow;
+- document the current guardrails before calling it a production security regression;
+- still track and patch the dependency when a safe upgrade path exists.
+
+### C. Condition-gated local-only exposure
+
+Some alerts matter only when a maintainer opts into a risky mode. Typical examples:
+
+- a dev server exposed with `--host` or equivalent network binding;
+- Windows-only path traversal behavior;
+- optional UI/browser tooling that the repository does not enable in CI or documented flows.
+
+Default response:
+
+1. record the trigger conditions explicitly;
+2. confirm whether the repository currently enables those conditions;
+3. add or verify guardrails (docs, CI checks, config bans) if the package cannot be upgraded immediately.
+
+## 4. Maintainer note template for transient policy failures
 
 ```text
 CI failed on a supply-chain policy gate, not on application compatibility.
@@ -78,3 +125,4 @@ Action:
 - Do not weaken supply-chain policy just to clear a transient failure.
 - Do not merge major money-path dependency upgrades without a dedicated migration plan.
 - Do not claim a dependency update is safe unless CI or local verification actually passed.
+- Do not describe a dev-only or condition-gated advisory as a deployed API compromise unless you verified the vulnerable execution path is actually enabled here.

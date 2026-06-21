@@ -71,6 +71,16 @@ We enforce strict validation rules across the API based on the authenticated age
 
 ---
 
+## 7. Development Tooling Exposure Boundaries
+
+- **Backend/runtime boundary**: CommerceBackend's shipped product is the Fastify API plus its supporting packages. Frontend and test toolchains are not part of the deployed checkout, webhook, inventory, or fulfillment runtime.
+- **Landing-site tooling**: `apps/landing` uses Vite as a static-site build/dev tool. Maintainers should treat Vite dev-server advisories as local tooling alerts first, then verify whether the reported trigger conditions (for example Windows path handling or network-exposed dev server modes) are part of the documented workflow before escalating them as production-impacting.
+- **esbuild and related transitive tooling**: esbuild-backed alerts are still worth patching, but their first triage question is whether the affected code path is only reachable through local development servers, local preview commands, or CI/build infrastructure.
+- **Windows and host-exposed conditions**: If an advisory requires Windows-specific path semantics or an explicitly host-exposed dev server, record that in the triage note. CommerceBackend maintainers should not normalize those findings into a generic "production API vulnerability" claim without evidence that the same path exists in deployed runtime code.
+- **Expected maintainer action**: patch safe tooling upgrades when possible, preserve CI guardrails, and document any temporary gap in `docs/maintenance/dependency-triage.md`, the tracking issue, or the relevant PR.
+
+---
+
 CommerceBackend is owned and maintained by Seeed LLC.
 
 Seeed LLC is unrelated to Seeed Studio.
