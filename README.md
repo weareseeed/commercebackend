@@ -47,11 +47,12 @@ If you want to drive the sandbox from Gemini or another Google AI Studio client,
 Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
+- Machine-readable project metadata: [`/.well-known/commercebackend.json`](https://www.commercebackend.com/.well-known/commercebackend.json)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
-- Agent metadata: [`/.well-known/agents.json`](https://www.commercebackend.com/.well-known/agents.json)
+- Supplemental agent registry metadata: [`/.well-known/agents.json`](https://www.commercebackend.com/.well-known/agents.json)
 - MCP tool spec: [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
 - Hosted sandbox quickstart: [`/docs/sandbox/`](https://www.commercebackend.com/docs/sandbox/)
 
