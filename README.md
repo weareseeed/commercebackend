@@ -62,6 +62,7 @@ pnpm verify:discovery:strict
 ```
 
 This checks repository parity and public production parity for the canonical discovery files so maintainers can catch stale repo copies or stale website deployments before merge.
+It also confirms the public assets return the expected text/plain or application/json content types, which helps catch misconfigured discovery responses even when the body text still looks correct.
 
 ---
 
