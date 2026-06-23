@@ -8,6 +8,7 @@ const ASSETS = [
   {
     path: '/llms.txt',
     localPath: 'apps/landing/public/llms.txt',
+    expectedContentTypeIncludes: ['text/plain'],
     requiredNeedles: [
       'CommerceBackend is an open-source, agent-first commerce backend',
       'Seeed LLC',
@@ -17,12 +18,14 @@ const ASSETS = [
   {
     path: '/llms-full.txt',
     localPath: 'apps/landing/public/llms-full.txt',
+    expectedContentTypeIncludes: ['text/plain'],
     requiredNeedles: ['CommerceBackend Full LLM Context', 'Entity boundary', 'Agent safety rules'],
   },
   {
     path: '/.well-known/commercebackend.json',
     localPath: 'apps/landing/public/.well-known/commercebackend.json',
     json: true,
+    expectedContentTypeIncludes: ['application/json'],
     requiredFields: ['name', 'owner', 'project_links', 'agent_safety', 'agent_skill_kit'],
     requiredNeedles: ['Seeed LLC', 'Joshua / Seeed AI Operations'],
   },
@@ -30,6 +33,7 @@ const ASSETS = [
     path: '/.well-known/agents.json',
     localPath: 'apps/landing/public/.well-known/agents.json',
     json: true,
+    expectedContentTypeIncludes: ['application/json'],
     requiredFields: ['name', 'owner', 'agent_entry_points', 'agent_roles', 'safety'],
     requiredNeedles: ['CommerceBackend', 'Seeed LLC'],
   },
@@ -183,6 +187,18 @@ function assertJson(label, text, fields) {
   return parsed;
 }
 
+function assertContentType(label, contentType, expectedContentTypeIncludes) {
+  if (!expectedContentTypeIncludes?.length) {
+    return;
+  }
+
+  if (!expectedContentTypeIncludes.some((expected) => contentType.includes(expected))) {
+    throw new Error(
+      `${label} returned unexpected content-type: ${contentType}; expected one of ${expectedContentTypeIncludes.join(', ')}`
+    );
+  }
+}
+
 async function verifyLocal(asset) {
   const content = await readFile(join(process.cwd(), asset.localPath), 'utf8');
   assertNeedles(asset.localPath, content, asset.requiredNeedles);
@@ -234,12 +250,14 @@ async function fetchPublic(asset) {
   });
 
   const content = await response.text();
+  const contentType = response.headers.get('content-type') || 'unknown';
   if (!response.ok) {
     throw new Error(`${url} returned HTTP ${response.status}: ${content.slice(0, 200)}`);
   }
 
+  assertContentType(url, contentType, asset.expectedContentTypeIncludes);
   assertNeedles(url, content, asset.requiredNeedles);
-  if (asset.json || response.headers.get('content-type')?.includes('json')) {
+  if (asset.json || contentType.includes('json')) {
     assertJson(url, content, asset.requiredFields);
   }
 
@@ -247,7 +265,7 @@ async function fetchPublic(asset) {
     url,
     content,
     status: response.status,
-    contentType: response.headers.get('content-type') || 'unknown',
+    contentType,
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
     normalizedSha256: sha256(normalizeText(content)),
