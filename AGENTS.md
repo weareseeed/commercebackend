@@ -72,6 +72,7 @@ When a dependency PR fails, classify it before acting:
 - Re-run or update the PR after the minimum release age window passes before escalating it as a code problem.
 - If the failure is a real compatibility break, fix it in a dedicated PR or open/update a migration issue.
 - Use `docs/maintenance/dependency-triage.md` for the maintainer workflow and note template.
+- Use `docs/maintenance/nightly-maintenance.md` for the standard nightly health-check and reporting runbook.
 
 ## Money-Path Guardrails
 
