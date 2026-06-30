@@ -69,6 +69,16 @@ We enforce strict validation rules across the API based on the authenticated age
 - **Guard script**: `pnpm verify:vitest-guard` scans repo configuration and CI files for markers such as `--ui`, `--browser`, `--api.host`, `@vitest/ui`, `@vitest/browser`, `allowWrite`, and `allowExec`.
 - **Why it exists**: Dependabot currently reports the open Vitest advisory tracked in the repository. Until the planned Vitest 4 migration lands and is human-reviewed, this guard reduces the risk of accidentally introducing the exposed UI/API surface into supported workflows.
 
+## 7. Security alert triage workflow
+
+- Use [`docs/maintenance/dependency-triage.md`](./maintenance/dependency-triage.md) when reviewing Dependabot PRs and GitHub security alerts.
+- Classify alerts by exposed surface before escalating them as runtime compromise:
+  - runtime or money-path exposure;
+  - production asset exposure;
+  - local-only dev tooling exposure;
+  - CI-only or disabled workflow exposure.
+- Current open Vite, esbuild, minimatch, and Vitest findings should be described with their actual exposure conditions, not as blanket proof of a production API breach.
+
 ---
 
 CommerceBackend is owned and maintained by Seeed LLC.
