@@ -49,13 +49,54 @@ Operator response:
 ## 2. Recommended nightly triage flow
 
 1. Check open dependency PRs.
-2. Read failed logs before assuming the repository is broken.
-3. Classify each failure as **transient policy** or **real compatibility**.
-4. For transient policy failures, leave a factual maintainer note and retry after the cutoff.
-5. For real compatibility failures, decide between:
+2. Enumerate open Dependabot alerts so you do not confuse alert backlog with CI breakage.
+3. Read failed logs before assuming the repository is broken.
+4. Classify each failure or alert as **transient policy** or **real compatibility**.
+5. For transient policy failures, leave a factual maintainer note and retry after the cutoff.
+6. For real compatibility failures, decide between:
    - a small fix PR;
    - a migration issue;
    - closing/superseding the dependency PR.
+
+### GitHub CLI commands for alert intake
+
+Use repository-owned evidence instead of guessing from the GitHub UI:
+
+```bash
+gh pr list --repo weareseeed/commercebackend --search "dependabot" --limit 20
+
+gh api repos/weareseeed/commercebackend/dependabot/alerts?state=open \
+  -H 'Accept: application/vnd.github+json'
+
+# Optional summary query when you want only the current open count and package names.
+gh api graphql -f query='query {
+  repository(owner:"weareseeed", name:"commercebackend") {
+    vulnerabilityAlerts(first: 20, states: OPEN) {
+      totalCount
+      nodes {
+        number
+        dependencyScope
+        securityVulnerability {
+          package { name ecosystem }
+          severity
+          firstPatchedVersion { identifier }
+        }
+      }
+    }
+  }
+}'
+```
+
+### Scope notes for alert classification
+
+Before escalating an alert, record whether it is:
+
+- **production-path** or **development-only**;
+- **cross-platform** or **Windows-only/local-dev-server-only**;
+- already covered by an open Dependabot PR;
+- blocked by a guarded migration boundary (Stripe, Prisma, Fastify, Zod, TypeScript major upgrades).
+
+Development-only alerts still matter, but they should be described accurately. Do not present a Windows-only local dev-server advisory as a confirmed production checkout risk.
 
 ## 3. Maintainer note template for transient policy failures
 
