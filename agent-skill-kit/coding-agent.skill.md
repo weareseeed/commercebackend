@@ -48,6 +48,8 @@ pnpm build
 NODE_ENV=test pnpm test
 ```
 
+`pnpm typecheck` and `pnpm test` auto-build missing workspace artifacts before they run. That build also generates the Prisma client for the workspace.
+
 For docs/static-discovery-only changes, still run formatting/build checks when practical. Validate JSON with a parser and verify Markdown links that changed.
 
 If the change touches `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or the docs that describe those assets, run:
