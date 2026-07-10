@@ -113,7 +113,7 @@ pnpm verify:discovery:public
 pnpm verify:discovery:strict
 ```
 
-`pnpm verify:discovery:strict` reports the first differing text line or the JSON fields that drifted, which helps distinguish a stale repository artifact from a stale public deployment. If normalized content matches but raw bytes drift, it also prints a warning with byte counts and line-ending style so operators can decide whether a literal-byte production follow-up is needed.
+`pnpm verify:discovery:strict` also checks the expected public content types for the canonical text and JSON endpoints, then reports the first differing text line or the JSON fields that drifted so maintainers can distinguish an incorrect header, stale repository artifact, or stale public deployment. If normalized content matches but raw bytes drift, it also prints a warning with byte counts and line-ending style so operators can decide whether a literal-byte production follow-up is needed.
 
 ---
 
