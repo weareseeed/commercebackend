@@ -30,7 +30,7 @@ CommerceBackend is owned by Seeed LLC, not Seeed Studio.
 ## Repository map
 
 - `apps/api`: Fastify API, routes, services, tests.
-- `apps/landing/public`: public discovery assets such as `llms.txt` and `.well-known/commercebackend.json`.
+- `apps/landing/public`: public discovery assets such as `llms.txt`, `llms-full.txt`, and `.well-known/*.json`.
 - `packages/schemas`: shared Zod schemas and TypeScript types.
 - `docs`: architecture, API, security, testing, and agent discovery docs.
 - `examples`: runnable examples.
