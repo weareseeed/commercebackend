@@ -97,6 +97,34 @@ function summarizeTextDiff(localContent, remoteContent) {
   return null;
 }
 
+function summarizeRawByteDrift(local, remote) {
+  const causes = [];
+
+  if (local.bytes !== remote.bytes) {
+    causes.push(`byte-count local=${local.bytes} public=${remote.bytes}`);
+  }
+
+  if (local.lineEndings !== remote.lineEndings) {
+    causes.push(`line-endings local=${local.lineEndings} public=${remote.lineEndings}`);
+  }
+
+  if (causes.length === 0) {
+    causes.push('normalized content matches but raw bytes differ');
+  }
+
+  let remediation = 'review the deploy pipeline or CDN behavior before treating this as stale content';
+
+  if (local.lineEndings === 'LF' && remote.lineEndings === 'CRLF') {
+    remediation =
+      'public output appears to be newline-normalized to CRLF; check the deploy/CDN path before escalating as stale discovery content';
+  } else if (local.lineEndings === 'CRLF' && remote.lineEndings === 'LF') {
+    remediation =
+      'repository copy uses CRLF while public output is LF; normalize repository line endings if literal-byte parity matters';
+  }
+
+  return `${causes.join('; ')}; ${remediation}`;
+}
+
 function collectJsonDiffs(localValue, remoteValue, path = '$', diffs = []) {
   if (Object.is(localValue, remoteValue)) {
     return diffs;
@@ -320,9 +348,7 @@ for (const asset of ASSETS) {
         local.sha256 !== remote.sha256
       ) {
         warnings += 1;
-        console.warn(
-          `discovery verification warning for ${asset.path}: normalized content matches but raw bytes differ; local-bytes=${local.bytes} public-bytes=${remote.bytes}; local-line-endings=${local.lineEndings} public-line-endings=${remote.lineEndings}`
-        );
+        console.warn(`discovery verification warning for ${asset.path}: ${summarizeRawByteDrift(local, remote)}`);
       }
     }
   } catch (error) {

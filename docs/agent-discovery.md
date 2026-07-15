@@ -105,7 +105,7 @@ This verifier checks:
 - expected public content types for the canonical text and JSON endpoints
 - public production parity at `https://www.commercebackend.com`
 
-If strict parity fails, the script reports the first differing text line or the JSON field path that drifted, which helps distinguish stale repository artifacts from stale production deployment bytes.
+If strict parity fails, the script reports the first differing text line or the JSON field path that drifted, which helps distinguish stale repository artifacts from stale production deployment bytes. When normalized content matches but raw bytes differ, it also flags likely line-ending normalization so maintainers can check the deploy/CDN path before treating the site as stale.
 
 ---
 
