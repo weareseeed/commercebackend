@@ -61,7 +61,7 @@ If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-
 pnpm verify:discovery:strict
 ```
 
-This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, or stale website deployments before merge.
+This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, stale website deployments, and newline-only byte drift before merge.
 
 ---
 
