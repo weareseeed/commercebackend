@@ -107,7 +107,7 @@ pnpm verify:discovery:strict
 - `/.well-known/commercebackend.json`
 - `/.well-known/agents.json`
 
-When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale. If normalized content matches but raw bytes drift, it prints a warning with byte counts and line-ending style for follow-up.
+When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale. If normalized content matches but raw bytes drift, it prints a warning with byte counts, line-ending style, and likely deploy/CDN follow-up for faster triage.
 
 ---
 
