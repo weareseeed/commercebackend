@@ -1,14 +1,27 @@
+import { readFile } from 'node:fs/promises';
 import { buildApp } from '../src/app';
 import { prisma } from '@commercebackend/db';
 
 const PORT = 4001;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
+async function getExpectedApiVersion() {
+  const packageJsonUrl = new URL('../package.json', import.meta.url);
+  const packageJson = JSON.parse(await readFile(packageJsonUrl, 'utf8')) as { version?: string };
+
+  if (!packageJson.version) {
+    throw new Error('apps/api/package.json is missing a version field');
+  }
+
+  return packageJson.version;
+}
+
 // Read self-test mode from args
 const mode = process.argv.includes('--stripe') ? 'stripe' : 'mock';
 
 async function run() {
   console.log(`Starting CommerceBackend self-test in [${mode.toUpperCase()}] mode...\n`);
+  const expectedApiVersion = await getExpectedApiVersion();
 
   // Ensure DB can be connected to
   try {
@@ -48,17 +61,19 @@ async function run() {
 
   let sellerKey = '';
   let buyerKey = '';
+  let buyerId = '';
   let listingId = '';
   let checkoutIntentId = '';
   let stripeSessionId = '';
   let orderId = '';
+  const operatorKey = process.env.OPERATOR_API_KEY;
 
   // 1. Health check
   await testStep('health check', async () => {
     const res = await fetch(`${BASE_URL}/health`);
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
     const body = await res.json();
-    if (!body.ok || body.version !== '0.1.0') {
+    if (!body.ok || body.version !== expectedApiVersion) {
       throw new Error(`Invalid body: ${JSON.stringify(body)}`);
     }
   });
@@ -103,8 +118,37 @@ async function run() {
     });
     if (res.status !== 201) throw new Error(`Status ${res.status}`);
     const body = await res.json();
+    buyerId = body.agent?.id;
     buyerKey = body.apiKey;
+    if (!buyerId) throw new Error('Buyer agent ID not returned');
     if (!buyerKey) throw new Error('API key not returned');
+  });
+
+  // 4b. Operator creates an auto-approval purchase policy for the buyer
+  await testStep('purchase policy created', async () => {
+    if (!operatorKey) throw new Error('OPERATOR_API_KEY is required for self-test purchase policy setup');
+
+    const res = await fetch(`${BASE_URL}/v1/agents/${buyerId}/purchase-policies`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-operator-key': operatorKey,
+      },
+      body: JSON.stringify({
+        name: 'SelfTest auto-approve physical goods',
+        enabled: true,
+        maxAutoApproveAmount: 5000,
+        currency: 'USD',
+        allowedListingTypes: ['physical_good'],
+        allowedSellerAgentIds: [],
+        requireHumanApprovalAboveAmount: 5000,
+        requireHumanApprovalForOffers: false,
+      }),
+    });
+
+    if (res.status !== 201) throw new Error(`Status ${res.status}`);
+    const body = await res.json();
+    if (!body.purchasePolicy?.id) throw new Error('Purchase policy ID not returned');
   });
 
   // 5. Seller creates listing

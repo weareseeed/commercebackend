@@ -23,7 +23,9 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
   {
     "ok": true,
     "service": "commercebackend-api",
-    "version": "0.1.0"
+    "version": "0.2.1",
+    "mode": "development",
+    "stripeMode": "mocked"
   }
   ```
 - **Example Curl**:

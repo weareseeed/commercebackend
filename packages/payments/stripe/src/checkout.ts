@@ -1,5 +1,17 @@
 import { getStripeClient } from './client';
 
+function isMockStripeMode() {
+  const secretKey = process.env.STRIPE_SECRET_KEY?.toLowerCase() ?? '';
+
+  return (
+    process.env.BYPASS_STRIPE_SIGNATURE === 'true' ||
+    secretKey.includes('mock') ||
+    secretKey.includes('placeholder') ||
+    secretKey === 'sk_test_' ||
+    secretKey === ''
+  );
+}
+
 export interface CreateStripeSessionInput {
   checkoutIntentId: string;
   listingId: string;
@@ -15,8 +27,6 @@ export interface CreateStripeSessionInput {
 }
 
 export async function createStripeCheckoutSession(input: CreateStripeSessionInput) {
-  const stripe = getStripeClient();
-
   const formattedSuccessUrl = input.successUrl.replace(
     '{CHECKOUT_INTENT_ID}',
     input.checkoutIntentId
@@ -25,6 +35,15 @@ export async function createStripeCheckoutSession(input: CreateStripeSessionInpu
     '{CHECKOUT_INTENT_ID}',
     input.checkoutIntentId
   );
+
+  if (isMockStripeMode()) {
+    return {
+      id: `cs_mock_${input.checkoutIntentId}`,
+      url: `https://checkout.stripe.com/pay/cs_mock_${input.checkoutIntentId}`,
+    };
+  }
+
+  const stripe = getStripeClient();
 
   const session = await stripe.checkout.sessions.create(
     {
