@@ -4,6 +4,10 @@ packages:
   - 'packages/payments/*'
   - 'packages/protocols/*'
   - 'examples/*'
+overrides:
+  find-my-way: 9.7.0
+  fast-uri@3.1.3: 3.1.4
+  fast-uri@4.1.0: 4.1.1
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
