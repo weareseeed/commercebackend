@@ -21,6 +21,7 @@ Seeed LLC (https://www.seeed.us) is a Miami software engineering company focused
 - Agent metadata: https://www.commercebackend.com/.well-known/agents.json
 - Agent skill kit: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - MCP tool spec: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
+- Current release target: v0.2.1
 
 ## Primary audience
 
