@@ -19,8 +19,13 @@ The maintainer owns the accuracy of:
 - `.github/copilot-instructions.md`
 - `.cursor/rules/commercebackend.mdc`
 - `.windsurf/rules/commercebackend.md`
+- `llms.txt`
+- `llms-full.txt`
+- `.well-known/agents.json`
+- `.well-known/commercebackend.json`
 - `apps/landing/public/llms.txt`
 - `apps/landing/public/llms-full.txt`
+- `apps/landing/public/.well-known/agents.json`
 - `apps/landing/public/.well-known/commercebackend.json`
 - agent-facing sections of `README.md` and `docs/agent-discovery.md`
 
