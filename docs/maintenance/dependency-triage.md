@@ -65,6 +65,25 @@ Use GitHub CLI so the nightly maintainer note is grounded in the actual failing 
 gh pr list --label dependencies --state open
 ```
 
+Capture the current Dependabot alert backlog in one command:
+
+```bash
+pnpm dependabot:alerts:snapshot
+```
+
+Default behavior:
+
+- targets `weareseeed/commercebackend`
+- requests the first 100 alerts in `open` state
+- prints severity counts plus a per-alert manifest/scope summary with URLs
+
+Optional overrides:
+
+```bash
+pnpm dependabot:alerts:snapshot -- --state=all
+pnpm dependabot:alerts:snapshot -- --repo=OWNER/REPO --per-page=50
+```
+
 Inspect the failing PR checks:
 
 ```bash
