@@ -47,6 +47,7 @@
     "verify:discovery": "node scripts/verify-discovery-assets.mjs",
     "verify:discovery:public": "node scripts/verify-discovery-assets.mjs --public",
     "verify:discovery:strict": "node scripts/verify-discovery-assets.mjs --public --strict-parity",
+    "verify:github-metadata": "node scripts/verify-github-metadata.mjs",
     "db:migrate": "pnpm --filter @commercebackend/db migrate",
     "db:reset": "pnpm --filter @commercebackend/db reset",
     "db:seed": "pnpm --filter @commercebackend/db seed",
