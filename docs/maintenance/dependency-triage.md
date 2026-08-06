@@ -65,6 +65,18 @@ Use GitHub CLI so the nightly maintainer note is grounded in the actual failing 
 gh pr list --label dependencies --state open
 ```
 
+Snapshot the current Dependabot alert surface before deciding whether the repo needs a fix PR, a migration issue, or only a maintainer note:
+
+```bash
+pnpm security:alerts:snapshot
+```
+
+Use `--json` when you want machine-readable output for another agent or a saved nightly artifact:
+
+```bash
+pnpm security:alerts:snapshot --json
+```
+
 Inspect the failing PR checks:
 
 ```bash
@@ -75,6 +87,13 @@ Read only the failed job output:
 
 ```bash
 gh run view <run-id> --log-failed
+```
+
+If you need a repository other than the current default or want to compare fixed/dismissed states, pass the flags through to the snapshot script:
+
+```bash
+pnpm security:alerts:snapshot --repo=weareseeed/commercebackend --state=open
+pnpm security:alerts:snapshot --repo=weareseeed/commercebackend --state=fixed
 ```
 
 When the failure is a release-age gate, capture the exact package/version and cutoff timestamp from the log before writing a note.
