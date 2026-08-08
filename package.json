@@ -36,6 +36,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @commercebackend/api dev",
+    "verify": "pnpm lint && pnpm typecheck && pnpm build && NODE_ENV=test pnpm test",
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm --filter \"./packages/**\" build && pnpm -r typecheck",

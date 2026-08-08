@@ -34,11 +34,10 @@ Use these canonical public resources before inferring project behavior:
 ```bash
 pnpm install
 cp .env.example .env
-pnpm lint
-pnpm typecheck
-pnpm build
-NODE_ENV=test pnpm test
+pnpm verify
 ```
+
+`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test`.
 
 Use mock self-tests for local commerce-loop verification without real Stripe network calls:
 
