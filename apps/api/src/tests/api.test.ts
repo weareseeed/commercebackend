@@ -1759,7 +1759,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(JSON.parse(resHealth.body)).toEqual({
         ok: true,
         service: 'commercebackend-api',
-        version: '0.2.1',
+        version: '0.2.2',
         mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
         stripeMode: 'mocked',
       });

@@ -13,7 +13,7 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
 - **MCP Tool Spec**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
 - **License**: Apache-2.0
-- **Current Release Target**: v0.2.1
+- **Current Release Target**: v0.2.2
 
 ## Disambiguation
 
