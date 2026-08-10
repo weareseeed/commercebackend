@@ -20,6 +20,13 @@ import crypto from 'crypto';
 
 export function buildApp() {
   const app = fastify({
+    // Behind a hosting proxy (Railway/Cloud Run/etc.) the socket peer is the
+    // proxy, not the client. Trust X-Forwarded-For so `request.ip` is the real
+    // client address — without this, per-IP rate limiting keys on the proxy hop
+    // and never accumulates (i.e. does not actually limit anyone). A client can
+    // still spoof XFF to evade limits; that is an accepted trade-off for a
+    // test-mode sandbox. Locally / in tests there is no proxy, so this is a no-op.
+    trustProxy: true,
     // Cap request bodies to blunt abuse on a public endpoint (agent payloads
     // are small JSON documents). Oversized bodies are rejected with 413.
     bodyLimit: 65536, // 64 KB
