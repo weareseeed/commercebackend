@@ -20,6 +20,9 @@ import crypto from 'crypto';
 
 export function buildApp() {
   const app = fastify({
+    // Cap request bodies to blunt abuse on a public endpoint (agent payloads
+    // are small JSON documents). Oversized bodies are rejected with 413.
+    bodyLimit: 65536, // 64 KB
     logger: process.env.NODE_ENV !== 'test' ? {
       redact: {
         paths: [
