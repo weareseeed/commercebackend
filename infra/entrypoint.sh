@@ -22,7 +22,8 @@ fi
 
 if [ "$RUN_SEED" = "true" ]; then
   echo "[entrypoint] Seeding sandbox fixtures..."
-  (cd "$DB_DIR" && ./node_modules/.bin/tsx src/seed.ts)
+  # Run the compiled seed so the runtime image does not need tsx (a dev dep).
+  node "$DB_DIR/dist/seed.js"
 fi
 
 echo "[entrypoint] Starting CommerceBackend API on port ${PORT:-4000}..."

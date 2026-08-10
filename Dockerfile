@@ -48,6 +48,15 @@ RUN pnpm --filter @commercebackend/protocol-acp exec tsc
 RUN pnpm --filter @commercebackend/protocol-ucp exec tsc
 RUN pnpm --filter @commercebackend/api exec tsc
 
+# Prune to production dependencies *in the builder* so the runner's COPY only
+# ever receives prod modules (dropping typescript, tsx, vitest, eslint, vite).
+# Pruning after the COPY would not shrink the image — the fat layer would remain
+# underneath. prisma is a prod dep of @commercebackend/db so `migrate deploy`
+# still works; the seed runs from compiled dist/seed.js (no tsx needed).
+# CI=true lets pnpm remove the dev-dep modules dir non-interactively.
+RUN CI=true pnpm install --prod --frozen-lockfile --ignore-scripts \
+  && cd packages/db && pnpm exec prisma generate
+
 # ---- Stage 2: runner --------------------------------------------------------
 FROM node:22-bookworm-slim AS runner
 
@@ -55,14 +64,12 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
-
+# No pnpm needed at runtime: the entrypoint calls prisma/node binaries directly.
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Carry the fully built workspace (dist/, node_modules incl. generated Prisma
-# client, schema, and the seed/migrate tooling used by the entrypoint).
-# Own it as `node` so runtime steps (tsx cache, etc.) can write.
+# Carry the pruned, production-only workspace (dist/ + generated Prisma client +
+# schema + prod node_modules). Own it as `node` so runtime steps can write.
 COPY --chown=node:node --from=builder /app /app
 
 COPY infra/entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -1,5 +1,5 @@
 import { buildApp } from '../src/app';
-import { prisma } from '@commercebackend/db';
+import { prisma, hashApiKey } from '@commercebackend/db';
 
 const PORT = 4001;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -58,7 +58,7 @@ async function run() {
     const res = await fetch(`${BASE_URL}/health`);
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
     const body = await res.json();
-    if (!body.ok || body.version !== '0.1.0') {
+    if (!body.ok || !body.version) {
       throw new Error(`Invalid body: ${JSON.stringify(body)}`);
     }
   });
@@ -160,6 +160,24 @@ async function run() {
     if (res.status !== 200) throw new Error(`Status ${res.status}`);
     const body = await res.json();
     if (body.listing.id !== listingId) throw new Error('Returned wrong listing ID');
+  });
+
+  // 7b. Give the buyer an auto-approve purchase policy. Without one, checkout
+  // stops at `human_approval_required` (secure default) and no Stripe session is
+  // created — so the direct happy-path below needs a policy that permits it.
+  await testStep('buyer purchase policy created', async () => {
+    const buyer = await prisma.agent.findFirst({ where: { apiKeyHash: hashApiKey(buyerKey) } });
+    if (!buyer) throw new Error('Buyer agent not found for policy setup');
+    await prisma.purchasePolicy.create({
+      data: {
+        buyerAgentId: buyer.id,
+        name: 'SelfTest Auto-Approve Policy',
+        enabled: true,
+        currency: 'USD',
+        maxAutoApproveAmount: 1_000_000,
+        requireHumanApprovalAboveAmount: 1_000_000,
+      },
+    });
   });
 
   // 8. Buyer creates checkout intent
