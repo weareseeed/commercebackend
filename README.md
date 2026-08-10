@@ -188,6 +188,32 @@ pnpm selftest:stripe
 
 ---
 
+## Deployment
+
+CommerceBackend ships a production container image ([`Dockerfile`](https://github.com/weareseeed/commercebackend/blob/master/Dockerfile)) that runs on Cloud Run, Railway, Fly, or any container platform. It listens on `$PORT`, runs as a non-root user, and applies migrations on boot when `RUN_MIGRATIONS=true`.
+
+```bash
+docker build -t commercebackend-api .
+# Prod-like local stack (Postgres + API):
+docker compose -f infra/docker-compose.app.yml up --build
+```
+
+See the [deploy runbook](https://github.com/weareseeed/commercebackend/blob/master/docs/deploy/README.md) for the Cloud Run and Railway paths, required environment/secrets ([`.env.hosted.example`](https://github.com/weareseeed/commercebackend/blob/master/.env.hosted.example)), and the launch checklist.
+
+### Operational environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CORS_ORIGIN` | `*` | `*` or a comma-separated origin allowlist (browser callers only). |
+| `RATE_LIMIT_MAX` | `300` | Per-IP request ceiling applied globally outside tests. |
+| `RATE_LIMIT_WINDOW` | `1 minute` | Window for the rate limit. |
+| `RUN_MIGRATIONS` | — | `true` applies pending migrations on container start. |
+| `RUN_SEED` | — | `true` resets and seeds sandbox fixtures on start (demo only). |
+
+`/health`, `/ready`, and the Stripe webhook are exempt from rate limiting.
+
+---
+
 ## API Summary
 
 All endpoints conform to the standard error response layout and require request IDs.

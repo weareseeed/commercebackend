@@ -178,11 +178,27 @@ curl -X POST https://api.demo.commercebackend.com/v1/search \
         <h2>Limits and safety boundaries</h2>
         <ul>
           <li>Demo data is seeded and may reset.</li>
-          <li>Write endpoints may be rate limited.</li>
+          <li>Requests are rate limited per IP (health and the Stripe webhook are exempt).</li>
           <li>Approval-required checkouts should not create a Stripe session before approval.</li>
           <li>Agent keys should be treated as demo credentials, not durable identities.</li>
           <li>Real merchant onboarding and payouts are out of scope.</li>
         </ul>
+      </section>
+
+      <section class="section">
+        <h2>Self-host this backend</h2>
+        <p>
+          CommerceBackend ships a production container image that runs on Cloud Run, Railway, Fly,
+          or any container platform. It applies database migrations on boot and can seed the same
+          deterministic sandbox fixtures used above.
+        </p>
+        <pre><code>docker build -t commercebackend-api .
+docker compose -f infra/docker-compose.app.yml up --build</code></pre>
+        <p>
+          See the
+          <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/deploy/README.md">deploy runbook</a>
+          for the Cloud Run and Railway paths, required environment and secrets, and the launch checklist.
+        </p>
       </section>
 
       <section class="section">
