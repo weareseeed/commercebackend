@@ -67,7 +67,7 @@ This checks repository parity, required public content types, and public product
 
 ## Supported in v0.2 (Agent-Commerce Loop)
 
-- **Agent Identity**: Registration and bearer API key credentials (raw keys returned once, only SHA-256 hashes stored, hashes are unique).
+- **Agent Identity**: Registration and bearer API key credentials (raw keys returned once, only scrypt-derived hashes stored, hashes are unique).
 - **Fixed-price Listings**: Listing CRUD, pausing, activating, and inventory tracking.
 - **Listing Search**: Score-based search matching terms across title, description, and JSON attributes. Logs queries to `AgentQueryLog`. Supports pagination.
 - **Offers and Counteroffers**: Buyer/seller negotiation with pending, accepted, countered, rejected, expired, cancelled, and checkout-pending states.

@@ -4,7 +4,9 @@ import { OrdersService } from '../services/orders.service';
 import { AppError } from '../plugins/error-handler';
 
 export async function webhookRoutes(fastify: FastifyInstance) {
-  fastify.post('/v1/webhooks/stripe', { config: { rawBody: true } }, async (request, reply) => {
+  // Stripe delivers (and retries) webhooks on its own schedule; do not
+  // rate-limit this endpoint. Authenticity is enforced via signature check.
+  fastify.post('/v1/webhooks/stripe', { config: { rawBody: true, rateLimit: false } }, async (request, reply) => {
     const sig = request.headers['stripe-signature'];
     if (!sig || typeof sig !== 'string') {
       throw new AppError('BAD_REQUEST', 'Missing stripe-signature header', 400);

@@ -1,7 +1,18 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import crypto from 'crypto';
 import { prisma, Agent, hashApiKey } from '@commercebackend/db';
 import { AppError } from './error-handler';
 import { env } from '../env';
+
+// Length-safe, constant-time string comparison. Avoids leaking the operator
+// key through response timing. Implemented locally so it does not depend on any
+// module that tests mock.
+function constantTimeEquals(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -42,7 +53,9 @@ export async function authenticateAgent(request: FastifyRequest, reply: FastifyR
 
 export async function authenticateOperator(request: FastifyRequest, reply: FastifyReply) {
   const operatorKey = request.headers['x-operator-key'];
-  if (!operatorKey || Array.isArray(operatorKey) || operatorKey !== env.OPERATOR_API_KEY) {
+  const expected = env.OPERATOR_API_KEY;
+  // Constant-time comparison avoids leaking the key via response timing.
+  if (!operatorKey || Array.isArray(operatorKey) || !expected || !constantTimeEquals(operatorKey, expected)) {
     throw new AppError('UNAUTHORIZED', 'Valid X-Operator-Key header is required', 401);
   }
 }

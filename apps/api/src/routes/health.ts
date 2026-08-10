@@ -24,7 +24,9 @@ const getStripeMode = (secretKey: string | undefined) => {
 };
 
 export async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get('/health', async (request, reply) => {
+  // Liveness/readiness probes are polled frequently by the platform; never
+  // rate-limit them.
+  fastify.get('/health', { config: { rateLimit: false } }, async (request, reply) => {
     return {
       ok: true,
       service: 'commercebackend-api',
@@ -34,7 +36,7 @@ export async function healthRoutes(fastify: FastifyInstance) {
     };
   });
 
-  fastify.get('/ready', async (request, reply) => {
+  fastify.get('/ready', { config: { rateLimit: false } }, async (request, reply) => {
     let dbStatus = 'ok';
     const stripeMode = getStripeMode(env.STRIPE_SECRET_KEY);
     let stripeStatus = stripeMode === 'missing' ? 'missing' : 'configured';

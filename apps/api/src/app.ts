@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
+import { env } from './env';
 import { registerErrorHandler } from './plugins/error-handler';
 import { registerAuthPlugin } from './plugins/auth';
 import { healthRoutes } from './routes/health';
@@ -51,13 +52,23 @@ export function buildApp() {
     reply.header('x-request-id', request.id);
   });
 
-  // CORS Configuration
+  // CORS Configuration. Default '*' (public agent API); override with a
+  // comma-separated CORS_ORIGIN allowlist for browser callers.
+  const corsOrigin =
+    env.CORS_ORIGIN === '*'
+      ? '*'
+      : env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
   app.register(cors, {
-    origin: '*',
+    origin: corsOrigin,
   });
 
+  // Per-IP rate limiting. Applied globally outside tests so authenticated
+  // mutation routes are covered; individual routes may set tighter limits, and
+  // health/webhook opt out. Disabled under test to keep the suite deterministic.
   app.register(rateLimit, {
-    global: false,
+    global: process.env.NODE_ENV !== 'test',
+    max: env.RATE_LIMIT_MAX,
+    timeWindow: env.RATE_LIMIT_WINDOW,
     keyGenerator: (request) => request.ip,
   });
 

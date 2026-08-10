@@ -19,6 +19,13 @@ const EnvSchema = z.object({
   BYPASS_STRIPE_SIGNATURE: z.string().optional(),
   OPERATOR_API_KEY: isTest ? z.string().default('operator_test_key') : z.string().optional(),
   SANDBOX_MODE: z.coerce.boolean().default(false),
+  // Comma-separated allowlist of origins, or '*' for any (default). Only
+  // affects browser callers; agent/server-to-server clients ignore CORS.
+  CORS_ORIGIN: z.string().default('*'),
+  // Per-IP request ceiling applied globally (outside tests). Sensitive routes
+  // may set their own tighter limits.
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 });
 
 // Run raw parse first
