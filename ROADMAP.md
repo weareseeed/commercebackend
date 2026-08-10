@@ -28,11 +28,16 @@ What exists now:
   - `/llms-full.txt`
   - `/.well-known/commercebackend.json`
 - Public discovery asset verification script.
+- Production container image (multi-stage Docker) and a host-agnostic deploy
+  runbook for Cloud Run and Railway (`docs/deploy/`), with migrate/seed-on-boot.
+- Operational hardening: per-IP rate limiting (health/webhook exempt),
+  configurable CORS allowlist, and constant-time operator-key comparison.
 - Apache-2.0 license.
 
 Current release:
 
-- `v0.2.1` — post-v0.2 hardening and discovery verification.
+- `v0.2.1` — post-v0.2 hardening, discovery verification, and a containerized
+  deploy path for the hosted sandbox.
 
 ## v0.3 — Connector imports, search correctness, and controlled checkout design
 
