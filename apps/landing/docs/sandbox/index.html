@@ -133,9 +133,9 @@
       <section class="section">
         <h2>Base URLs</h2>
         <pre><code>Landing: https://www.commercebackend.com
-Sandbox API: https://api.demo.commercebackend.com
-Health: https://api.demo.commercebackend.com/health</code></pre>
-        <p>Use the demo API hostname above once it is approved and promoted. Until then, treat it as the canonical public target shape.</p>
+Sandbox API: https://api.commercebackend.com
+Health: https://api.commercebackend.com/health</code></pre>
+        <p>The sandbox API is live at the hostname above in Stripe test mode. Requests are rate limited per IP.</p>
       </section>
 
       <section class="section">
@@ -157,9 +157,9 @@ X-Request-Id: sandbox-demo-001</code></pre>
 
       <section class="section">
         <h2>Example calls</h2>
-        <pre><code>curl https://api.demo.commercebackend.com/health
+        <pre><code>curl https://api.commercebackend.com/health
 
-curl -X POST https://api.demo.commercebackend.com/v1/search \
+curl -X POST https://api.commercebackend.com/v1/search \
   -H "authorization: Bearer &lt;demo buyer api key&gt;" \
   -H "content-type: application/json" \
   -H "x-request-id: sandbox-search-001" \
