@@ -9,6 +9,44 @@ review (branch protection stays in force).
 This complements the phase-level [`ROADMAP.md`](../ROADMAP.md); this file is the
 executable, ordered version.
 
+## North Star
+
+**Goal: make CommerceBackend the most advanced agent-first commerce backend in
+existence** — the default place autonomous agents discover products, negotiate,
+transact, and fulfill, with primitives no human-first store retrofits well.
+
+Two principles keep that a real target and not a slogan:
+
+1. **Earned, not claimed.** "Most advanced" is proven by shipped, tested,
+   verifiable capabilities — never by marketing copy ahead of the code. Public
+   claims must match shipped behavior (this is why we verify limits actually
+   enforce, not just that they deploy).
+2. **The money path is human-led.** Refunds, disputes, payouts, tax, and
+   real-money processing get deliberate design and explicit owner approval —
+   never an autonomous change. "Advanced" there means correct and auditable.
+
+Every weekly item should ladder up to one of these long-horizon epics:
+
+- **Protocol leadership** — production ACP and UCP adapters and a first-class
+  MCP server, so any agent framework can plug in natively.
+- **Merchant reach** — connector imports (Shopify, Square, BigCommerce,
+  WooCommerce) that turn real catalogs into agent-shoppable listings via a
+  canonical model.
+- **Agent-native primitives** — purchase policies and budgets, negotiation,
+  human-approval and delegation guardrails, provenance and audit trails, agent
+  identity and reputation.
+- **Search & discovery at scale** — DB, then semantic/vector search and ranking
+  so agents find the right offer, not just a matching string.
+- **Operational credibility** — observability, metrics, abuse controls, a
+  checkout event ledger, an operator dashboard, and incident runbooks.
+- **Proven reliability** — SDKs, skill kit, runnable examples, and evaluation
+  fixtures that demonstrate agents completing discovery → negotiate → checkout →
+  fulfill → failure-handling end to end.
+- **Trustworthy money path** `[HUMAN-LED]` — refunds, disputes, Stripe Connect
+  payouts, and tax, designed carefully and auditable.
+- **Marketplace maturity** — multi-seller, multi-currency, and platform
+  economics as the model hardens.
+
 ## Working rules for the Friday routine
 
 1. Pick the **topmost unchecked item that is not tagged `[HUMAN-LED]`**.
@@ -27,6 +65,14 @@ executable, ordered version.
    same PR.
 7. After opening the PR, check the box here (in the same PR) and add the PR
    link.
+8. **Keep the backlog full.** If fewer than 3 unchecked, buildable items remain,
+   propose new ones drawn from the North Star epics (with a one-line _DoD_) and
+   append them to the backlog in the same PR — the pipeline should never run dry.
+9. **Ping when blocked.** If work can't proceed — the buildable backlog is
+   exhausted, checks can't be made to pass, the top item needs a human decision,
+   or the next priority is `[HUMAN-LED]` — do not fail silently. Open (or update)
+   a GitHub issue titled `[weekly-routine] needs input: …` that mentions
+   `@rsaer` with the specific decision or help needed, and stop.
 
 ## Backlog (ordered)
 
