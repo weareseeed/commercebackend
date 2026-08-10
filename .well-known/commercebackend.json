@@ -20,7 +20,7 @@
     "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit"
   },
   "license": "Apache-2.0",
-  "current_release_target": "v0.2.1",
+  "current_release_target": "v0.2.2",
   "audience": [
     "autonomous commerce agents",
     "AI coding agents",
