@@ -121,5 +121,30 @@ After the first successful boot, set `RUN_SEED=false` and redeploy.
 - [ ] `scripts/smoke-sandbox.mjs` passes against the deployed URL
 - [ ] `/health` and `/ready` return 200
 - [ ] Public discovery files return 200 (`pnpm verify:discovery:public`)
+- [ ] Public discovery files match the repository copy on the custom domain (`pnpm verify:discovery:strict`)
 - [ ] Rate limits / body-size limits reviewed for public write routes
 - [ ] Rowland or Maria approval recorded for DNS + public API exposure
+
+## Discovery parity after deploy
+
+Do not stop after a `200 OK` on `llms.txt` or `/.well-known/commercebackend.json`.
+The custom domain can still serve a stale release marker or stale JSON field after
+the repository and landing app have been updated.
+
+Run this after every landing/docs deployment and every tagged release that updates
+agent-facing discovery assets:
+
+```bash
+pnpm verify:discovery:strict
+```
+
+Expected outcome:
+
+- local parity passes between repo-root files and `apps/landing/public/`
+- public parity passes for `llms.txt`, `llms-full.txt`, `/.well-known/commercebackend.json`, and `/.well-known/agents.json`
+- any failure shows the first differing text line or JSON field so you can tell
+  whether the repository copy or the custom-domain deployment is stale
+
+If this command reports a stale public release target or JSON field, treat it as
+a deployment/promotion problem and do not call the release fully live until the
+custom domain matches the repository copy.
