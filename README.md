@@ -207,6 +207,7 @@ See the [deploy runbook](https://github.com/weareseeed/commercebackend/blob/mast
 | `CORS_ORIGIN` | `*` | `*` or a comma-separated origin allowlist (browser callers only). |
 | `RATE_LIMIT_MAX` | `300` | Per-IP request ceiling applied globally outside tests. |
 | `RATE_LIMIT_WINDOW` | `1 minute` | Window for the rate limit. |
+| `TRUST_PROXY` | `true` | Trust `X-Forwarded-For` for the real client IP behind a reverse proxy, so per-IP rate limiting keys correctly. Set to `false` only with no proxy in front. |
 | `RUN_MIGRATIONS` | — | `true` applies pending migrations on container start. |
 | `RUN_SEED` | — | `true` resets and seeds sandbox fixtures on start (demo only). |
 
