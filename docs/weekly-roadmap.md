@@ -76,11 +76,11 @@ Every weekly item should ladder up to one of these long-horizon epics:
 
 ## Backlog (ordered)
 
-- [ ] **1. Rate-limit & proxy hardening polish.** Gate the rate limiter off for
+- [x] **1. Rate-limit & proxy hardening polish.** Gate the rate limiter off for
   any vitest run (check `VITEST` as well as `NODE_ENV==='test'`); make proxy
   trust configurable via a `TRUST_PROXY` env (default on) instead of a hardcoded
   `true`; document both. _DoD:_ tests green with and without `NODE_ENV`; env
-  documented in README + `.env.example`.
+  documented in README + `.env.example`. — [#147](https://github.com/weareseeed/commercebackend/pull/147)
 - [ ] **2. DB-level listing search.** Replace the in-memory 1000-row scan
   (`search.service.ts`) with a PostgreSQL query (trigram/`ILIKE` or `tsvector`),
   keeping the pluggable provider interface and current scoring semantics; add
