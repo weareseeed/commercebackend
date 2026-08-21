@@ -69,14 +69,32 @@ vi.mock('@commercebackend/db', () => {
         const listing = mockDb.listings.find((l) => l.id === where.id);
         return listing || null;
       }),
-      findMany: vi.fn(async ({ where }) => {
-        return mockDb.listings.filter((l) => {
+      findMany: vi.fn(async ({ where, orderBy, skip, take } = {}) => {
+        let matches = mockDb.listings.filter((l) => {
           if (where?.status && l.status !== where.status) return false;
           if (where?.type && l.type !== where.type) return false;
           if (where?.currency && l.currency !== where.currency) return false;
           if (where?.priceAmount?.lte && l.priceAmount > where.priceAmount.lte) return false;
           return true;
         });
+        if (orderBy?.createdAt) {
+          const direction = orderBy.createdAt === 'desc' ? -1 : 1;
+          matches = [...matches].sort(
+            (a, b) => direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+        }
+        if (typeof skip === 'number') matches = matches.slice(skip);
+        if (typeof take === 'number') matches = matches.slice(0, take);
+        return matches;
+      }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.listings.filter((l) => {
+          if (where?.status && l.status !== where.status) return false;
+          if (where?.type && l.type !== where.type) return false;
+          if (where?.currency && l.currency !== where.currency) return false;
+          if (where?.priceAmount?.lte && l.priceAmount > where.priceAmount.lte) return false;
+          return true;
+        }).length;
       }),
       update: vi.fn(async ({ where, data }) => {
         const listing = mockDb.listings.find((l) => l.id === where.id);
@@ -279,7 +297,68 @@ vi.mock('@commercebackend/db', () => {
       }
       return [];
     }),
-    $queryRaw: vi.fn(async (query, ...params) => {
+    $queryRaw: vi.fn(async (query: any, ...params: any[]) => {
+      const text = Array.isArray(query) ? query.join('') : String(query);
+      if (text.includes('keyword_hits')) {
+        const [keywords, status, typeFilter, currencyFilter, maxPriceFilter, limit, offset] = params as [
+          string[],
+          string,
+          string | null,
+          string | null,
+          number | null,
+          number,
+          number,
+        ];
+        const matched = mockDb.listings
+          .filter((l) => {
+            if (l.status !== status) return false;
+            if (typeFilter && l.type !== typeFilter) return false;
+            if (currencyFilter && l.currency !== currencyFilter) return false;
+            if (maxPriceFilter != null && l.priceAmount > maxPriceFilter) return false;
+            return true;
+          })
+          .map((l) => {
+            const titleLower = l.title.toLowerCase();
+            const descLower = l.description.toLowerCase();
+            const attrsStr = JSON.stringify(l.attributes ?? {}).toLowerCase();
+            const matchedKeywords: string[] = [];
+            let titleMatched = false;
+            let descMatched = false;
+            let attrsMatched = false;
+            for (const kw of keywords) {
+              let hit = false;
+              if (titleLower.includes(kw)) {
+                hit = true;
+                titleMatched = true;
+              }
+              if (descLower.includes(kw)) {
+                hit = true;
+                descMatched = true;
+              }
+              if (attrsStr.includes(kw)) {
+                hit = true;
+                attrsMatched = true;
+              }
+              if (hit) matchedKeywords.push(kw);
+            }
+            return {
+              ...l,
+              matched_count: matchedKeywords.length,
+              title_matched: titleMatched,
+              desc_matched: descMatched,
+              attrs_matched: attrsMatched,
+              matched_keywords: matchedKeywords,
+            };
+          })
+          .filter((row) => row.matched_count > 0)
+          .sort((a, b) => {
+            if (b.matched_count !== a.matched_count) return b.matched_count - a.matched_count;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+
+        const total = matched.length;
+        return matched.slice(offset, offset + limit).map((row) => ({ ...row, total_count: total }));
+      }
       return [1];
     }),
   };
@@ -947,6 +1026,59 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const data = JSON.parse(response.body);
       // Electro listing was paused, so it shouldn't show up in default (active) search
       expect(data.results.length).toBe(0);
+    });
+
+    it('should rank listings matching more query keywords ahead of partial matches', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami Rock Festival',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const data = JSON.parse(response.body);
+      // "Miami Rock Festival" matches all 3 keywords; the other active listing
+      // ("Miami Jazz VIP Concert") only matches "Miami", so it must rank lower.
+      expect(data.results[0].listing.title).toBe('Miami Rock Festival');
+      expect(data.results[0].score).toBeGreaterThan(data.results[1].score);
+    });
+
+    it('should paginate search results and report the total match count', async () => {
+      const firstPage = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami',
+          limit: 1,
+          offset: 0,
+        },
+      });
+
+      expect(firstPage.statusCode).toBe(200);
+      const firstPageData = JSON.parse(firstPage.body);
+      expect(firstPageData.results.length).toBe(1);
+      expect(firstPageData.pagination.total).toBe(2);
+
+      const secondPage = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami',
+          limit: 1,
+          offset: 1,
+        },
+      });
+
+      expect(secondPage.statusCode).toBe(200);
+      const secondPageData = JSON.parse(secondPage.body);
+      expect(secondPageData.results.length).toBe(1);
+      expect(secondPageData.pagination.total).toBe(2);
+      expect(secondPageData.results[0].listing.id).not.toBe(firstPageData.results[0].listing.id);
     });
   });
 
