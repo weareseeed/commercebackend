@@ -81,11 +81,11 @@ Every weekly item should ladder up to one of these long-horizon epics:
   trust configurable via a `TRUST_PROXY` env (default on) instead of a hardcoded
   `true`; document both. _DoD:_ tests green with and without `NODE_ENV`; env
   documented in README + `.env.example`. — [#147](https://github.com/weareseeed/commercebackend/pull/147)
-- [ ] **2. DB-level listing search.** Replace the in-memory 1000-row scan
+- [x] **2. DB-level listing search.** Replace the in-memory 1000-row scan
   (`search.service.ts`) with a PostgreSQL query (trigram/`ILIKE` or `tsvector`),
   keeping the pluggable provider interface and current scoring semantics; add
   the needed index via a Prisma migration. _DoD:_ existing search tests pass,
-  new tests for ranking/pagination, no full-table in-memory load.
+  new tests for ranking/pagination, no full-table in-memory load. — [#148](https://github.com/weareseeed/commercebackend/pull/148)
 - [ ] **3. MCP server.** Implement a minimal MCP server exposing search /
   listing / offer / checkout tools that map to the native API, matching
   `docs/api/mcp-tool-spec.md`. New workspace package + tests + usage docs; wire
