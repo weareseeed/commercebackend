@@ -9,3 +9,13 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+
+overrides:
+  brace-expansion@1: 1.1.16
+  brace-expansion@2: 2.1.2
+  esbuild: 0.28.1
+  find-my-way: 9.7.0
+  fast-uri@3: 3.1.4
+  fast-uri@4: 4.1.1
+  js-yaml: 4.3.0
+  minimatch@9: 9.0.9
