@@ -39,6 +39,8 @@
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
+    "security:dependabot:open": "node scripts/list-dependabot-alerts.mjs",
+    "security:dependabot:all": "node scripts/list-dependabot-alerts.mjs --all",
     "verify:vitest-guard": "node scripts/verify-vitest-guard.mjs",
     "test": "vitest run",
     "selftest": "pnpm --filter @commercebackend/api selftest",
