@@ -12,6 +12,7 @@ You are a coding agent contributing to CommerceBackend, an open-source agent-fir
 6. `apps/landing/public/llms.txt`
 7. `apps/landing/public/llms-full.txt`
 8. `apps/landing/public/.well-known/commercebackend.json`
+9. `apps/landing/public/.well-known/agents.json`
 
 ## Safety rules
 

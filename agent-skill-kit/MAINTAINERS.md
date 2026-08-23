@@ -22,6 +22,7 @@ The maintainer owns the accuracy of:
 - `apps/landing/public/llms.txt`
 - `apps/landing/public/llms-full.txt`
 - `apps/landing/public/.well-known/commercebackend.json`
+- `apps/landing/public/.well-known/agents.json`
 - agent-facing sections of `README.md` and `docs/agent-discovery.md`
 
 ## Update triggers
