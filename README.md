@@ -13,9 +13,10 @@ git clone https://github.com/weareseeed/commercebackend.git
 cd commercebackend
 pnpm install
 cp .env.example .env
-NODE_ENV=test pnpm test
-pnpm build
+pnpm verify
 ```
+
+`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test` in the documented maintainer order.
 
 ### Local sandbox quickstart
 
@@ -156,6 +157,9 @@ NODE_ENV=test pnpm test
 ### 5. Code Quality & Formatting
 
 ```bash
+# Run the standard local verification bundle
+pnpm verify
+
 # Check code style with ESLint
 pnpm lint
 
@@ -278,6 +282,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
 4. Verify local changes with:
 
 ```bash
+pnpm verify
 pnpm lint
 pnpm typecheck
 pnpm build
