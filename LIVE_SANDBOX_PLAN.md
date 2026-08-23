@@ -205,6 +205,8 @@ Before calling the sandbox live:
 - Low-inventory path behaves correctly.
 - `/health` returns healthy.
 - Public discovery files return 200.
+- `pnpm verify:discovery:strict` passes against the custom domain, with no stale
+  release markers or JSON fields.
 - Demo docs include all test-mode limitations.
 
 ## Observability
