@@ -63,11 +63,13 @@ We enforce strict validation rules across the API based on the authenticated age
 
 ---
 
-## 6. Temporary Vitest Exposure Guard
+## 6. Test Runner Exposure Boundaries & Guard
 
 - **Current posture**: The repository intentionally uses `vitest run` only. Vitest UI, Browser Mode, and network-exposed Vitest API server configurations are not part of the approved local or CI workflow.
-- **Guard script**: `pnpm verify:vitest-guard` scans repo configuration and CI files for markers such as `--ui`, `--browser`, `--api.host`, `@vitest/ui`, `@vitest/browser`, `allowWrite`, and `allowExec`.
-- **Why it exists**: Dependabot currently reports the open Vitest advisory tracked in the repository. Until the planned Vitest 4 migration lands and is human-reviewed, this guard reduces the risk of accidentally introducing the exposed UI/API surface into supported workflows.
+- **Known advisory**: As of 2026-06-04, GitHub Dependabot reports `GHSA-5xrq-8626-4rwp` / `CVE-2026-47429` against the current Vitest major in this workspace.
+- **Operational boundary**: Do not expose Vitest UI or Browser Mode to shared or untrusted networks for this repository while the tracked Vitest 4 migration is still pending.
+- **Local debugging only**: If a maintainer temporarily uses Vitest UI for debugging, keep it bound to localhost and do not treat it as a safe multi-user service.
+- **Guard script**: `pnpm verify:vitest-guard` scans repo configuration and CI files for markers such as `--ui`, `--browser`, `--api.host`, `@vitest/ui`, `@vitest/browser`, `allowWrite`, and `allowExec` to prevent accidental introduction of the exposed UI/API surface.
 
 ---
 

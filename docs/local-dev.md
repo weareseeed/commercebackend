@@ -90,6 +90,12 @@ pnpm verify:vitest-guard
 pnpm verify:discovery
 ```
 
+## Temporary Vitest security guidance
+
+GitHub Dependabot currently reports `GHSA-5xrq-8626-4rwp` / `CVE-2026-47429` against the Vitest major pinned in this workspace. The repository's standard verification commands use `vitest run`, which does not require exposing the Vitest UI API.
+
+Until the tracked Vitest 4 compatibility migration is complete, do not run Vitest UI or Browser Mode for this repo on a shared or network-exposed host, especially on Windows. If local UI inspection is ever necessary, keep it bound to localhost and treat it as a privileged debugging surface.
+
 ## Discovery asset verification
 
 Use the discovery verifier when you change agent-facing metadata or want to confirm the local/public discovery surfaces are aligned.
