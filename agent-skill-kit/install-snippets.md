@@ -47,5 +47,7 @@ Paste or attach:
 1. `agent-skill-kit/commercebackend-skill.md`
 2. the relevant role skill: buyer, seller, or coding agent
 3. `agent-skill-kit/evaluation-checklist.md`
+4. `https://www.commercebackend.com/llms.txt`
+5. `https://www.commercebackend.com/.well-known/commercebackend.json`
 
 Then ask the model to cite the exact file or endpoint it used for any technical claim.

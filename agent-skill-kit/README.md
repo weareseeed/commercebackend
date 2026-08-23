@@ -25,6 +25,13 @@ If your agent supports project instruction files, point it at these canonical so
 3. `agent-skill-kit/coding-agent.skill.md` for safe code changes.
 4. `agent-skill-kit/evaluation-checklist.md` before opening or reviewing a PR.
 
+Public discovery surfaces for agents and integrators:
+
+- `https://www.commercebackend.com/llms.txt`
+- `https://www.commercebackend.com/llms-full.txt`
+- `https://www.commercebackend.com/.well-known/commercebackend.json`
+- `https://www.commercebackend.com/.well-known/agents.json`
+
 For commerce roles:
 
 - buyer/procurement agents: `agent-skill-kit/buyer-agent.skill.md`
@@ -35,3 +42,11 @@ For commerce roles:
 The skill kit maintainer is **Joshua / Seeed AI Operations**, under Seeed LLC oversight. See [`MAINTAINERS.md`](./MAINTAINERS.md) for the update cadence and review rules.
 
 Keep this kit current whenever endpoints, schemas, supported features, prompts, examples, or safety boundaries change. Stale agent instructions are worse than no instructions: they make tiny robots confidently wrong. Nobody needs that.
+
+When a change touches discovery files or agent-facing docs, run:
+
+```bash
+pnpm verify:discovery:strict
+```
+
+This checks repository parity and public production parity for the canonical discovery assets before handoff.
