@@ -44,6 +44,8 @@ node examples/agent-buyer-flow/buyer-offer-flow.mjs
 
 If you want to drive the sandbox from Gemini or another Google AI Studio client, set `GOOGLE_API_KEY` in your shell or local agent project. CommerceBackend itself does not require Google AI Studio to run the API; the key is only for the external agent you point at the sandbox.
 
+`pnpm typecheck` and `pnpm test` now auto-build missing workspace artifacts on a clean clone before they run. That build also generates the Prisma client for the workspace, so the documented quickstart works without a manual pre-build step.
+
 Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
