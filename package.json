@@ -44,6 +44,7 @@
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
     "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
+    "dependabot:alerts:snapshot": "node scripts/dependabot-alert-snapshot.mjs",
     "verify:discovery": "node scripts/verify-discovery-assets.mjs",
     "verify:discovery:public": "node scripts/verify-discovery-assets.mjs --public",
     "verify:discovery:strict": "node scripts/verify-discovery-assets.mjs --public --strict-parity",
