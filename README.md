@@ -329,6 +329,7 @@ Detailed documentation on development guides, security, testing, and payment set
 
 - [Local Development Setup](https://github.com/weareseeed/commercebackend/blob/master/docs/local-dev.md)
 - [Testing Guidelines](https://github.com/weareseeed/commercebackend/blob/master/docs/testing.md)
+- [Nightly Maintenance Runbook](https://github.com/weareseeed/commercebackend/blob/master/docs/maintenance/nightly-maintenance.md)
 - [Security Auditing](https://github.com/weareseeed/commercebackend/blob/master/docs/security.md)
 - [Stripe & Webhook Integration](https://github.com/weareseeed/commercebackend/blob/master/docs/stripe.md)
 - [Native API Contract Specifications](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md)
