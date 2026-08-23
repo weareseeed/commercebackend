@@ -65,6 +65,14 @@ Use GitHub CLI so the nightly maintainer note is grounded in the actual failing 
 gh pr list --label dependencies --state open
 ```
 
+Snapshot open Dependabot alerts before you decide whether a dependency PR is the right fix path:
+
+```bash
+gh api repos/weareseeed/commercebackend/dependabot/alerts \
+  --paginate \
+  --jq '.[] | select(.state == "open") | "#\(.number)\t\(.dependency.package.name)\t\(.security_advisory.severity)\t\(.html_url)"'
+```
+
 Inspect the failing PR checks:
 
 ```bash
