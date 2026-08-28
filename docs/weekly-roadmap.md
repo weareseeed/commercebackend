@@ -86,11 +86,11 @@ Every weekly item should ladder up to one of these long-horizon epics:
   keeping the pluggable provider interface and current scoring semantics; add
   the needed index via a Prisma migration. _DoD:_ existing search tests pass,
   new tests for ranking/pagination, no full-table in-memory load. — [#148](https://github.com/weareseeed/commercebackend/pull/148)
-- [ ] **3. MCP server.** Implement a minimal MCP server exposing search /
+- [x] **3. MCP server.** Implement a minimal MCP server exposing search /
   listing / offer / checkout tools that map to the native API, matching
   `docs/api/mcp-tool-spec.md`. New workspace package + tests + usage docs; wire
   it into discovery assets. _DoD:_ an MCP client can list tools and run a search
-  against the sandbox.
+  against the sandbox. — [#151](https://github.com/weareseeed/commercebackend/pull/151)
 - [ ] **4. Operator visibility endpoint.** Add a read-only, operator-gated
   counts/metrics endpoint (agents, listings, offers, checkout intents, orders,
   query logs, `CHECKOUT_PERSISTENCE_FAILED` events) as groundwork for the v0.4
