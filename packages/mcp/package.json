@@ -1,0 +1,35 @@
+{
+  "name": "@commercebackend/mcp",
+  "version": "0.2.2",
+  "private": true,
+  "author": "Seeed LLC",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/weareseeed/commercebackend",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weareseeed/commercebackend.git"
+  },
+  "description": "Model Context Protocol (MCP) server exposing CommerceBackend's search, listing, offer, checkout, and order tools to MCP-aware AI agents.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "commercebackend-mcp": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@commercebackend/schemas": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^3.2.7"
+  }
+}

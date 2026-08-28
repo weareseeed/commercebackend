@@ -1,6 +1,6 @@
 # CommerceBackend MCP Tool Spec
 
-**Status:** implementation contract, not a shipped MCP server yet  
+**Status:** implemented in [`packages/mcp`](../../packages/mcp) (`@commercebackend/mcp`)  
 **Owner:** Seeed LLC  
 **Maintainer:** Joshua / Seeed AI Operations
 
@@ -150,10 +150,10 @@ Create a buyer offer for a listing.
 Maps to:
 
 ```text
-POST /v1/offers
+POST /v1/listings/:id/offers
 ```
 
-Input schema should mirror the API's create-offer schema.
+Input schema should mirror the API's create-offer schema (`CreateOfferSchema` from `@commercebackend/schemas`), alongside the target `listing_id`.
 
 ### `commercebackend_accept_offer`
 
@@ -218,10 +218,10 @@ Update fulfillment status as the seller agent.
 Maps to:
 
 ```text
-PATCH /v1/orders/:id/fulfillment
+POST /v1/orders/:id/fulfillment
 ```
 
-Input schema should mirror the API fulfillment update schema.
+Input schema should mirror the API fulfillment update schema (`UpdateFulfillmentSchema` from `@commercebackend/schemas`), alongside the target `order_id`.
 
 ---
 
@@ -254,10 +254,12 @@ Expose read-only resources for docs-oriented clients:
 
 ## Implementation checklist
 
-- [ ] Create `packages/mcp` or `apps/mcp` package.
-- [ ] Use the official MCP SDK unless there is a strong reason not to.
-- [ ] Reuse schemas from `@commercebackend/schemas` where possible.
-- [ ] Add dry-run tests for every mutating tool.
-- [ ] Add integration tests against the local API in `NODE_ENV=test`.
-- [ ] Add README install snippet for Claude Desktop / Cursor style MCP config.
-- [ ] Update `llms.txt`, `llms-full.txt`, `.well-known/commercebackend.json`, README, and Agent Skill Kit only after the MCP server is real.
+- [x] Create `packages/mcp` (`@commercebackend/mcp`).
+- [x] Use the official MCP SDK (`@modelcontextprotocol/sdk`).
+- [x] Reuse schemas from `@commercebackend/schemas` where possible.
+- [x] Add dry-run tests for every mutating tool.
+- [x] Add integration tests against a mocked API and a full MCP protocol round-trip (`Client` + `InMemoryTransport`) in `NODE_ENV=test`. A live-server integration test (spinning up `apps/api` against a real Postgres) is not included yet — tracked as follow-up.
+- [x] Add README install snippet for Claude Desktop / Cursor style MCP config.
+- [x] Update `llms.txt`, `llms-full.txt`, `.well-known/commercebackend.json`, README, and Agent Skill Kit now that the MCP server is real.
+
+Follow-up not included in the first slice: a live-server (real Postgres + Stripe test mode) end-to-end run, and publishing the package outside the monorepo.
