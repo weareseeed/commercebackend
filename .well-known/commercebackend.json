@@ -35,14 +35,14 @@
     "checkout_intents",
     "stripe_checkout_webhooks",
     "orders",
-    "fulfillment_status"
+    "fulfillment_status",
+    "mcp_server"
   ],
   "planned_capabilities": [
     "marketplace_connectors",
     "acp_adapters",
     "ucp_adapters",
-    "agent_flow_examples",
-    "mcp_server"
+    "agent_flow_examples"
   ],
   "docs_links": {
     "overview": "https://github.com/weareseeed/commercebackend/blob/master/docs/architecture/overview.md",
@@ -56,6 +56,7 @@
     "llms_full": "https://www.commercebackend.com/llms-full.txt",
     "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
     "skill_kit_maintainers": "https://github.com/weareseeed/commercebackend/blob/master/agent-skill-kit/MAINTAINERS.md",
+    "mcp_server": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
     "mcp_tool_spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
   },
   "agent_safety": {
@@ -88,6 +89,10 @@
     {
       "label": "Prompt pack",
       "url": "https://github.com/weareseeed/commercebackend/tree/master/prompts"
+    },
+    {
+      "label": "MCP server",
+      "url": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp"
     },
     {
       "label": "MCP tool spec",

@@ -31,6 +31,7 @@ CommerceBackend is owned by Seeed LLC, not Seeed Studio.
 
 - `apps/api`: Fastify API, routes, services, tests.
 - `apps/landing/public`: public discovery assets such as `llms.txt` and `.well-known/commercebackend.json`.
+- `packages/mcp`: MCP server (`@commercebackend/mcp`) exposing the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
 - `packages/schemas`: shared Zod schemas and TypeScript types.
 - `docs`: architecture, API, security, testing, and agent discovery docs.
 - `examples`: runnable examples.

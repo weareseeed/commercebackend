@@ -52,7 +52,7 @@ Agent entry points:
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 - Agent metadata: [`/.well-known/agents.json`](https://www.commercebackend.com/.well-known/agents.json)
-- MCP tool spec: [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
+- MCP server: [`packages/mcp`](https://github.com/weareseeed/commercebackend/tree/master/packages/mcp) (`@commercebackend/mcp`), spec at [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
 - Hosted sandbox quickstart: [`/docs/sandbox/`](https://www.commercebackend.com/docs/sandbox/)
 
 If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-discovery assets, run:

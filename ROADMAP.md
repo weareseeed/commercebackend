@@ -113,7 +113,7 @@ Planned work:
 
 - Fuller ACP adapter implementation.
 - Fuller UCP adapter implementation.
-- MCP server or adapter spike.
+- ~~MCP server or adapter spike.~~ Shipped ahead of schedule: `packages/mcp` (`@commercebackend/mcp`), see `docs/api/mcp-tool-spec.md`.
 - Agent skill kit refinements.
 - Claude/Copilot/Cursor/Windsurf adapter maintenance.
 - Runnable buyer-agent and seller-agent examples against the sandbox.

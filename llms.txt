@@ -11,6 +11,7 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Agent Skill Kit**: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - **Buyer Agent Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
+- **MCP Server**: https://github.com/weareseeed/commercebackend/tree/master/packages/mcp
 - **MCP Tool Spec**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
 - **License**: Apache-2.0
 - **Current Release Target**: v0.2.2
@@ -43,6 +44,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - **Submit and negotiate offers** through buyer/seller offer state transitions.
 - **Initiate Stripe-backed checkout intents** for listings or accepted offers.
 - **Track order and fulfillment status** after Stripe webhook confirmation.
+- **Use an MCP server** (`packages/mcp`, `@commercebackend/mcp`) to operate the above through Model Context Protocol tools instead of hand-written REST calls.
 
 ## Agent Safety Rules
 

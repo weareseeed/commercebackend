@@ -39,6 +39,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Full LLM context: https://www.commercebackend.com/llms-full.txt
 - Machine-readable metadata: https://www.commercebackend.com/.well-known/commercebackend.json
 - API contract: `docs/api/native-api.md`
+- MCP server: `packages/mcp/` (spec: `docs/api/mcp-tool-spec.md`)
 - Agent discovery guide: `docs/agent-discovery.md`
 - Buyer flow example: `examples/agent-buyer-flow/`
 - Prompt pack: `prompts/`
@@ -52,6 +53,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Stripe-backed checkout intents for listings or accepted offers.
 - Stripe webhook reconciliation for paid checkout sessions.
 - Buyer/seller order lookup and seller fulfillment status updates.
+- An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order tools over the Model Context Protocol; see `docs/api/mcp-tool-spec.md`.
 - ACP/UCP mapping stubs for future protocol adapters.
 
 ## Not supported in v0.2
