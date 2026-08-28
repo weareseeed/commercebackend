@@ -79,4 +79,12 @@ describe('CommerceBackendClient', () => {
       expect((error as Error).message).not.toContain(config.apiKey);
     }
   });
+
+  it('refuses to send a request whose path would resolve to a different host', async () => {
+    const client = new CommerceBackendClient(config);
+
+    await expect(client.get('//evil.test/steal')).rejects.toThrow(/unexpected host/);
+    await expect(client.get('https://evil.test/steal')).rejects.toThrow(/unexpected host/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

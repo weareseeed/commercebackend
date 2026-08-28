@@ -35,8 +35,24 @@ function describeApiError(status: number, body: unknown): string {
 export class CommerceBackendClient {
   constructor(private readonly config: RuntimeConfig) {}
 
+  /**
+   * Resolves `path` against the configured API origin and rejects anything
+   * that would resolve to a different host — every tool path is built from a
+   * fixed template plus encodeURIComponent'd segments, but this closes off
+   * `//host/...`-style tool-argument tricks that could otherwise redirect
+   * the request to an unintended server (CWE-918).
+   */
+  private buildUrl(path: string): string {
+    const base = new URL(this.config.apiUrl);
+    const url = new URL(path, base);
+    if (url.origin !== base.origin) {
+      throw new Error('Refusing to send a CommerceBackend API request to an unexpected host');
+    }
+    return url.toString();
+  }
+
   private async request<T>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<T> {
-    const url = `${this.config.apiUrl}${path}`;
+    const url = this.buildUrl(path);
     const response = await fetch(url, {
       method,
       headers: {
