@@ -20,6 +20,7 @@ Seeed LLC (https://www.seeed.us) is a Miami software engineering company focused
 - Machine-readable project metadata: https://www.commercebackend.com/.well-known/commercebackend.json
 - Agent metadata: https://www.commercebackend.com/.well-known/agents.json
 - Agent skill kit: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
+- MCP server: https://github.com/weareseeed/commercebackend/tree/master/packages/mcp
 - MCP tool spec: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
 
 ## Primary audience
@@ -41,6 +42,7 @@ CommerceBackend is for:
 6. Accept, reject, counter, cancel, and inspect offers with `/v1/offers` endpoints.
 7. Initiate Stripe Checkout sessions with `POST /v1/checkout-intents`.
 8. Read order and fulfillment status with `/v1/orders` endpoints.
+9. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
 
 ## Core API map
 
@@ -160,6 +162,10 @@ Use `agent-skill-kit/` for reusable instructions that can be copied into popular
 Tool-specific adapters live in `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/commercebackend.mdc`, and `.windsurf/rules/commercebackend.md`.
 
 Primary skill kit maintainer: Joshua / Seeed AI Operations, under Seeed LLC oversight.
+
+## MCP server
+
+`packages/mcp` (`@commercebackend/mcp`) is a Model Context Protocol server that exposes the native API as MCP tools (search, listing, offer, checkout-intent, and order operations) for MCP-aware AI agents. It is a thin, schema-validated adapter over the same HTTP API described above; it adds no capabilities beyond it. See `docs/api/mcp-tool-spec.md` for the full tool list and `packages/mcp/README.md` for setup.
 
 ## Prompt pack
 

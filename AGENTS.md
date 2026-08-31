@@ -26,6 +26,7 @@ Use these canonical public resources before inferring project behavior:
 - `apps/api` — Fastify API for agents, listings, offers, checkout intents, webhooks, orders, and fulfillment.
 - `apps/landing` — public landing site and deployable discovery assets.
 - `packages/db` — Prisma schema, migrations, and database helpers.
+- `packages/mcp` — MCP server (`@commercebackend/mcp`) exposing the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
 - `packages/protocol` — ACP/UCP protocol mapping stubs and shared protocol types.
 - `docs` — public technical documentation.
 

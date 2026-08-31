@@ -17,6 +17,7 @@
     "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
     "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
     "buyer_agent_example": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
+    "mcp_server": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
     "mcp_tool_spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
   },
   "agent_roles": [
@@ -45,7 +46,8 @@
     "checkout_intents",
     "stripe_checkout_webhook_confirmation",
     "orders",
-    "fulfillment_status"
+    "fulfillment_status",
+    "mcp_server"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",
@@ -57,10 +59,11 @@
     "shipping_labels",
     "merchant_connectors"
   ],
-  "planned_agent_interfaces": [
+  "shipped_agent_interfaces": [
     {
       "name": "MCP server",
-      "status": "specified_not_shipped",
+      "status": "shipped",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
     }
   ],
