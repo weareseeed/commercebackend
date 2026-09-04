@@ -11,6 +11,7 @@ const mockDb = {
   purchasePolicies: [] as any[],
   offers: [] as any[],
   offerHistories: [] as any[],
+  criticalEvents: [] as any[],
   reset() {
     this.agents = [];
     this.listings = [];
@@ -20,6 +21,7 @@ const mockDb = {
     this.purchasePolicies = [];
     this.offers = [];
     this.offerHistories = [];
+    this.criticalEvents = [];
   },
 };
 
@@ -51,6 +53,7 @@ vi.mock('@commercebackend/db', () => {
       findUnique: vi.fn(async ({ where }) => {
         return mockDb.agents.find((a) => a.id === where.id) || null;
       }),
+      count: vi.fn(async () => mockDb.agents.length),
       deleteMany: vi.fn(),
     },
     listing: {
@@ -125,6 +128,7 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(intent, data);
         return intent;
       }),
+      count: vi.fn(async () => mockDb.checkoutIntents.length),
       deleteMany: vi.fn(),
     },
     order: {
@@ -192,6 +196,7 @@ vi.mock('@commercebackend/db', () => {
         mockDb.queryLogs.push(log);
         return log;
       }),
+      count: vi.fn(async () => mockDb.queryLogs.length),
       deleteMany: vi.fn(),
     },
     purchasePolicy: {
@@ -274,6 +279,7 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(offer, data);
         return offer;
       }),
+      count: vi.fn(async () => mockDb.offers.length),
       deleteMany: vi.fn(),
     },
     offerHistory: {
@@ -285,6 +291,24 @@ vi.mock('@commercebackend/db', () => {
         };
         mockDb.offerHistories.push(newHistory);
         return newHistory;
+      }),
+      deleteMany: vi.fn(),
+    },
+    criticalEvent: {
+      create: vi.fn(async ({ data }) => {
+        const event = {
+          id: `evt_${Math.random().toString(36).substring(2, 11)}`,
+          createdAt: new Date(),
+          ...data,
+        };
+        mockDb.criticalEvents.push(event);
+        return event;
+      }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.criticalEvents.filter((e) => {
+          if (where?.code && e.code !== where.code) return false;
+          return true;
+        }).length;
       }),
       deleteMany: vi.fn(),
     },
@@ -2652,6 +2676,10 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(resCheckout.statusCode).toBe(500);
       expect(resCheckout.body).toContain('CHECKOUT_PERSISTENCE_FAILED');
 
+      const criticalEvent = mockDb.criticalEvents.find((e) => e.code === 'CHECKOUT_PERSISTENCE_FAILED');
+      expect(criticalEvent).toBeDefined();
+      expect(criticalEvent.payload.checkoutIntentId).toBeDefined();
+
       const dbOffer = mockDb.offers.find((o) => o.id === offerId);
       expect(dbOffer.status).toBe('checkout_pending');
 
@@ -2672,6 +2700,79 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       expect(resCheckout2.statusCode).toBe(400);
       expect(JSON.parse(resCheckout2.body).error.code).toBe('OFFER_ALREADY_CHECKED_OUT');
+    });
+  });
+
+  describe('Operator Metrics API', () => {
+    it('rejects requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+      });
+      expect(res.statusCode).toBe(401);
+
+      const resWrongKey = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: { 'x-operator-key': 'not_the_real_key' },
+      });
+      expect(resWrongKey.statusCode).toBe(401);
+    });
+
+    it('returns live counts for an authenticated operator', async () => {
+      mockDb.agents.push({ id: 'metrics_agent_1', status: 'active' });
+      mockDb.listings.push({ id: 'metrics_listing_1' });
+      mockDb.offers.push({ id: 'metrics_offer_1' });
+      mockDb.checkoutIntents.push({ id: 'metrics_intent_1' });
+      mockDb.orders.push({ id: 'metrics_order_1' });
+      mockDb.queryLogs.push({ id: 'metrics_log_1' });
+      mockDb.criticalEvents.push({
+        id: 'metrics_evt_1',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: {},
+        createdAt: new Date(),
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.counts).toEqual({
+        agents: 1,
+        listings: 1,
+        offers: 1,
+        checkoutIntents: 1,
+        orders: 1,
+        queryLogs: 1,
+      });
+      expect(body.criticalEvents.total).toBe(1);
+      expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(1);
+      expect(typeof body.generatedAt).toBe('string');
+    });
+
+    it('returns zero counts on an empty database', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.counts).toEqual({
+        agents: 0,
+        listings: 0,
+        offers: 0,
+        checkoutIntents: 0,
+        orders: 0,
+        queryLogs: 0,
+      });
+      expect(body.criticalEvents.total).toBe(0);
+      expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
     });
   });
 });

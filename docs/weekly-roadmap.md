@@ -91,10 +91,10 @@ Every weekly item should ladder up to one of these long-horizon epics:
   `docs/api/mcp-tool-spec.md`. New workspace package + tests + usage docs; wire
   it into discovery assets. _DoD:_ an MCP client can list tools and run a search
   against the sandbox. — [#151](https://github.com/weareseeed/commercebackend/pull/151)
-- [ ] **4. Operator visibility endpoint.** Add a read-only, operator-gated
+- [x] **4. Operator visibility endpoint.** Add a read-only, operator-gated
   counts/metrics endpoint (agents, listings, offers, checkout intents, orders,
   query logs, `CHECKOUT_PERSISTENCE_FAILED` events) as groundwork for the v0.4
-  dashboard. _DoD:_ endpoint returns live counts; operator-auth enforced; tests.
+  dashboard. _DoD:_ endpoint returns live counts; operator-auth enforced; tests. — [#153](https://github.com/weareseeed/commercebackend/pull/153)
 - [ ] **5. Per-record salt for API-key hashing.** Add a per-key salt column +
   migration; keep verifying existing keys (backward compatible). _DoD:_ old and
   new keys both authenticate; tests cover both paths. (Security, non-Stripe.)
