@@ -109,16 +109,30 @@ export class CheckoutService {
         },
       });
     } catch (err: any) {
+      const criticalEventPayload = {
+        stripeSessionId: stripeSession.id,
+        checkoutIntentId: checkoutIntent.id,
+        offerId: checkoutIntent.offerId || null,
+        error: err.message,
+      };
+
       console.error(
         JSON.stringify({
           level: 'critical',
           code: 'CHECKOUT_PERSISTENCE_FAILED',
-          stripeSessionId: stripeSession.id,
-          checkoutIntentId: checkoutIntent.id,
-          offerId: checkoutIntent.offerId || null,
-          error: err.message,
+          ...criticalEventPayload,
         })
       );
+
+      // Best-effort persisted audit trail for the operator metrics endpoint.
+      // Never let a logging failure mask the original persistence error below.
+      try {
+        await prisma.criticalEvent.create({
+          data: { code: 'CHECKOUT_PERSISTENCE_FAILED', payload: criticalEventPayload },
+        });
+      } catch (auditErr: any) {
+        console.error(`Failed to persist CHECKOUT_PERSISTENCE_FAILED critical event: ${auditErr.message}`);
+      }
 
       try {
         await prisma.checkoutIntent.update({
