@@ -588,6 +588,45 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 
 ---
 
+## Operator Endpoints
+
+These endpoints are for Seeed LLC operators, not buyer/seller agents. They
+require the `X-Operator-Key` header (see `OPERATOR_API_KEY`) instead of an
+agent bearer token.
+
+### 20. Operator Metrics
+- **GET** `/v1/operator/metrics` *(Requires `X-Operator-Key`)*
+- Read-only live counts across core resources, plus persisted critical
+  operational events (currently `CHECKOUT_PERSISTENCE_FAILED`). Groundwork
+  for the planned v0.4 read-only operator dashboard.
+- **Response (200 OK):**
+  ```json
+  {
+    "generatedAt": "2026-09-04T00:00:00.000Z",
+    "counts": {
+      "agents": 12,
+      "listings": 40,
+      "offers": 8,
+      "checkoutIntents": 22,
+      "orders": 15,
+      "queryLogs": 133
+    },
+    "criticalEvents": {
+      "total": 0,
+      "byCode": {
+        "CHECKOUT_PERSISTENCE_FAILED": 0
+      }
+    }
+  }
+  ```
+- **Example Curl**:
+  ```bash
+  curl http://localhost:4000/v1/operator/metrics \
+    -H "X-Operator-Key: $OPERATOR_API_KEY"
+  ```
+
+---
+
 CommerceBackend is owned and maintained by Seeed LLC.
 
 Seeed LLC is unrelated to Seeed Studio.

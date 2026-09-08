@@ -257,3 +257,16 @@ model OfferHistory {
   @@index([offerId])
 }
 
+// Persisted record of critical operational events (e.g. CHECKOUT_PERSISTENCE_FAILED)
+// that today are only structured console logs. Written best-effort so a logging
+// failure never masks or replaces the original error path.
+model CriticalEvent {
+  id        String   @id @default(cuid())
+  code      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([createdAt])
+}
+

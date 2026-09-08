@@ -15,6 +15,7 @@ import { orderRoutes } from './routes/orders';
 import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
 import { sandboxRoutes } from './routes/sandbox';
+import { operatorRoutes } from './routes/operator';
 
 import crypto from 'crypto';
 
@@ -108,6 +109,7 @@ export function buildApp() {
   app.register(offersRoutes);
   app.register(purchasePolicyRoutes);
   app.register(sandboxRoutes);
+  app.register(operatorRoutes);
 
   return app;
 }
