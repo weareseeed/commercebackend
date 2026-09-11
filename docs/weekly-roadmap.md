@@ -101,7 +101,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
 - [ ] **6. Real ACP adapter.** Turn the `protocol-acp` stub into a working
   inbound/outbound mapping with an API entry point; document supported subset.
   _DoD:_ round-trip mapping tests; clearly-labeled unsupported fields.
-- [x] **7. Real UCP adapter.** Same treatment for `protocol-ucp`. — [#PR_PLACEHOLDER](https://github.com/weareseeed/commercebackend/pull/PR_PLACEHOLDER)
+- [x] **7. Real UCP adapter.** Same treatment for `protocol-ucp`. — [#158](https://github.com/weareseeed/commercebackend/pull/158)
 - [ ] **8. Connector abstraction + Shopify import spike (read-only).** Canonical
   imported-catalog model + a read-only Shopify catalog import that maps into
   agent-facing listings, with a sync log and failure states. May span two
