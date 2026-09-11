@@ -14,7 +14,7 @@ export const CreateListingSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().default(''),
   type: ListingTypeSchema,
-  priceAmount: z.number().int().positive('Price must be a positive integer in cents'),
+  priceAmount: z.number().int().min(0, 'Price must be a non-negative integer in cents'),
   currency: z.string().default('USD'),
   quantityAvailable: z.number().int().nonnegative('Quantity available cannot be negative'),
   attributes: z.record(z.any()).default({}),
@@ -25,7 +25,7 @@ export const UpdateListingSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   status: ListingStatusSchema.optional(),
-  priceAmount: z.number().int().positive('Price must be a positive integer in cents').optional(),
+  priceAmount: z.number().int().min(0, 'Price must be a non-negative integer in cents').optional(),
   quantityAvailable: z
     .number()
     .int()
@@ -69,7 +69,8 @@ export const SearchFiltersSchema = z.object({
 export const SearchListingsRequestSchema = z.object({
   query: z.string().default(''),
   filters: SearchFiltersSchema.default({ status: 'active' }),
-  limit: z.number().int().positive().default(10),
+  limit: z.number().int().min(1).max(100).default(20),
+  offset: z.number().int().nonnegative().default(0),
 });
 
 export const SearchListingResultSchema = z.object({

@@ -1,0 +1,58 @@
+name: Maintenance task
+description: Track safe nightly maintenance, dependency follow-up, or release-hardening work.
+title: "[Maintenance]: "
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for factual maintenance tasks.
+
+        Examples:
+        - dependency follow-up after a failed Dependabot PR
+        - CI reliability improvements
+        - discovery asset parity or deployment verification
+        - docs or agent-onboarding cleanup
+  - type: textarea
+    id: task
+    attributes:
+      label: Task summary
+      placeholder: Describe the maintenance task.
+    validations:
+      required: true
+  - type: dropdown
+    id: maintenance_type
+    attributes:
+      label: Maintenance type
+      options:
+        - Dependency follow-up
+        - CI / workflow reliability
+        - Agent discovery / static assets
+        - Docs / onboarding
+        - Security hardening
+        - Release verification
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Current evidence
+      description: Link the PR, failing log, deployed URL, or command output that shows why this task exists.
+      placeholder: PR #123 is failing because...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_work
+    attributes:
+      label: Proposed work
+      placeholder: The smallest safe next step is...
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Blockers or approval boundaries
+      description: Note any auth gaps, protected-branch review needs, or human approvals required.
+      placeholder: Requires Rowland/Maria approval before...

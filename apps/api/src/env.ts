@@ -2,17 +2,97 @@ import { z } from 'zod';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load env from the monorepo root
+// Load env from the monorepo root or current directory
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// True for any vitest run, even if NODE_ENV hasn't been explicitly set to
+// 'test' (e.g. a bare `pnpm test` in a shell that already exports another
+// NODE_ENV). Vitest always sets VITEST='true', so checking both keeps
+// test-only gates (rate limiting, verbose logging) off regardless of how
+// NODE_ENV landed.
+export const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string(),
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  DATABASE_URL: isTest ? z.string().default('postgresql://mock') : z.string(),
+  STRIPE_SECRET_KEY: isTest ? z.string().default('sk_test_mock') : z.string(),
+  STRIPE_WEBHOOK_SECRET: isTest ? z.string().default('whsec_mock') : z.string(),
   API_BASE_URL: z.string().url().default('http://localhost:4000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
+  BYPASS_STRIPE_SIGNATURE: z.string().optional(),
+  OPERATOR_API_KEY: isTest ? z.string().default('operator_test_key') : z.string().optional(),
+  SANDBOX_MODE: z.coerce.boolean().default(false),
+  // Comma-separated allowlist of origins, or '*' for any (default). Only
+  // affects browser callers; agent/server-to-server clients ignore CORS.
+  CORS_ORIGIN: z.string().default('*'),
+  // Per-IP request ceiling applied globally (outside tests). Sensitive routes
+  // may set their own tighter limits.
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+  // Trust X-Forwarded-For so request.ip (and therefore per-IP rate limiting)
+  // reflects the real client behind a hosting proxy (Railway/Cloud Run/etc.).
+  // Default on; set to false only for a deployment with no reverse proxy in
+  // front, where trusting XFF would let a client spoof its own IP.
+  TRUST_PROXY: z.coerce.boolean().default(true),
 });
 
-export const env = EnvSchema.parse(process.env);
+// Run raw parse first
+const parsed = EnvSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error('❌ Environment validation failed:', parsed.error.format());
+  process.exit(1);
+}
+
+const isPlaceholder = (val: string) => {
+  const v = val.toLowerCase();
+  return (
+    v.includes('placeholder') ||
+    v.includes('mock') ||
+    v.includes('your_') ||
+    v.includes('sk_test_xxx') ||
+    v.includes('whsec_xxx') ||
+    v === 'sk_test_' ||
+    v === 'whsec_'
+  );
+};
+
+const isStripeLiveKey = (val: string) => val.toLowerCase().startsWith('sk_live_');
+
+const validatedEnv = parsed.data;
+
+if (!isTest && validatedEnv.NODE_ENV === 'production') {
+  const errors: string[] = [];
+  if (isPlaceholder(validatedEnv.STRIPE_SECRET_KEY)) {
+    errors.push('STRIPE_SECRET_KEY is a placeholder or mock value');
+  }
+  if (isPlaceholder(validatedEnv.STRIPE_WEBHOOK_SECRET)) {
+    errors.push('STRIPE_WEBHOOK_SECRET is a placeholder or mock value');
+  }
+  if (validatedEnv.BYPASS_STRIPE_SIGNATURE === 'true') {
+    errors.push('BYPASS_STRIPE_SIGNATURE cannot be true in production');
+  }
+  if (!validatedEnv.OPERATOR_API_KEY || isPlaceholder(validatedEnv.OPERATOR_API_KEY)) {
+    errors.push('OPERATOR_API_KEY is required in production and cannot be a placeholder');
+  }
+  if (validatedEnv.SANDBOX_MODE && isStripeLiveKey(validatedEnv.STRIPE_SECRET_KEY)) {
+    errors.push('SANDBOX_MODE requires Stripe test keys; live Stripe secret keys are not allowed');
+  }
+  if (errors.length > 0) {
+    console.error('❌ Production startup failed due to invalid Stripe configuration:');
+    errors.forEach((err) => console.error(`  - ${err}`));
+    process.exit(1);
+  }
+} else if (!isTest && validatedEnv.NODE_ENV === 'development') {
+  if (isPlaceholder(validatedEnv.STRIPE_SECRET_KEY)) {
+    console.warn('⚠️ WARNING: STRIPE_SECRET_KEY contains a placeholder or mock value.');
+  }
+  if (isPlaceholder(validatedEnv.STRIPE_WEBHOOK_SECRET)) {
+    console.warn('⚠️ WARNING: STRIPE_WEBHOOK_SECRET contains a placeholder or mock value.');
+  }
+}
+
+export const env = validatedEnv;
 export type Env = z.infer<typeof EnvSchema>;

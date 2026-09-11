@@ -1,0 +1,57 @@
+name: Feature request
+description: Propose a small, concrete CommerceBackend improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for scoped product, docs, or DX improvements.
+
+        Guardrails:
+        - Do not present planned capabilities as already shipped.
+        - Major money-path migrations (Stripe, Prisma, Fastify, Zod, TypeScript) need a migration plan issue, not a drive-by request.
+        - Keep CommerceBackend clearly separate from Rogue Commerce and WTZON.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user, maintainer, or agent problem exists today?
+      placeholder: The current workflow breaks down because...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful change.
+      placeholder: Add / change / document...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: What other approaches did you consider?
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Docs / discovery metadata
+        - Developer experience / tooling
+        - API behavior
+        - Example / prompt / skill kit
+        - CI / repository maintenance
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success criteria
+      description: How should maintainers verify this is done?
+      placeholder: Exact commands, URLs, or outputs to check.
+    validations:
+      required: true

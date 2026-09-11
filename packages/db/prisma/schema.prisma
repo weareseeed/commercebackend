@@ -12,7 +12,13 @@ model Agent {
   name        String
   type        AgentType
   ownerEmail  String
-  apiKeyHash  String
+  apiKeyHash  String   @unique
+  // Per-record salt + public lookup id for API keys issued after the
+  // per-record-salt migration. Null on agents whose key predates it; those
+  // keep authenticating via the legacy shared-salt `apiKeyHash` lookup.
+  // See docs/security.md and packages/db/src/auth-utils.ts.
+  apiKeySalt  String?
+  apiKeyId    String?  @unique
   status      AgentStatus @default(active)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -22,6 +28,7 @@ model Agent {
   ordersAsBuyer Order[] @relation("BuyerOrders")
   ordersAsSeller Order[] @relation("SellerOrders")
   queryLogs AgentQueryLog[]
+  purchasePolicies PurchasePolicy[] @relation("BuyerPurchasePolicies")
 }
 
 enum AgentType {
@@ -52,6 +59,10 @@ model Listing {
   updatedAt               DateTime @updatedAt
   checkoutIntents CheckoutIntent[]
   orders          Order[]
+  offers          Offer[]
+
+  @@index([sellerAgentId])
+  @@index([status])
 }
 
 enum ListingType {
@@ -82,20 +93,68 @@ model CheckoutIntent {
   amountTotal             Int
   currency                String
   status                  CheckoutIntentStatus @default(open)
-  stripeCheckoutSessionId String?
+  stripeCheckoutSessionId String? @unique
   stripePaymentIntentId   String?
   checkoutUrl             String?
+  successUrl              String?
+  cancelUrl               String?
+  purchasePolicyId        String?
+  purchasePolicy          PurchasePolicy? @relation(fields: [purchasePolicyId], references: [id], onDelete: SetNull)
+  policyDecision          PurchasePolicyDecision?
+  approvalRequestedAt     DateTime?
+  humanApprovedAt         DateTime?
+  humanRejectedAt         DateTime?
+  approvalRejectionReason String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   order Order?
+  offerId                 String?
+  offer                   Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  @@index([stripeCheckoutSessionId])
+  @@index([buyerAgentId])
+  @@index([sellerAgentId])
+  @@index([offerId])
+  @@index([purchasePolicyId])
 }
 
 enum CheckoutIntentStatus {
   open
+  human_approval_required
+  human_approved
+  human_rejected
   paid
   expired
   cancelled
   failed
+  payment_inventory_conflict
+}
+
+
+enum PurchasePolicyDecision {
+  policy_approved
+  human_approval_required
+  no_policy
+}
+
+model PurchasePolicy {
+  id                              String   @id @default(cuid())
+  buyerAgentId                    String
+  buyerAgent                      Agent    @relation("BuyerPurchasePolicies", fields: [buyerAgentId], references: [id], onDelete: Cascade)
+  name                            String
+  enabled                         Boolean  @default(true)
+  maxAutoApproveAmount            Int
+  currency                        String   @default("USD")
+  allowedListingTypes             String[] @default([])
+  allowedSellerAgentIds           String[] @default([])
+  requireHumanApprovalAboveAmount Int
+  requireHumanApprovalForOffers   Boolean  @default(false)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+  checkoutIntents                 CheckoutIntent[]
+
+  @@index([buyerAgentId])
+  @@index([enabled])
 }
 
 model Order {
@@ -116,6 +175,9 @@ model Order {
   fulfillmentNote   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([buyerAgentId])
+  @@index([sellerAgentId])
 }
 
 enum PaymentStatus {
@@ -139,4 +201,78 @@ model AgentQueryLog {
   filters     Json
   resultCount Int
   createdAt   DateTime @default(now())
+
+  @@index([agentId])
 }
+
+enum OfferStatus {
+  pending
+  accepted
+  checkout_pending
+  rejected
+  countered
+  expired
+  cancelled
+}
+
+model Offer {
+  id                  String           @id @default(cuid())
+  listingId           String
+  listing             Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerAgentId        String
+  priceAmount         Int              // Offered price in cents
+  quantity            Int              // Offered quantity
+  status              OfferStatus      @default(pending)
+  expiresAt           DateTime
+  
+  // Counter Offer Terms
+  counterPriceAmount  Int?             // Counter offered price in cents
+  counterQuantity     Int?             // Counter offered quantity
+  counterExpiresAt    DateTime?        // Expiration for the counter offer
+  
+  // Frozen Accepted Terms
+  acceptedPriceAmount Int?
+  acceptedQuantity    Int?
+  acceptedAt          DateTime?
+  acceptedByAgentId   String?
+  
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  
+  // Relations
+  checkoutIntents     CheckoutIntent[]
+  history             OfferHistory[]
+
+  @@index([listingId])
+  @@index([buyerAgentId])
+  @@index([status])
+}
+
+model OfferHistory {
+  id         String      @id @default(cuid())
+  offerId    String
+  offer      Offer       @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  fromStatus OfferStatus?
+  toStatus   OfferStatus
+  event      String      // e.g. "OFFER_CREATED", "OFFER_ACCEPTED", "OFFER_COUNTERED", "COUNTER_ACCEPTED", "OFFER_REJECTED", "OFFER_EXPIRED", "OFFER_CANCELLED"
+  actorId    String      // The agentId performing the transition
+  note       String?
+  metadata   Json?       // Term snapshots and reasons (JSON object)
+  createdAt  DateTime    @default(now())
+
+  @@index([offerId])
+}
+
+// Persisted record of critical operational events (e.g. CHECKOUT_PERSISTENCE_FAILED)
+// that today are only structured console logs. Written best-effort so a logging
+// failure never masks or replaces the original error path.
+model CriticalEvent {
+  id        String   @id @default(cuid())
+  code      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([createdAt])
+}
+

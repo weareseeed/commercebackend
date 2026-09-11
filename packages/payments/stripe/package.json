@@ -1,11 +1,19 @@
 {
   "name": "@commercebackend/payments-stripe",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "private": true,
+  "author": "Seeed LLC",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/weareseeed/commercebackend",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weareseeed/commercebackend.git"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "stripe": "^14.14.0"

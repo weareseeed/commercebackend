@@ -2,21 +2,36 @@ import { FastifyInstance } from 'fastify';
 import { SearchListingsRequestSchema } from '@commercebackend/schemas';
 import { SearchService } from '../services/search.service';
 import { authenticateAgent } from '../plugins/auth';
+import { isTest } from '../env';
 
 export async function searchRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', authenticateAgent);
 
-  fastify.post('/v1/search', async (request, reply) => {
+  // Search runs an in-memory scan/scoring pass, so it is comparatively
+  // expensive; cap it per IP. Disabled under test for a deterministic suite.
+  fastify.post('/v1/search', {
+    config: {
+      rateLimit: isTest ? false : { max: 60, timeWindow: '1 minute' },
+    },
+  }, async (request, reply) => {
     const agent = request.agent!;
     const input = SearchListingsRequestSchema.parse(request.body);
 
-    const results = await SearchService.searchListings(
+    const { results, total } = await SearchService.searchListings(
       agent.id,
       input.query,
       input.filters,
-      input.limit
+      input.limit,
+      input.offset
     );
 
-    return { results };
+    return {
+      results,
+      pagination: {
+        limit: input.limit,
+        offset: input.offset,
+        total,
+      },
+    };
   });
 }

@@ -4,7 +4,8 @@ import { AppError } from '../plugins/error-handler';
 export class OrdersService {
   static async handleSuccessfulPayment(
     checkoutIntentId: string,
-    stripePaymentIntentId: string | null
+    stripePaymentIntentId: string | null,
+    stripeCheckoutSessionId: string | null
   ) {
     return await prisma.$transaction(async (tx) => {
       const intent = await tx.checkoutIntent.findUnique({
@@ -12,16 +13,85 @@ export class OrdersService {
       });
 
       if (!intent) {
-        throw new Error(`CheckoutIntent ${checkoutIntentId} not found`);
+        throw new AppError('CHECKOUT_INTENT_NOT_FOUND', `CheckoutIntent ${checkoutIntentId} not found`, 404);
       }
 
       if (intent.status === 'paid') {
         const existingOrder = await tx.order.findUnique({
           where: { checkoutIntentId },
         });
-        return existingOrder;
+        return existingOrder || null;
       }
 
+      if (intent.status !== 'open' && intent.status !== 'human_approved') {
+        return null;
+      }
+
+      if (
+        stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId !== stripeCheckoutSessionId
+      ) {
+        return null;
+      }
+
+      // Lock the Listing row
+      const listings = await tx.$queryRawUnsafe<any[]>(
+        'SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE',
+        intent.listingId
+      );
+
+      const listing = listings?.[0];
+      if (!listing) {
+        throw new AppError('LISTING_NOT_FOUND', `Listing ${intent.listingId} not found`, 404);
+      }
+
+      // Check if stock is available
+      if (listing.quantityAvailable < intent.quantity) {
+        // Handle payment_inventory_conflict operational state:
+        // Do not create order, do not decrement inventory.
+        // TODO: v0.1 requires manual review / refund for this state.
+        await tx.checkoutIntent.update({
+          where: { id: checkoutIntentId },
+          data: {
+            status: 'payment_inventory_conflict',
+            stripePaymentIntentId,
+          },
+        });
+
+        if (intent.offerId) {
+          await tx.offer.update({
+            where: { id: intent.offerId },
+            data: { status: 'cancelled' },
+          });
+
+          await tx.offerHistory.create({
+            data: {
+              offerId: intent.offerId,
+              fromStatus: 'checkout_pending',
+              toStatus: 'cancelled',
+              event: 'OFFER_CANCELLED_INVENTORY_CONFLICT',
+              actorId: 'system',
+              note: 'Offer cancelled due to concurrent payment inventory conflict.',
+            },
+          });
+        }
+        return null;
+      }
+
+      // Decrement inventory
+      const newQty = listing.quantityAvailable - intent.quantity;
+      const newStatus = newQty === 0 ? 'sold_out' : listing.status;
+
+      await tx.listing.update({
+        where: { id: intent.listingId },
+        data: {
+          quantityAvailable: newQty,
+          status: newStatus,
+        },
+      });
+
+      // Update CheckoutIntent to paid
       await tx.checkoutIntent.update({
         where: { id: checkoutIntentId },
         data: {
@@ -30,6 +100,7 @@ export class OrdersService {
         },
       });
 
+      // Create Order
       const order = await tx.order.create({
         data: {
           checkoutIntentId,
@@ -44,47 +115,92 @@ export class OrdersService {
         },
       });
 
-      const listing = await tx.listing.findUnique({
-        where: { id: intent.listingId },
-      });
-
-      if (!listing) {
-        throw new Error(`Listing ${intent.listingId} not found`);
+      if (intent.offerId) {
+        await tx.offerHistory.create({
+          data: {
+            offerId: intent.offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'checkout_pending',
+            event: 'OFFER_CHECKOUT_COMPLETED',
+            actorId: 'system',
+            note: 'Stripe payment checkout completed successfully.',
+            metadata: {
+              checkoutIntentId,
+              orderId: order.id,
+              stripePaymentIntentId,
+            },
+          },
+        });
       }
-
-      const newQty = Math.max(0, listing.quantityAvailable - intent.quantity);
-      const newStatus = newQty === 0 ? 'sold_out' : listing.status;
-
-      await tx.listing.update({
-        where: { id: intent.listingId },
-        data: {
-          quantityAvailable: newQty,
-          status: newStatus,
-        },
-      });
 
       return order;
     });
   }
 
-  static async getOrders(agentId: string, role?: 'buyer' | 'seller') {
-    if (role === 'buyer') {
-      return prisma.order.findMany({
-        where: { buyerAgentId: agentId },
+  static async handleExpiredPayment(checkoutIntentId: string, stripeCheckoutSessionId: string | null = null) {
+    return await prisma.$transaction(async (tx) => {
+      const intent = await tx.checkoutIntent.findUnique({
+        where: { id: checkoutIntentId },
       });
-    }
 
-    if (role === 'seller') {
-      return prisma.order.findMany({
-        where: { sellerAgentId: agentId },
+      if (!intent || (intent.status !== 'open' && intent.status !== 'human_approved')) {
+        return;
+      }
+
+      if (
+        stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId &&
+        intent.stripeCheckoutSessionId !== stripeCheckoutSessionId
+      ) {
+        return;
+      }
+
+      await tx.checkoutIntent.update({
+        where: { id: checkoutIntentId },
+        data: { status: 'expired' },
       });
-    }
 
-    return prisma.order.findMany({
-      where: {
-        OR: [{ buyerAgentId: agentId }, { sellerAgentId: agentId }],
-      },
+      if (intent.offerId) {
+        await tx.offer.update({
+          where: { id: intent.offerId },
+          data: { status: 'accepted' },
+        });
+
+        await tx.offerHistory.create({
+          data: {
+            offerId: intent.offerId,
+            fromStatus: 'checkout_pending',
+            toStatus: 'accepted',
+            event: 'OFFER_REVERTED_CHECKOUT_EXPIRED',
+            actorId: 'system',
+            note: 'Offer reverted to accepted because Stripe checkout session expired.',
+          },
+        });
+      }
     });
+  }
+
+  static async getOrders(agentId: string, role?: 'buyer' | 'seller', limit = 20, offset = 0) {
+    const where: any = {};
+    if (role === 'buyer') {
+      where.buyerAgentId = agentId;
+    } else if (role === 'seller') {
+      where.sellerAgentId = agentId;
+    } else {
+      where.OR = [{ buyerAgentId: agentId }, { sellerAgentId: agentId }];
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return { orders, total };
   }
 
   static async getOrderDetails(id: string, agentId: string) {

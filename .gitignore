@@ -21,3 +21,6 @@ Thumbs.db
 /npm-debug.log*
 /yarn-error.log*
 .eslintcache
+
+# Local seed output containing generated demo API keys
+.commercebackend-seed-credentials.json

@@ -22,11 +22,32 @@ export class ListingsService {
     return listing;
   }
 
+  static async listPublicListings(limit = 20, offset = 0) {
+    return prisma.listing.findMany({
+      where: { status: 'active' },
+      take: limit,
+      skip: offset,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  static async countPublicListings() {
+    return prisma.listing.count({ where: { status: 'active' } });
+  }
+
   static async getListingById(id: string) {
     const listing = await prisma.listing.findUnique({
       where: { id },
     });
     if (!listing || listing.status === 'deleted') {
+      throw new AppError('LISTING_NOT_FOUND', 'Listing not found', 404);
+    }
+    return listing;
+  }
+
+  static async getPublicListingById(id: string) {
+    const listing = await this.getListingById(id);
+    if (listing.status !== 'active' && listing.status !== 'sold_out') {
       throw new AppError('LISTING_NOT_FOUND', 'Listing not found', 404);
     }
     return listing;
@@ -87,7 +108,7 @@ export class ListingsService {
     }
 
     if (listing.quantityAvailable <= 0) {
-      throw new AppError('INVALID_STATE', 'Cannot activate listing with 0 quantity', 400);
+      throw new AppError('VALIDATION_ERROR', 'Cannot activate listing with zero inventory', 400);
     }
 
     const updatedListing = await prisma.listing.update({

@@ -27,6 +27,7 @@ export function registerErrorHandler(fastify: FastifyInstance) {
         error: {
           code: error.code,
           message: error.message,
+          requestId: request.id,
         },
       });
     }
@@ -38,6 +39,7 @@ export function registerErrorHandler(fastify: FastifyInstance) {
           message:
             error.errors?.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ') ||
             error.message,
+          requestId: request.id,
         },
       });
     }
@@ -47,6 +49,7 @@ export function registerErrorHandler(fastify: FastifyInstance) {
         error: {
           code: 'VALIDATION_ERROR',
           message: error.message,
+          requestId: request.id,
         },
       });
     }
@@ -56,6 +59,7 @@ export function registerErrorHandler(fastify: FastifyInstance) {
       error: {
         code: error.code || 'INTERNAL_SERVER_ERROR',
         message: isProd ? 'An unexpected error occurred' : error.message,
+        requestId: request.id,
       },
     });
   });

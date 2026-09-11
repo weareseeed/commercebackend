@@ -1,0 +1,27 @@
+# Keep the build context small and reproducible.
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+
+# Local env / secrets — never bake into an image.
+.env
+.env.*
+!.env.example
+!.env.sandbox.example
+!.env.hosted.example
+.commercebackend-seed-credentials.json
+
+# Local tooling / logs
+*.log
+npm-debug.log*
+.DS_Store
+coverage
+.vscode
+.idea
+.cursor
+.windsurf
+
+# Landing site is deployed separately (Vercel), not in the API image.
+apps/landing/dist

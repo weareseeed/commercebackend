@@ -41,7 +41,7 @@ async function main() {
     console.log('\n=========================================');
     console.log('SELLER AGENT CREATION SUCCESSFUL');
     console.log('=========================================');
-    console.log(`Seller API Key:   ${agentResult.apiKey}`);
+    console.log('Seller API Key:   returned by createAgent; store securely and do not log it');
     console.log(`Listing ID:       ${listingResult.listing.id}`);
     console.log(`Listing Title:    ${listingResult.listing.title}`);
     console.log(`Listing Price:    $${listingResult.listing.priceAmount / 100}`);
