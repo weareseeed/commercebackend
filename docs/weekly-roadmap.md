@@ -98,9 +98,9 @@ Every weekly item should ladder up to one of these long-horizon epics:
 - [x] **5. Per-record salt for API-key hashing.** Add a per-key salt column +
   migration; keep verifying existing keys (backward compatible). _DoD:_ old and
   new keys both authenticate; tests cover both paths. (Security, non-Stripe.) — [#155](https://github.com/weareseeed/commercebackend/pull/155)
-- [ ] **6. Real ACP adapter.** Turn the `protocol-acp` stub into a working
+- [x] **6. Real ACP adapter.** Turn the `protocol-acp` stub into a working
   inbound/outbound mapping with an API entry point; document supported subset.
-  _DoD:_ round-trip mapping tests; clearly-labeled unsupported fields.
+  _DoD:_ round-trip mapping tests; clearly-labeled unsupported fields. — [#157](https://github.com/weareseeed/commercebackend/pull/157)
 - [x] **7. Real UCP adapter.** Same treatment for `protocol-ucp`. — [#158](https://github.com/weareseeed/commercebackend/pull/158)
 - [ ] **8. Connector abstraction + Shopify import spike (read-only).** Canonical
   imported-catalog model + a read-only Shopify catalog import that maps into
@@ -108,9 +108,19 @@ Every weekly item should ladder up to one of these long-horizon epics:
   Fridays — ship the model + import first. _DoD:_ a Shopify catalog fixture
   imports into listings; sync log records outcome.
 - [ ] **9. Square connector spike (read-only).** As above, for Square catalog.
-- [ ] **10. Read-only operator dashboard.** Minimal admin views over the counts
+- [x] **10. Read-only operator dashboard.** Minimal admin views over the counts
   from item 4 (agents, listings, offers, orders, query logs, critical events).
-  _DoD:_ operator can inspect sandbox state in a browser.
+  _DoD:_ operator can inspect sandbox state in a browser. — [#156](https://github.com/weareseeed/commercebackend/pull/156)
+- [ ] **11. Agent reputation signal (read-only).** Compute a per-agent
+  reputation summary (completed vs. failed checkouts, offer acceptance rate)
+  surfaced on the existing agent lookup path, groundwork for future
+  purchase-policy trust checks. _DoD:_ endpoint/response returns the computed
+  signal for a seeded agent; tests cover the calculation.
+- [ ] **12. Incident runbook doc.** Write a first incident-response runbook
+  covering `CHECKOUT_PERSISTENCE_FAILED` and other critical events surfaced by
+  the operator metrics endpoint: what to check, who to page, and rollback
+  steps. _DoD:_ `docs/operations/incident-runbook.md` exists and is linked from
+  `AGENTS.md`.
 
 ## Human-led (design + human review first — do NOT auto-build)
 

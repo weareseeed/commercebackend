@@ -30,7 +30,7 @@ CommerceBackend is for:
 - autonomous commerce agents that need to discover, negotiate, and purchase goods or services through APIs;
 - AI coding agents that need a clear repo map and safe contribution boundaries;
 - marketplace operators testing agent-native commerce workflows;
-- protocol implementers exploring ACP/UCP-style commerce adapters.
+- protocol implementers integrating CommerceBackend's ACP adapter, or exploring UCP-style commerce adapters (still a stub).
 
 ## What agents can do today
 
@@ -43,7 +43,8 @@ CommerceBackend is for:
 7. Initiate Stripe Checkout sessions with `POST /v1/checkout-intents`.
 8. Read order and fulfillment status with `/v1/orders` endpoints.
 9. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
-10. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
+10. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
+11. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
 
 ## Core API map
 
@@ -72,6 +73,9 @@ CommerceBackend is for:
 | `GET`   | `/v1/orders`                    | Bearer | List buyer or seller orders.                                             |
 | `GET`   | `/v1/orders/:id`                | Bearer | Read an order.                                                           |
 | `POST`  | `/v1/orders/:id/fulfillment`    | Bearer | Seller updates fulfillment status.                                       |
+| `GET`   | `/v1/protocols/acp/product-feed`            | Bearer | ACP-shaped product feed of active listings (scoped subset).             |
+| `POST`  | `/v1/protocols/acp/checkout-sessions`       | Bearer | Buyer creates an ACP-shaped checkout session (scoped subset).           |
+| `GET`   | `/v1/protocols/acp/checkout-sessions/:id`   | Bearer | Buyer or seller reads an ACP-shaped checkout session.                   |
 | `GET`   | `/v1/protocols/ucp/products`    | Bearer | UCP-shaped active-listing catalog (CommerceBackend's own mapping layer). |
 | `POST`  | `/v1/protocols/ucp/orders`      | Bearer | Buyer creates a UCP-shaped order, mapped onto a checkout intent.         |
 | `GET`   | `/v1/protocols/ucp/orders/:id`  | Bearer | Read a UCP-shaped order (buyer or seller only).                          |
@@ -194,7 +198,7 @@ Use `/prompts` for copy/paste-ready agent prompts:
 - No tax calculation.
 - No multi-seller cart.
 - No Shopify, BigCommerce, WooCommerce, or Square connector sync.
-- ACP adapter is a stub, not a production-ready protocol implementation.
+- ACP adapter (`docs/api/protocol-acp.md`) is a real but scoped subset — no delegated payment token / PSP handoff, no session update/cancel, no multi-item carts, no tax, discounts, or refunds; not a certified/full ACP spec implementation.
 - UCP here is CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer (a real, tested adapter, not a stub) — see `docs/api/protocol-ucp.md` for the supported subset. It is not a claim of conformance to any named external "Universal Commerce Protocol" standard, and it does not add delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds beyond the existing Stripe-hosted-checkout-URL redirect model.
 - Fulfillment is status-only. There are no shipping label, tracking carrier, or digital-delivery automations yet.
 

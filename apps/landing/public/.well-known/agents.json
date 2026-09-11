@@ -48,6 +48,7 @@
     "orders",
     "fulfillment_status",
     "mcp_server",
+    "acp_adapter",
     "ucp_adapter"
   ],
   "not_supported_in_v0_2": [
@@ -66,6 +67,12 @@
       "status": "shipped",
       "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
+    },
+    {
+      "name": "ACP adapter",
+      "status": "shipped_scoped_subset",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/protocols/acp",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-acp.md"
     },
     {
       "name": "UCP adapter",
