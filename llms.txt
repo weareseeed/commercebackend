@@ -46,6 +46,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - **Track order and fulfillment status** after Stripe webhook confirmation.
 - **Use an MCP server** (`packages/mcp`, `@commercebackend/mcp`) to operate the above through Model Context Protocol tools instead of hand-written REST calls.
 - **Use the ACP adapter** (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
+- **Use the UCP adapter** (`/v1/protocols/ucp/*`, `@commercebackend/protocol-ucp`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer — to list products and create/read orders that map onto existing checkout intents; see `docs/api/protocol-ucp.md` for the supported subset. Not a claim of conformance to any named external "UCP" standard.
 
 ## Agent Safety Rules
 
@@ -79,7 +80,6 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 ## Roadmap
 
 - Connectors to third-party marketplaces.
-- A working adapter layer for Universal Commerce Protocol (UCP) (ACP now has an initial working adapter; see `docs/api/protocol-acp.md`).
 - Richer examples showing agent-to-agent commerce flows.
 
 ## Agent Skill Maintenance

@@ -29,7 +29,7 @@ Use this skill when you need to:
 - cite the canonical public discovery files;
 - route an AI coding agent to the right docs before making changes.
 
-Do not use this skill to claim unsupported capabilities such as refunds, Stripe Connect payouts, tax calculation, auctions, multi-seller carts, a full/certified ACP spec implementation (see `docs/api/protocol-acp.md` for the actual supported subset), or a production-ready UCP adapter (still a mapping stub).
+Do not use this skill to claim unsupported capabilities such as refunds, Stripe Connect payouts, tax calculation, auctions, multi-seller carts, a full/certified ACP spec implementation (see `docs/api/protocol-acp.md` for the actual supported subset), or conformance to any named external "UCP" standard (the UCP adapter is real and tested, but it is CommerceBackend's own vendor-neutral mapping layer — see `docs/api/protocol-ucp.md`).
 
 ## Canonical links
 
@@ -55,7 +55,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Buyer/seller order lookup and seller fulfillment status updates.
 - An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order tools over the Model Context Protocol; see `docs/api/mcp-tool-spec.md`.
 - Initial ACP (Agentic Commerce Protocol) adapter — a working, scoped subset (product feed + checkout sessions over the existing Stripe-hosted checkout redirect); see `docs/api/protocol-acp.md` for the supported subset and clearly-labeled unsupported fields.
-- UCP mapping stub for a future protocol adapter.
+- Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
 
 ## Not supported in v0.2
 
@@ -66,7 +66,8 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Tax calculation.
 - Stripe Connect seller payouts.
 - Shopify, BigCommerce, WooCommerce, or Square sync connectors.
-- Full/certified ACP spec compliance (delegated payment token, session update/cancel, multi-item carts, tax, discounts, refunds — see `docs/api/protocol-acp.md`) and a production-ready UCP protocol adapter (still a stub).
+- Full/certified ACP spec compliance (delegated payment token, session update/cancel, multi-item carts, tax, discounts, refunds — see `docs/api/protocol-acp.md`).
+- Conformance to any named external "UCP" standard — UCP here is CommerceBackend's own mapping layer (see `docs/api/protocol-ucp.md` for its scoped subset).
 
 ## Standard local verification
 

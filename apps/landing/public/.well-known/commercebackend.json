@@ -37,11 +37,11 @@
     "orders",
     "fulfillment_status",
     "mcp_server",
-    "acp_adapter"
+    "acp_adapter",
+    "ucp_adapter"
   ],
   "planned_capabilities": [
     "marketplace_connectors",
-    "ucp_adapters",
     "agent_flow_examples"
   ],
   "docs_links": {
