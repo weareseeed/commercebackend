@@ -2892,4 +2892,244 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
     });
   });
+
+  describe('UCP Protocol Adapter API Endpoints', () => {
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'UCP Seller', type: 'seller', ownerEmail: 's@ucp.com' },
+      });
+      sellerKey = JSON.parse(resSeller.body).apiKey;
+      sellerId = JSON.parse(resSeller.body).agent.id;
+
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'UCP Buyer', type: 'buyer', ownerEmail: 'b@ucp.com' },
+      });
+      buyerKey = JSON.parse(resBuyer.body).apiKey;
+      buyerId = JSON.parse(resBuyer.body).agent.id;
+
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          title: 'UCP Test Ticket',
+          description: 'A ticket sold through the UCP mapping layer.',
+          type: 'event_ticket',
+          priceAmount: 5000,
+          currency: 'USD',
+          quantityAvailable: 10,
+        },
+      });
+      testListingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    describe('GET /v1/protocols/ucp/products', () => {
+      it('rejects unauthenticated requests', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+        });
+        expect(response.statusCode).toBe(401);
+      });
+
+      it('maps active listings to schema.org-style UCP products for any authenticated agent', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const data = JSON.parse(response.body);
+        expect(data.pagination.total).toBe(1);
+        expect(data.products).toEqual([
+          {
+            id: testListingId,
+            name: 'UCP Test Ticket',
+            description: 'A ticket sold through the UCP mapping layer.',
+            offers: [{ price: 5000, currency: 'USD' }],
+          },
+        ]);
+      });
+
+      it('excludes paused listings', async () => {
+        await app.inject({
+          method: 'POST',
+          url: `/v1/listings/${testListingId}/pause`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const data = JSON.parse(response.body);
+        expect(data.products).toEqual([]);
+        expect(data.pagination.total).toBe(0);
+      });
+    });
+
+    describe('POST /v1/protocols/ucp/orders', () => {
+      it('rejects seller agents from creating UCP orders', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(403);
+        const data = JSON.parse(response.body);
+        expect(data.error.code).toBe('FORBIDDEN');
+      });
+
+      it('rejects a request naming more than one distinct product with a clear 400', async () => {
+        const otherListingRes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Second UCP Product',
+            type: 'event_ticket',
+            priceAmount: 3000,
+            quantityAvailable: 5,
+          },
+        });
+        const otherListingId = JSON.parse(otherListingRes.body).listing.id;
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [
+              { productId: testListingId, quantity: 1 },
+              { productId: otherListingId, quantity: 1 },
+            ],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const data = JSON.parse(response.body);
+        expect(data.error.code).toBe('UCP_MULTI_ITEM_UNSUPPORTED');
+        // Not silently truncated or merged: no checkout intent should have been created.
+        expect(mockDb.checkoutIntents).toHaveLength(0);
+      });
+
+      it('creates a UCP order mapped onto an auto-approved checkout intent with a payment URL', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 2 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.order.status).toBe('payment_pending');
+        expect(data.order.buyerId).toBe(buyerId);
+        expect(data.order.sellerId).toBe(sellerId);
+        expect(data.order.lineItems).toEqual([{ productId: testListingId, quantity: 2 }]);
+        expect(data.order.totalPrice).toEqual({ amount: 10000, currency: 'USD' });
+        expect(data.order.paymentUrl).toContain('https://checkout.stripe.com/');
+
+        expect(mockDb.checkoutIntents).toHaveLength(1);
+        expect(mockDb.checkoutIntents[0].id).toBe(data.order.id);
+      });
+
+      it('creates a UCP order with requires_human_review and a null payment URL when no policy exists', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.order.status).toBe('requires_human_review');
+        expect(data.order.paymentUrl).toBeNull();
+      });
+    });
+
+    describe('GET /v1/protocols/ucp/orders/:id', () => {
+      it('lets the buyer and the seller view the UCP order, but forbids an unrelated agent', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const createResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+        const orderId = JSON.parse(createResponse.body).order.id;
+
+        const buyerView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(buyerView.statusCode).toBe(200);
+        expect(JSON.parse(buyerView.body).order.id).toBe(orderId);
+
+        const sellerView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+        expect(sellerView.statusCode).toBe(200);
+        expect(JSON.parse(sellerView.body).order.id).toBe(orderId);
+
+        const otherAgentRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Unrelated Agent', type: 'buyer', ownerEmail: 'unrelated@ucp.com' },
+        });
+        const otherAgentKey = JSON.parse(otherAgentRes.body).apiKey;
+
+        const forbiddenView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${otherAgentKey}` },
+        });
+        expect(forbiddenView.statusCode).toBe(403);
+      });
+
+      it('returns 404 for an unknown order id', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/orders/chk_does_not_exist',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(response.statusCode).toBe(404);
+      });
+    });
+  });
 });

@@ -24,6 +24,7 @@
     "@commercebackend/db": "workspace:*",
     "@commercebackend/schemas": "workspace:*",
     "@commercebackend/payments-stripe": "workspace:*",
+    "@commercebackend/protocol-ucp": "workspace:*",
     "fastify": "^5.10.0",
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^10.3.0",

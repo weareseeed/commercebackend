@@ -16,6 +16,7 @@ import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
 import { sandboxRoutes } from './routes/sandbox';
 import { operatorRoutes } from './routes/operator';
+import { protocolUcpRoutes } from './routes/protocol-ucp';
 
 import crypto from 'crypto';
 
@@ -112,6 +113,7 @@ export function buildApp() {
   app.register(purchasePolicyRoutes);
   app.register(sandboxRoutes);
   app.register(operatorRoutes);
+  app.register(protocolUcpRoutes);
 
   return app;
 }

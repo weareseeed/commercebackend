@@ -44,6 +44,9 @@ importers:
       '@commercebackend/payments-stripe':
         specifier: workspace:*
         version: link:../../packages/payments/stripe
+      '@commercebackend/protocol-ucp':
+        specifier: workspace:*
+        version: link:../../packages/protocols/ucp
       '@commercebackend/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -163,10 +166,20 @@ importers:
         version: 5.9.3
 
   packages/protocols/ucp:
+    dependencies:
+      '@commercebackend/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
     devDependencies:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.1.1)(lightningcss@1.32.0)(tsx@4.22.3)
 
   packages/schemas:
     dependencies:
