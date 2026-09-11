@@ -2,10 +2,19 @@ import { prisma, generateApiKey } from '@commercebackend/db';
 import { CreateAgentInput } from '@commercebackend/schemas';
 import { AppError } from '../plugins/error-handler';
 
+function redactApiKeyFields<T extends { apiKeyHash?: unknown; apiKeySalt?: unknown }>(
+  agent: T
+): Omit<T, 'apiKeyHash' | 'apiKeySalt'> {
+  const redacted = { ...agent };
+  delete (redacted as any).apiKeyHash;
+  delete (redacted as any).apiKeySalt;
+  return redacted;
+}
+
 export class AgentsService {
   static async createAgent(input: CreateAgentInput) {
     const prefix = process.env.NODE_ENV === 'production' ? 'cb_live_' : 'cb_test_';
-    const { apiKey, apiKeyHash } = generateApiKey(prefix);
+    const { apiKey, apiKeyHash, apiKeySalt, apiKeyId } = generateApiKey(prefix);
 
     const agent = await prisma.agent.create({
       data: {
@@ -13,15 +22,14 @@ export class AgentsService {
         type: input.type,
         ownerEmail: input.ownerEmail,
         apiKeyHash,
+        apiKeySalt,
+        apiKeyId,
         status: 'active',
       },
     });
 
-    const agentWithoutHash = { ...agent };
-    delete (agentWithoutHash as any).apiKeyHash;
-
     return {
-      agent: agentWithoutHash,
+      agent: redactApiKeyFields(agent),
       apiKey,
     };
   }
@@ -33,8 +41,6 @@ export class AgentsService {
     if (!agent) {
       throw new AppError('AGENT_NOT_FOUND', 'Agent not found', 404);
     }
-    const agentWithoutHash = { ...agent };
-    delete (agentWithoutHash as any).apiKeyHash;
-    return agentWithoutHash;
+    return redactApiKeyFields(agent);
   }
 }

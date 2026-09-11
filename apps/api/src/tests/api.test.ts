@@ -28,6 +28,20 @@ const mockDb = {
 // --- MOCK DATABASE WORKSPACE PACKAGE ---
 vi.mock('@commercebackend/db', () => {
   const hashKey = (key: string) => `hash_${key}`;
+  const hashKeyWithSalt = (key: string, salt: string) => `hash_${key}_${salt}`;
+  const randomHex = (length: number) => {
+    let s = '';
+    while (s.length < length) s += Math.floor(Math.random() * 16).toString(16);
+    return s.slice(0, length);
+  };
+  // Mirrors the real `extractApiKeyId` in packages/db/src/auth-utils.ts: new-format
+  // keys are `<prefix><16-hex-keyId>.<secret>`; legacy keys have no embedded id.
+  const extractApiKeyId = (apiKey: string): string | null => {
+    const dotIndex = apiKey.indexOf('.');
+    if (dotIndex === -1) return null;
+    const keyId = apiKey.slice(0, dotIndex).slice(-16);
+    return /^[0-9a-f]{16}$/.test(keyId) ? keyId : null;
+  };
 
   const prismaMock: any = {
     agent: {
@@ -46,6 +60,7 @@ vi.mock('@commercebackend/db', () => {
         return (
           mockDb.agents.find((a) => {
             if (where.apiKeyHash && a.apiKeyHash !== where.apiKeyHash) return false;
+            if (where.apiKeyId && a.apiKeyId !== where.apiKeyId) return false;
             return true;
           }) || null
         );
@@ -628,9 +643,14 @@ vi.mock('@commercebackend/db', () => {
   return {
     prisma: prismaMock,
     hashApiKey: hashKey,
+    hashApiKeyWithSalt: hashKeyWithSalt,
+    extractApiKeyId,
     generateApiKey: (prefix: string) => {
-      const apiKey = `${prefix}mock_key_${Math.random().toString(36).substring(2, 9)}`;
-      return { apiKey, apiKeyHash: hashKey(apiKey) };
+      const keyId = randomHex(16);
+      const secret = `mock_key_${Math.random().toString(36).substring(2, 9)}`;
+      const apiKey = `${prefix}${keyId}.${secret}`;
+      const apiKeySalt = randomHex(8);
+      return { apiKey, apiKeyHash: hashKeyWithSalt(apiKey, apiKeySalt), apiKeySalt, apiKeyId: keyId };
     },
     resetAndSeedSandbox,
     sandboxFixtureIds,
@@ -2235,6 +2255,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const bodyCreate = JSON.parse(resCreate.body);
       expect(bodyCreate.agent.apiKeyHash).toBeUndefined();
+      expect(bodyCreate.agent.apiKeySalt).toBeUndefined();
       expect(bodyCreate.apiKey).toBeDefined();
 
       // GET /v1/agents/me response
@@ -2245,6 +2266,102 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const bodyMe = JSON.parse(resMe.body);
       expect(bodyMe.agent.apiKeyHash).toBeUndefined();
+      expect(bodyMe.agent.apiKeySalt).toBeUndefined();
+    });
+  });
+
+  describe('API key hashing (per-record salt)', () => {
+    it('issues new agents a per-record-salted key and authenticates it', async () => {
+      const resCreate = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Salted Key Agent', type: 'buyer', ownerEmail: 'salted@test.com' },
+      });
+      const { apiKey } = JSON.parse(resCreate.body);
+
+      // New-format keys embed a public lookup id: `<prefix><16-hex keyId>.<secret>`.
+      expect(apiKey).toMatch(/^cb_test_[0-9a-f]{16}\..+$/);
+
+      const resMe = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${apiKey}` },
+      });
+      expect(resMe.statusCode).toBe(200);
+    });
+
+    it('two agents created back-to-back get different salts and different hashes', async () => {
+      const first = JSON.parse(
+        (
+          await app.inject({
+            method: 'POST',
+            url: '/v1/agents',
+            payload: { name: 'Agent One', type: 'buyer', ownerEmail: 'salt-one@test.com' },
+          })
+        ).body
+      );
+      const second = JSON.parse(
+        (
+          await app.inject({
+            method: 'POST',
+            url: '/v1/agents',
+            payload: { name: 'Agent Two', type: 'buyer', ownerEmail: 'salt-two@test.com' },
+          })
+        ).body
+      );
+
+      const firstAgent = mockDb.agents.find((a) => a.id === first.agent.id);
+      const secondAgent = mockDb.agents.find((a) => a.id === second.agent.id);
+      expect(firstAgent.apiKeySalt).not.toBe(secondAgent.apiKeySalt);
+      expect(firstAgent.apiKeyHash).not.toBe(secondAgent.apiKeyHash);
+    });
+
+    it('still authenticates an agent whose key predates the per-record-salt migration', async () => {
+      // Simulates a row written before this migration: a flat legacy-format
+      // key (no embedded keyId/dot), hashed with the old shared salt, and no
+      // apiKeySalt/apiKeyId columns populated.
+      const legacyApiKey = 'cb_test_legacy_preexisting_key';
+      mockDb.agents.push({
+        id: 'agent_legacy_1',
+        name: 'Legacy Agent',
+        type: 'buyer',
+        ownerEmail: 'legacy@test.com',
+        apiKeyHash: `hash_${legacyApiKey}`,
+        apiKeySalt: null,
+        apiKeyId: null,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const resMe = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${legacyApiKey}` },
+      });
+      expect(resMe.statusCode).toBe(200);
+      const body = JSON.parse(resMe.body);
+      expect(body.agent.id).toBe('agent_legacy_1');
+    });
+
+    it('rejects a new-format key whose secret has been tampered with', async () => {
+      const resCreate = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Tamper Test', type: 'buyer', ownerEmail: 'tamper@test.com' },
+      });
+      const { apiKey } = JSON.parse(resCreate.body);
+
+      // Keep the real, valid keyId (so the row is still found by lookup) but
+      // corrupt the secret portion that the per-record-salted hash covers.
+      const tamperedKey = `${apiKey}tampered`;
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${tamperedKey}` },
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 

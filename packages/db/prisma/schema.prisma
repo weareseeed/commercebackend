@@ -13,6 +13,12 @@ model Agent {
   type        AgentType
   ownerEmail  String
   apiKeyHash  String   @unique
+  // Per-record salt + public lookup id for API keys issued after the
+  // per-record-salt migration. Null on agents whose key predates it; those
+  // keep authenticating via the legacy shared-salt `apiKeyHash` lookup.
+  // See docs/security.md and packages/db/src/auth-utils.ts.
+  apiKeySalt  String?
+  apiKeyId    String?  @unique
   status      AgentStatus @default(active)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
