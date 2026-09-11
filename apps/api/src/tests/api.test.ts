@@ -2892,4 +2892,256 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
     });
   });
+
+  describe('ACP Protocol Adapter API (v0.2 scoped subset)', () => {
+    let acpListingId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'ACP Seller', type: 'seller', ownerEmail: 's@acp.com' },
+      });
+      sellerKey = JSON.parse(resSeller.body).apiKey;
+      sellerId = JSON.parse(resSeller.body).agent.id;
+
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'ACP Buyer', type: 'buyer', ownerEmail: 'b@acp.com' },
+      });
+      buyerKey = JSON.parse(resBuyer.body).apiKey;
+      buyerId = JSON.parse(resBuyer.body).agent.id;
+
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          title: 'ACP Widget',
+          description: 'A widget sold via the ACP adapter.',
+          type: 'physical_good',
+          priceAmount: 5000,
+          quantityAvailable: 10,
+        },
+      });
+      acpListingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    describe('GET /v1/protocols/acp/product-feed', () => {
+      it('rejects unauthenticated requests', async () => {
+        const res = await app.inject({ method: 'GET', url: '/v1/protocols/acp/product-feed' });
+        expect(res.statusCode).toBe(401);
+      });
+
+      it('returns only active listings mapped to the ACP catalog item shape', async () => {
+        const resPaused = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Paused Widget',
+            description: 'Should not appear in the feed.',
+            type: 'physical_good',
+            priceAmount: 2500,
+            quantityAvailable: 5,
+          },
+        });
+        const pausedListingId = JSON.parse(resPaused.body).listing.id;
+        await app.inject({
+          method: 'POST',
+          url: `/v1/listings/${pausedListingId}/pause`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        const res = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/acp/product-feed',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        const ids = body.items.map((item: any) => item.id);
+        expect(ids).toContain(acpListingId);
+        expect(ids).not.toContain(pausedListingId);
+
+        const acpItem = body.items.find((item: any) => item.id === acpListingId);
+        expect(acpItem).toEqual({
+          id: acpListingId,
+          title: 'ACP Widget',
+          description: 'A widget sold via the ACP adapter.',
+          price: { amount: 5000, currency: 'USD' },
+          availability: 'in_stock',
+          quantity_available: 10,
+        });
+      });
+    });
+
+    describe('POST /v1/protocols/acp/checkout-sessions', () => {
+      it('creates a checkout session backed by the existing Stripe-hosted checkout redirect', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 2 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+
+        expect(res.statusCode).toBe(201);
+        const body = JSON.parse(res.body);
+        expect(body.checkoutSession.status).toBe('ready_for_payment');
+        expect(body.checkoutSession.commercebackend_status).toBe('open');
+        expect(body.checkoutSession.line_items).toEqual([
+          { id: acpListingId, quantity: 2, amount_total: 10000 },
+        ]);
+        expect(body.checkoutSession.totals).toEqual({
+          subtotal: 10000,
+          total: 10000,
+          currency: 'USD',
+        });
+        expect(body.checkoutSession.buyer_agent_id).toBe(buyerId);
+        expect(body.checkoutSession.seller_agent_id).toBe(sellerId);
+        expect(body.checkoutSession.payment_provider.type).toBe('commercebackend_stripe_hosted_redirect');
+        expect(typeof body.checkoutSession.payment_provider.checkout_url).toBe('string');
+      });
+
+      it('rejects checkout sessions from non-buyer agents', async () => {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 1 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        expect(res.statusCode).toBe(403);
+      });
+
+      it('rejects multi-item carts with a clear 400 instead of silently truncating', async () => {
+        const resOtherListing = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Second Widget',
+            type: 'physical_good',
+            priceAmount: 1500,
+            quantityAvailable: 5,
+          },
+        });
+        const otherListingId = JSON.parse(resOtherListing.body).listing.id;
+
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [
+              { id: acpListingId, quantity: 1 },
+              { id: otherListingId, quantity: 1 },
+            ],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+
+        expect(res.statusCode).toBe(400);
+        const body = JSON.parse(res.body);
+        expect(body.error.code).toBe('ACP_UNSUPPORTED_REQUEST');
+      });
+
+      it('rejects requests missing required ACP fields', async () => {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        expect(res.statusCode).toBe(400);
+      });
+    });
+
+    describe('GET /v1/protocols/acp/checkout-sessions/:id', () => {
+      async function createAcpCheckoutSession() {
+        seedAutoApprovePolicy(buyerId);
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 1 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        return JSON.parse(res.body).checkoutSession;
+      }
+
+      it('allows the buyer agent to view their own checkout session', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        expect(JSON.parse(res.body).checkoutSession.id).toBe(created.id);
+      });
+
+      it('allows the seller agent to view the checkout session', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        expect(JSON.parse(res.body).checkoutSession.id).toBe(created.id);
+      });
+
+      it('rejects an unrelated agent with 403', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const resOutsider = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Outsider', type: 'buyer', ownerEmail: 'outsider@acp.com' },
+        });
+        const outsiderKey = JSON.parse(resOutsider.body).apiKey;
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${outsiderKey}` },
+        });
+
+        expect(res.statusCode).toBe(403);
+      });
+
+      it('returns 404 for a checkout session that does not exist', async () => {
+        const res = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/acp/checkout-sessions/chk_does_not_exist',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(res.statusCode).toBe(404);
+      });
+    });
+  });
 });
