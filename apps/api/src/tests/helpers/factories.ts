@@ -7,7 +7,7 @@ export function authHeader(apiKey: string) {
 
 export async function createTestAgent(type: 'buyer' | 'seller' | 'both', overrides: any = {}) {
   const prefix = 'cb_test_';
-  const { apiKey, apiKeyHash } = generateApiKey(prefix);
+  const { apiKey, apiKeyHash, apiKeySalt, apiKeyId } = generateApiKey(prefix);
 
   const agent = await prisma.agent.create({
     data: {
@@ -15,12 +15,15 @@ export async function createTestAgent(type: 'buyer' | 'seller' | 'both', overrid
       type,
       ownerEmail: overrides.ownerEmail || `agent-${crypto.randomBytes(3).toString('hex')}@test.com`,
       apiKeyHash,
+      apiKeySalt,
+      apiKeyId,
       status: overrides.status || 'active',
     },
   });
 
   const agentWithoutHash = { ...agent };
   delete (agentWithoutHash as any).apiKeyHash;
+  delete (agentWithoutHash as any).apiKeySalt;
 
   return {
     agent: agentWithoutHash,

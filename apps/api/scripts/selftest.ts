@@ -1,5 +1,5 @@
 import { buildApp } from '../src/app';
-import { prisma, hashApiKey } from '@commercebackend/db';
+import { prisma } from '@commercebackend/db';
 
 const PORT = 4001;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -166,7 +166,7 @@ async function run() {
   // stops at `human_approval_required` (secure default) and no Stripe session is
   // created — so the direct happy-path below needs a policy that permits it.
   await testStep('buyer purchase policy created', async () => {
-    const buyer = await prisma.agent.findFirst({ where: { apiKeyHash: hashApiKey(buyerKey) } });
+    const buyer = await prisma.agent.findFirst({ where: { ownerEmail: 'selftest-buyer@example.com' } });
     if (!buyer) throw new Error('Buyer agent not found for policy setup');
     await prisma.purchasePolicy.create({
       data: {
