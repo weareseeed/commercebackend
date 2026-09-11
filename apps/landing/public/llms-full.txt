@@ -43,6 +43,7 @@ CommerceBackend is for:
 7. Initiate Stripe Checkout sessions with `POST /v1/checkout-intents`.
 8. Read order and fulfillment status with `/v1/orders` endpoints.
 9. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
+10. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
 
 ## Core API map
 
@@ -71,6 +72,9 @@ CommerceBackend is for:
 | `GET`   | `/v1/orders`                    | Bearer | List buyer or seller orders.                                             |
 | `GET`   | `/v1/orders/:id`                | Bearer | Read an order.                                                           |
 | `POST`  | `/v1/orders/:id/fulfillment`    | Bearer | Seller updates fulfillment status.                                       |
+| `GET`   | `/v1/protocols/ucp/products`    | Bearer | UCP-shaped active-listing catalog (CommerceBackend's own mapping layer). |
+| `POST`  | `/v1/protocols/ucp/orders`      | Bearer | Buyer creates a UCP-shaped order, mapped onto a checkout intent.         |
+| `GET`   | `/v1/protocols/ucp/orders/:id`  | Bearer | Read a UCP-shaped order (buyer or seller only).                          |
 
 ## Agent buyer flow
 
@@ -190,7 +194,8 @@ Use `/prompts` for copy/paste-ready agent prompts:
 - No tax calculation.
 - No multi-seller cart.
 - No Shopify, BigCommerce, WooCommerce, or Square connector sync.
-- ACP/UCP adapters are stubs, not production-ready protocol implementations.
+- ACP adapter is a stub, not a production-ready protocol implementation.
+- UCP here is CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer (a real, tested adapter, not a stub) — see `docs/api/protocol-ucp.md` for the supported subset. It is not a claim of conformance to any named external "Universal Commerce Protocol" standard, and it does not add delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds beyond the existing Stripe-hosted-checkout-URL redirect model.
 - Fulfillment is status-only. There are no shipping label, tracking carrier, or digital-delivery automations yet.
 
 ## Recommended citation

@@ -74,7 +74,8 @@ This checks repository parity, required public content types, and public product
 - **Checkout Intents**: Initiating Stripe-backed hosted payment sessions for listings or accepted offers (persisted first, using Stripe idempotency keys, fails gracefully on API error).
 - **Stripe Checkout Webhook**: Webhook processing (`checkout.session.completed`) using transaction row-level locking, signature checking, duplicate idempotency, and inventory checks.
 - **Fulfillment**: Seller agents can retrieve orders and update fulfillment status, and buyer agents can track status.
-- **ACP & UCP protocol stubs**: Initial mapping logic for Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
+- **ACP protocol stub**: Initial mapping logic for Agentic Commerce Protocol (ACP).
+- **UCP protocol adapter**: CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer, with a working inbound/outbound mapping and API entry points (`/v1/protocols/ucp/*`); see [`docs/api/protocol-ucp.md`](docs/api/protocol-ucp.md) for the supported subset. Not a claim of conformance to any named external "UCP" standard.
 
 ## Explicitly NOT Supported in v0.2
 
@@ -255,7 +256,8 @@ All endpoints conform to the standard error response layout and require request 
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
 - **No merchant connectors**: No Shopify, BigCommerce, WooCommerce, or Square sync.
-- **ACP/UCP Stubs**: Adapters are placeholder mapping templates and are not production-ready.
+- **ACP Stub**: The ACP adapter is a placeholder mapping template and is not production-ready.
+- **UCP Adapter Scope**: The UCP adapter (`docs/api/protocol-ucp.md`) supports single-listing order create/read mapped onto the existing Stripe-hosted-checkout-URL redirect model only — no delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.
 - **Fulfillment**: Fulfillment is status-only; no shipping labels, tracking APIs, or digital delivery automation.
 

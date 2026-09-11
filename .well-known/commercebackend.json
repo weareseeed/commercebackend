@@ -36,12 +36,12 @@
     "stripe_checkout_webhooks",
     "orders",
     "fulfillment_status",
-    "mcp_server"
+    "mcp_server",
+    "ucp_adapter"
   ],
   "planned_capabilities": [
     "marketplace_connectors",
     "acp_adapters",
-    "ucp_adapters",
     "agent_flow_examples"
   ],
   "docs_links": {

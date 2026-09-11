@@ -47,7 +47,8 @@
     "stripe_checkout_webhook_confirmation",
     "orders",
     "fulfillment_status",
-    "mcp_server"
+    "mcp_server",
+    "ucp_adapter"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",
@@ -65,6 +66,12 @@
       "status": "shipped",
       "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
+    },
+    {
+      "name": "UCP adapter",
+      "status": "shipped",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/protocols/ucp",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-ucp.md"
     }
   ],
   "safety": {
