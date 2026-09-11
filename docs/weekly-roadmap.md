@@ -110,7 +110,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
 - [ ] **9. Square connector spike (read-only).** As above, for Square catalog.
 - [x] **10. Read-only operator dashboard.** Minimal admin views over the counts
   from item 4 (agents, listings, offers, orders, query logs, critical events).
-  _DoD:_ operator can inspect sandbox state in a browser. — [#TBD](https://github.com/weareseeed/commercebackend/pull/TBD)
+  _DoD:_ operator can inspect sandbox state in a browser. — [#156](https://github.com/weareseeed/commercebackend/pull/156)
 - [ ] **11. Agent reputation signal (read-only).** Compute a per-agent
   reputation summary (completed vs. failed checkouts, offer acceptance rate)
   surfaced on the existing agent lookup path, groundwork for future
