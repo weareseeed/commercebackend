@@ -74,7 +74,7 @@ This checks repository parity, required public content types, and public product
 - **Checkout Intents**: Initiating Stripe-backed hosted payment sessions for listings or accepted offers (persisted first, using Stripe idempotency keys, fails gracefully on API error).
 - **Stripe Checkout Webhook**: Webhook processing (`checkout.session.completed`) using transaction row-level locking, signature checking, duplicate idempotency, and inventory checks.
 - **Fulfillment**: Seller agents can retrieve orders and update fulfillment status, and buyer agents can track status.
-- **ACP & UCP protocol stubs**: Initial mapping logic for Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
+- **ACP adapter**: Working inbound/outbound mapping (product feed + checkout sessions) for a scoped subset of the Agentic Commerce Protocol (ACP); see `docs/api/protocol-acp.md`. **UCP protocol stub**: initial mapping logic only, not yet a working adapter.
 
 ## Explicitly NOT Supported in v0.2
 
@@ -255,7 +255,7 @@ All endpoints conform to the standard error response layout and require request 
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
 - **No merchant connectors**: No Shopify, BigCommerce, WooCommerce, or Square sync.
-- **ACP/UCP Stubs**: Adapters are placeholder mapping templates and are not production-ready.
+- **ACP**: A real but scoped subset (product feed + checkout sessions over the existing Stripe-hosted redirect); see `docs/api/protocol-acp.md` for unsupported fields — not a certified/full spec implementation. **UCP**: still a placeholder mapping template, not production-ready.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.
 - **Fulfillment**: Fulfillment is status-only; no shipping labels, tracking APIs, or digital delivery automation.
 
