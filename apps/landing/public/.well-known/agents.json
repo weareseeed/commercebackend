@@ -49,7 +49,8 @@
     "fulfillment_status",
     "mcp_server",
     "acp_adapter",
-    "ucp_adapter"
+    "ucp_adapter",
+    "square_catalog_connector_spike"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",
@@ -59,7 +60,8 @@
     "platform_fees",
     "tax_calculation",
     "shipping_labels",
-    "merchant_connectors"
+    "live_or_automatic_merchant_connector_sync",
+    "shopify_bigcommerce_woocommerce_connectors"
   ],
   "shipped_agent_interfaces": [
     {
@@ -79,6 +81,12 @@
       "status": "shipped",
       "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/protocols/ucp",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-ucp.md"
+    },
+    {
+      "name": "Square catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/square",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-square.md"
     }
   ],
   "safety": {

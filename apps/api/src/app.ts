@@ -18,6 +18,7 @@ import { sandboxRoutes } from './routes/sandbox';
 import { operatorRoutes } from './routes/operator';
 import { protocolAcpRoutes } from './routes/protocol-acp';
 import { protocolUcpRoutes } from './routes/protocol-ucp';
+import { connectorRoutes } from './routes/connectors';
 
 import crypto from 'crypto';
 
@@ -116,6 +117,7 @@ export function buildApp() {
   app.register(operatorRoutes);
   app.register(protocolAcpRoutes);
   app.register(protocolUcpRoutes);
+  app.register(connectorRoutes);
 
   return app;
 }

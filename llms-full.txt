@@ -197,7 +197,7 @@ Use `/prompts` for copy/paste-ready agent prompts:
 - No refunds or disputes API.
 - No tax calculation.
 - No multi-seller cart.
-- No Shopify, BigCommerce, WooCommerce, or Square connector sync.
+- No live/automatic merchant connector sync. An initial, operator-triggered, read-only Square catalog import spike exists (fixture-driven, no live Square API call — see `docs/api/connectors-square.md`). No Shopify, BigCommerce, or WooCommerce connectors yet.
 - ACP adapter (`docs/api/protocol-acp.md`) is a real but scoped subset — no delegated payment token / PSP handoff, no session update/cancel, no multi-item carts, no tax, discounts, or refunds; not a certified/full ACP spec implementation.
 - UCP here is CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer (a real, tested adapter, not a stub) — see `docs/api/protocol-ucp.md` for the supported subset. It is not a claim of conformance to any named external "Universal Commerce Protocol" standard, and it does not add delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds beyond the existing Stripe-hosted-checkout-URL redirect model.
 - Fulfillment is status-only. There are no shipping label, tracking carrier, or digital-delivery automations yet.

@@ -56,6 +56,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order tools over the Model Context Protocol; see `docs/api/mcp-tool-spec.md`.
 - Initial ACP (Agentic Commerce Protocol) adapter — a working, scoped subset (product feed + checkout sessions over the existing Stripe-hosted checkout redirect); see `docs/api/protocol-acp.md` for the supported subset and clearly-labeled unsupported fields.
 - Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
+- Operator-triggered, read-only Square catalog import spike (fixture-driven, no live Square API call) mapping into ordinary agent-facing listings; see `docs/api/connectors-square.md`.
 
 ## Not supported in v0.2
 
@@ -65,7 +66,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Refunds or disputes.
 - Tax calculation.
 - Stripe Connect seller payouts.
-- Shopify, BigCommerce, WooCommerce, or Square sync connectors.
+- A live Square API integration or automatic sync — only an operator-triggered, fixture-driven import spike exists. Shopify, BigCommerce, and WooCommerce connectors do not exist yet.
 - Full/certified ACP spec compliance (delegated payment token, session update/cancel, multi-item carts, tax, discounts, refunds — see `docs/api/protocol-acp.md`).
 - Conformance to any named external "UCP" standard — UCP here is CommerceBackend's own mapping layer (see `docs/api/protocol-ucp.md` for its scoped subset).
 
