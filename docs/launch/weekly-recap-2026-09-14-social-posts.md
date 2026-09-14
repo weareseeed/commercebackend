@@ -10,35 +10,42 @@ connector spike)
 Blog post (published on the site once this branch merges):
 https://www.commercebackend.com/blog/agent-protocols-and-catalog-connectors/
 
-## LinkedIn / long-form version
+Image: `docs/launch/assets/commercebackend-protocols-square-linkedin.png`
+(1200×627, source SVG alongside it)
 
-Two weeks of the CommerceBackend Friday backlog routine, six merged PRs:
+## LinkedIn post (final draft)
 
-- **Per-record API key salt** — every new agent key now gets its own scrypt
-  salt and a public lookup id, instead of one shared salt for all keys.
-  Keys issued before this change keep working unchanged.
-- **Real ACP adapter** — a scoped, honestly-labeled subset of OpenAI/Stripe's
-  Agentic Commerce Protocol, mapped onto our existing Stripe-hosted-checkout
-  flow. Not a claim of full/certified ACP spec compliance.
-- **Real UCP adapter** — our own vendor-neutral mapping layer for agent
-  frameworks (products, orders, full status mapping). Not a claim of
-  conformance to any external "UCP" standard — it's ours.
-- **Read-only operator dashboard** — operator-key-gated visibility into
-  agents, orders, and sync activity. No destructive controls.
-- **Square catalog connector spike** — a canonical imported-catalog model and
-  connector abstraction, proven against a static Square-shaped fixture (no
-  live Square API, no credentials in the repo). Imports become ordinary
-  listings, keyed so re-syncing updates instead of duplicating. Every sync
-  is logged with per-item failure detail. Meant to be reused by future
-  Shopify/BigCommerce/WooCommerce connectors — none of those exist yet.
+Most "agent commerce" demos stop at a shopping cart. Ours ships the full
+loop — discovery to fulfillment — and says exactly where it stops.
 
-None of this touches the money path: Stripe test-mode checkout and
-webhook-backed order reconciliation work exactly as before.
+In the last two weeks we merged six pull requests on CommerceBackend, our
+open-source commerce backend for autonomous agents: per-record API key
+salting, a real ACP adapter, a real UCP adapter, a read-only operator
+dashboard, and a Square catalog connector spike.
 
-Full write-up: https://www.commercebackend.com/blog/agent-protocols-and-catalog-connectors/
-Repo: https://github.com/weareseeed/commercebackend
+The ACP adapter maps a scoped subset of OpenAI/Stripe's Agentic Commerce
+Protocol onto our existing Stripe checkout flow. The UCP adapter is our own
+vendor-neutral mapping layer — we're not claiming conformance to anyone
+else's "UCP" standard.
 
-CommerceBackend is owned and maintained by Seeed LLC.
+The Square spike reads a static catalog fixture, maps it to a canonical
+listing model, and logs every item that fails to import. No live Square API
+call. No Square credentials anywhere in the repo.
+
+154 tests pass across the monorepo. None of this touches production
+credentials, the Stripe money path, or seller payouts.
+
+→ Full recap: https://www.commercebackend.com/blog/agent-protocols-and-catalog-connectors/
+→ Repo: https://github.com/weareseeed/commercebackend
+
+If you're building agent frameworks against ACP or a similar checkout spec,
+what would make an adapter actually useful to you — more spec coverage, or
+more honesty about what's missing?
+
+let's grow together
+
+CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC is unrelated
+to Seeed Studio.
 
 ## X / short version
 
@@ -60,8 +67,9 @@ Full recap: https://www.commercebackend.com/blog/agent-protocols-and-catalog-con
 
 ## Suggested image pairing
 
-`docs/launch/assets/commercebackend-protocols-square-recap.svg`
-(also served at `/blog/commercebackend-protocols-square-recap.svg` on the site)
+- LinkedIn (1200×627): `docs/launch/assets/commercebackend-protocols-square-linkedin.png`
+- Square / blog (1080×1080): `docs/launch/assets/commercebackend-protocols-square-recap.svg`
+  (also served at `/blog/commercebackend-protocols-square-recap.svg` on the site)
 
 ## Approval checklist
 
