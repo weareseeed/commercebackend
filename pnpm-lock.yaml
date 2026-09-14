@@ -38,6 +38,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@commercebackend/connector-square':
+        specifier: workspace:*
+        version: link:../../packages/connectors/square
       '@commercebackend/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -110,6 +113,12 @@ importers:
       tsx:
         specifier: ^4.7.0
         version: 4.22.3
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/connectors/square:
+    devDependencies:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

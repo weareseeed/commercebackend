@@ -1,0 +1,110 @@
+import { prisma, Prisma } from '@commercebackend/db';
+import {
+  CatalogMappingError,
+  ConnectorImportError,
+  loadSquareCatalogFixture,
+  mapSquareCatalogObjectToCanonical,
+} from '@commercebackend/connector-square';
+import { AppError } from '../plugins/error-handler';
+
+const SQUARE_CONNECTOR = 'square';
+
+export class CatalogSyncService {
+  /**
+   * Read-only catalog import spike (weekly backlog item 9): reads a static
+   * Square catalog fixture (no live Square API call), maps each item to the
+   * canonical catalog shape, and upserts it into `Listing` keyed on
+   * (importSource, externalId) so re-running the sync updates existing
+   * imported listings instead of duplicating them. A per-item mapping
+   * failure is recorded in the returned sync log, not thrown — the rest of
+   * the batch still imports.
+   */
+  static async syncSquareCatalog(sellerAgentId: string) {
+    const sellerAgent = await prisma.agent.findUnique({ where: { id: sellerAgentId } });
+    if (!sellerAgent) {
+      throw new AppError('AGENT_NOT_FOUND', 'Seller agent not found', 404);
+    }
+    if (sellerAgent.type !== 'seller' && sellerAgent.type !== 'both') {
+      throw new AppError('VALIDATION_ERROR', 'sellerAgentId must belong to a seller or both-type agent', 400);
+    }
+
+    const catalogObjects = loadSquareCatalogFixture();
+    const errors: ConnectorImportError[] = [];
+    let itemsImported = 0;
+
+    for (const object of catalogObjects) {
+      let canonicalItem;
+      try {
+        canonicalItem = mapSquareCatalogObjectToCanonical(object);
+      } catch (err) {
+        if (err instanceof CatalogMappingError) {
+          errors.push({ externalId: err.externalId, message: err.message });
+          continue;
+        }
+        throw err;
+      }
+
+      // Non-ITEM catalog objects (categories, taxes, etc.) are not listings.
+      if (!canonicalItem) continue;
+
+      const existing = await prisma.listing.findFirst({
+        where: { importSource: SQUARE_CONNECTOR, externalId: canonicalItem.externalId },
+      });
+
+      if (existing) {
+        await prisma.listing.update({
+          where: { id: existing.id },
+          data: {
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            attributes: canonicalItem.attributes,
+          },
+        });
+      } else {
+        await prisma.listing.create({
+          data: {
+            sellerAgentId,
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            attributes: canonicalItem.attributes,
+            importSource: SQUARE_CONNECTOR,
+            externalId: canonicalItem.externalId,
+          },
+        });
+      }
+
+      itemsImported += 1;
+    }
+
+    const status = errors.length === 0 ? 'success' : itemsImported > 0 ? 'partial' : 'failed';
+
+    return prisma.catalogSyncLog.create({
+      data: {
+        connector: SQUARE_CONNECTOR,
+        sellerAgentId,
+        status,
+        itemsImported,
+        itemsFailed: errors.length,
+        errors: errors.length > 0 ? (errors as unknown as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  }
+
+  static async listSyncLogs(limit = 20, offset = 0) {
+    return prisma.catalogSyncLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+  }
+}

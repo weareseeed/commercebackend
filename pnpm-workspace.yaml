@@ -3,6 +3,7 @@ packages:
   - 'packages/*'
   - 'packages/payments/*'
   - 'packages/protocols/*'
+  - 'packages/connectors/*'
   - 'examples/*'
 allowBuilds:
   '@prisma/client': true

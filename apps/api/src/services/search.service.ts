@@ -46,6 +46,8 @@ function toListing(row: KeywordMatchRow): Listing {
     quantityAvailable: row.quantityAvailable,
     attributes: row.attributes,
     fulfillmentInstructions: row.fulfillmentInstructions,
+    importSource: row.importSource,
+    externalId: row.externalId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

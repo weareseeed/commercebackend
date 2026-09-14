@@ -84,7 +84,7 @@ This checks repository parity, required public content types, and public product
 - Multi-seller shopping carts.
 - Refunds, disputes, platform fees, or tax calculation.
 - Stripe Connect seller payouts.
-- Merchant system connectors (Shopify, WooCommerce, Square, etc.).
+- Merchant system connectors: an initial, operator-triggered, read-only Square catalog import spike exists (fixture-driven, not a live Square API integration — see `docs/api/connectors-square.md`); no Shopify, BigCommerce, or WooCommerce connectors yet, and no live/automatic Square sync.
 
 ---
 
@@ -255,7 +255,7 @@ All endpoints conform to the standard error response layout and require request 
 - **No tax calculation**: Tax collection is omitted in this version.
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
-- **No merchant connectors**: No Shopify, BigCommerce, WooCommerce, or Square sync.
+- **Merchant connectors**: an initial, operator-triggered, read-only Square catalog import spike exists (`docs/api/connectors-square.md`) — fixture-driven, no live Square API call, no automatic sync. No Shopify, BigCommerce, or WooCommerce connectors yet.
 - **ACP Scope**: A real but scoped subset (product feed + checkout sessions over the existing Stripe-hosted redirect); see `docs/api/protocol-acp.md` for unsupported fields — not a certified/full spec implementation.
 - **UCP Scope**: The UCP adapter (`docs/api/protocol-ucp.md`) supports single-listing order create/read mapped onto the existing Stripe-hosted-checkout-URL redirect model only — no delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.

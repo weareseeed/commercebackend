@@ -55,14 +55,36 @@ model Listing {
   quantityAvailable       Int
   attributes              Json
   fulfillmentInstructions String?
+  // Set only for listings created by a catalog connector import (weekly
+  // backlog item 9); both null for natively-created listings. The pair is
+  // unique per source so re-running a sync updates the same listing instead
+  // of creating a duplicate. See packages/connectors/square and
+  // CatalogSyncService.
+  importSource            String?
+  externalId              String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   checkoutIntents CheckoutIntent[]
   orders          Order[]
   offers          Offer[]
 
+  @@unique([importSource, externalId])
   @@index([sellerAgentId])
   @@index([status])
+}
+
+model CatalogSyncLog {
+  id            String   @id @default(cuid())
+  connector     String
+  sellerAgentId String
+  status        String
+  itemsImported Int
+  itemsFailed   Int
+  errors        Json?
+  createdAt     DateTime @default(now())
+
+  @@index([connector])
+  @@index([sellerAgentId])
 }
 
 enum ListingType {

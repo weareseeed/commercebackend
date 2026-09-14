@@ -107,7 +107,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   agent-facing listings, with a sync log and failure states. May span two
   Fridays — ship the model + import first. _DoD:_ a Shopify catalog fixture
   imports into listings; sync log records outcome.
-- [ ] **9. Square connector spike (read-only).** As above, for Square catalog.
+- [x] **9. Square connector spike (read-only).** As above, for Square catalog.
 - [x] **10. Read-only operator dashboard.** Minimal admin views over the counts
   from item 4 (agents, listings, offers, orders, query logs, critical events).
   _DoD:_ operator can inspect sandbox state in a browser. — [#156](https://github.com/weareseeed/commercebackend/pull/156)
