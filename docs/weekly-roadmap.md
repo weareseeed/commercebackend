@@ -102,7 +102,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   inbound/outbound mapping with an API entry point; document supported subset.
   _DoD:_ round-trip mapping tests; clearly-labeled unsupported fields. — [#157](https://github.com/weareseeed/commercebackend/pull/157)
 - [x] **7. Real UCP adapter.** Same treatment for `protocol-ucp`. — [#158](https://github.com/weareseeed/commercebackend/pull/158)
-- [ ] **8. Connector abstraction + Shopify import spike (read-only).** Canonical
+- [x] **8. Connector abstraction + Shopify import spike (read-only).** Canonical
   imported-catalog model + a read-only Shopify catalog import that maps into
   agent-facing listings, with a sync log and failure states. May span two
   Fridays — ship the model + import first. _DoD:_ a Shopify catalog fixture
@@ -121,6 +121,19 @@ Every weekly item should ladder up to one of these long-horizon epics:
   the operator metrics endpoint: what to check, who to page, and rollback
   steps. _DoD:_ `docs/operations/incident-runbook.md` exists and is linked from
   `AGENTS.md`.
+- [ ] **13. BigCommerce connector spike (read-only).** Same treatment as the
+  Square (item 9) and Shopify (item 8) spikes: map a BigCommerce-shaped
+  catalog product onto the existing canonical imported-catalog shape and
+  import it via the existing sync-log endpoints. _DoD:_ a BigCommerce catalog
+  fixture imports into listings using the same `/v1/connectors/*/sync`
+  pattern; sync log records outcome.
+- [ ] **14. Purchase-policy & budget primitive (read-only enforcement scaffold).**
+  Groundwork for the agent-native primitives epic: a `PurchasePolicy` read
+  path (already modeled in Prisma) gains a computed "would this checkout
+  violate the buyer's spending limit?" check, surfaced read-only on the
+  checkout-intent creation path without blocking checkout yet. _DoD:_ endpoint
+  or response field reports a policy violation signal for a seeded buyer
+  policy + checkout amount; tests cover under/at/over-limit cases.
 
 ## Human-led (design + human review first — do NOT auto-build)
 
