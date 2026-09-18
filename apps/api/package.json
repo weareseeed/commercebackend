@@ -27,6 +27,7 @@
     "@commercebackend/protocol-acp": "workspace:*",
     "@commercebackend/protocol-ucp": "workspace:*",
     "@commercebackend/connector-square": "workspace:*",
+    "@commercebackend/connector-shopify": "workspace:*",
     "fastify": "^5.10.0",
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^10.3.0",
