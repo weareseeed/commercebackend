@@ -59,9 +59,10 @@ If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-
 
 ```bash
 pnpm verify:discovery:strict
+pnpm verify:github-metadata
 ```
 
-This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, stale website deployments, and newline-only byte drift before merge.
+This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, stale website deployments, and newline-only byte drift before merge. The GitHub metadata verifier compares the live repository description, homepage URL, and topic set against `apps/landing/public/.well-known/commercebackend.json` so agent-facing discovery stays aligned across repo-owned surfaces. Run `pnpm verify:github-metadata -- --strict` when you want drift to fail the command instead of surfacing as a nightly warning report.
 
 ---
 
