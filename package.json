@@ -39,6 +39,7 @@
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "typecheck": "pnpm -r typecheck",
+    "triage:dependency-log": "node scripts/triage-dependency-log.mjs",
     "verify:vitest-guard": "node scripts/verify-vitest-guard.mjs",
     "test": "vitest run",
     "selftest": "pnpm --filter @commercebackend/api selftest",
