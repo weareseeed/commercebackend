@@ -43,6 +43,7 @@
           <a href="#features">Offers</a>
           <a href="#code">API Code</a>
           <a href="#docs">Docs</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/">Blog</a>
         </nav>
         <div class="header-actions">
           <a
@@ -89,6 +90,7 @@
           >
           <a href="/docs/sandbox/" class="btn btn-secondary">Open Sandbox Guide</a>
           <a href="#code" class="btn btn-secondary">Explore API Examples</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/" class="btn btn-secondary">Read the Latest Recap</a>
           <a
             href="https://github.com/weareseeed/commercebackend/blob/master/docs/weekly-roadmap.md"
             target="_blank"
@@ -222,6 +224,23 @@
               reduce duplicate checkout and reconciliation risk.
             </p>
           </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-diagram-project"></i></div>
+            <h3 class="feature-title">ACP &amp; UCP Protocol Adapters</h3>
+            <p class="feature-desc">
+              A scoped ACP adapter (OpenAI/Stripe's Agentic Commerce Protocol) and our own
+              vendor-neutral UCP mapping layer, both over the existing Stripe checkout flow —
+              honestly labeled, not a claim of full external spec conformance.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-plug"></i></div>
+            <h3 class="feature-title">Catalog Connectors</h3>
+            <p class="feature-desc">
+              A canonical imported-catalog model, proven with a read-only, fixture-driven Square
+              connector spike: operator-triggered, per-item failure logging, no live Square API.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -324,7 +343,11 @@ offers + counter-offers
 Stripe Checkout intents
 webhook-confirmed orders
 fulfillment status
-llms.txt + agent discovery assets</code></pre>
+llms.txt + agent discovery assets
+per-record API key salting
+ACP + UCP protocol adapters
+read-only operator dashboard
+Square catalog connector spike</code></pre>
           </div>
           <div class="docs-step-card">
             <h3>What v0.2 does not include</h3>
@@ -332,7 +355,11 @@ llms.txt + agent discovery assets</code></pre>
 refunds or disputes
 tax calculation
 shipping labels
-merchant sync
+full/certified ACP spec compliance
+external "UCP" standard conformance
+live/automatic merchant sync
+(Square spike is fixture-only, no live API)
+Shopify/BigCommerce/WooCommerce connectors
 human-first marketplace UI</code></pre>
           </div>
         </div>
@@ -363,6 +390,7 @@ human-first marketplace UI</code></pre>
           <a href="#features">Features</a>
           <a href="#loop">Agent Loop</a>
           <a href="#code">Developer SDK</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/">Blog</a>
           <a
             href="https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md"
             target="_blank"
