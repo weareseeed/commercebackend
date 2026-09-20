@@ -58,6 +58,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
 - Operator-triggered, read-only Square catalog import (fixture-driven by default; optionally live against the operator's own Square Developer Sandbox when a real `SQUARE_ACCESS_TOKEN` is configured, never a third-party merchant's account) mapping into ordinary agent-facing listings; see `docs/api/connectors-square.md`.
 - Operator-triggered, read-only Shopify catalog import spike (fixture-driven, no live Shopify API call), reusing the same canonical catalog shape; see `docs/api/connectors-shopify.md`.
+- A per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) computed at request time and surfaced on `GET /v1/agents/me` and the new `GET /v1/agents/:id` public-profile lookup; groundwork for a future purchase-policy trust check, not itself an enforcement decision; see `docs/api/native-api.md`.
 
 ## Not supported in v0.2
 

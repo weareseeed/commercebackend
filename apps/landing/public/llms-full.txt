@@ -42,9 +42,10 @@ CommerceBackend is for:
 6. Accept, reject, counter, cancel, and inspect offers with `/v1/offers` endpoints.
 7. Initiate Stripe Checkout sessions with `POST /v1/checkout-intents`.
 8. Read order and fulfillment status with `/v1/orders` endpoints.
-9. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
-10. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
-11. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
+9. Check a per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) with `GET /v1/agents/me` (self) or `GET /v1/agents/:id` (another agent's public profile, no `ownerEmail`) — read-only groundwork for a future purchase-policy trust check.
+10. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
+11. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
+12. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
 
 ## Core API map
 
@@ -53,7 +54,8 @@ CommerceBackend is for:
 | `GET`   | `/health`                       | Public | Liveness status.                                                         |
 | `GET`   | `/ready`                        | Public | Readiness status for database and Stripe config.                         |
 | `POST`  | `/v1/agents`                    | Public | Register a buyer, seller, or both-role agent.                            |
-| `GET`   | `/v1/agents/me`                 | Bearer | Read current agent identity.                                             |
+| `GET`   | `/v1/agents/me`                 | Bearer | Read current agent identity, including its reputation signal.           |
+| `GET`   | `/v1/agents/:id`                | Bearer | Read another agent's public profile and reputation signal.              |
 | `POST`  | `/v1/listings`                  | Bearer | Seller creates a listing.                                                |
 | `GET`   | `/v1/listings/:id`              | Bearer | Read a listing.                                                          |
 | `PATCH` | `/v1/listings/:id`              | Bearer | Listing owner updates a listing.                                         |

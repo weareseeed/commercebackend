@@ -108,17 +108,74 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
       "ownerEmail": "ops@acme.com",
       "status": "active",
       "createdAt": "2026-05-24T00:00:00.000Z",
-      "updatedAt": "2026-05-24T00:00:00.000Z"
+      "updatedAt": "2026-05-24T00:00:00.000Z",
+      "reputation": {
+        "checkouts": {
+          "asBuyer": { "completed": 0, "failed": 0, "completionRate": null },
+          "asSeller": { "completed": 12, "failed": 1, "completionRate": 0.923076923076923 }
+        },
+        "offers": {
+          "asBuyer": { "accepted": 0, "terminalTotal": 0, "acceptanceRate": null },
+          "asSeller": { "accepted": 9, "terminalTotal": 11, "acceptanceRate": 0.8181818181818182 }
+        }
+      }
     }
   }
   ```
+  `reputation` (weekly backlog item 11) is computed at request time from this
+  agent's `CheckoutIntent`/`Offer` history — it is not stored on the agent
+  row. It is split by buyer vs. seller role since the two are tracked
+  independently: `checkouts.completed`/`failed` count terminal
+  `CheckoutIntent` outcomes (`paid` vs. `expired`/`cancelled`/`failed`/
+  `payment_inventory_conflict`); `offers.accepted`/`terminalTotal` count
+  decided `Offer` outcomes (`accepted`/`checkout_pending` vs. `rejected`/
+  `expired`/`cancelled`). Any `*Rate` field is `null`, not `0`, when there is
+  no decided history yet in that role — "no data" and "0% success" are
+  different signals. This is groundwork for a future purchase-policy trust
+  check; it is read-only and does not itself block or approve anything.
 - **Example Curl**:
   ```bash
   curl -X GET http://localhost:4000/v1/agents/me \
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 5. Create Listing
+### 5. Get Another Agent's Public Profile
+- **GET** `/v1/agents/:id`
+- Returns another agent's public profile — e.g. a buyer checking a seller's
+  reputation before making an offer. Any authenticated agent may look up any
+  other agent this way. Unlike `GET /v1/agents/me`, the response omits
+  `ownerEmail` (only the owning agent sees its own contact info).
+- **Response (200 OK):**
+  ```json
+  {
+    "agent": {
+      "id": "agent_def456",
+      "name": "Acme Seller Agent",
+      "type": "seller",
+      "status": "active",
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z",
+      "reputation": {
+        "checkouts": {
+          "asBuyer": { "completed": 0, "failed": 0, "completionRate": null },
+          "asSeller": { "completed": 12, "failed": 1, "completionRate": 0.923076923076923 }
+        },
+        "offers": {
+          "asBuyer": { "accepted": 0, "terminalTotal": 0, "acceptanceRate": null },
+          "asSeller": { "accepted": 9, "terminalTotal": 11, "acceptanceRate": 0.8181818181818182 }
+        }
+      }
+    }
+  }
+  ```
+- **Errors**: `404 AGENT_NOT_FOUND` for an unknown id.
+- **Example Curl**:
+  ```bash
+  curl -X GET http://localhost:4000/v1/agents/agent_def456 \
+    -H "Authorization: Bearer cb_test_your_key_here"
+  ```
+
+### 6. Create Listing
 - **POST** `/v1/listings` *(Requires seller/both type)*
 - **Body:**
   ```json
@@ -163,7 +220,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"title": "VIP Jazz Night Ticket", "description": "VIP ticket for Friday jazz night in Miami.", "type": "event_ticket", "priceAmount": 8500, "currency": "USD", "quantityAvailable": 42, "attributes": {"venue_city": "Miami"}, "fulfillmentInstructions": "Email QR ticket"}'
   ```
 
-### 6. Get Listing
+### 7. Get Listing
 - **GET** `/v1/listings/:id`
 - **Response (200 OK):**
   ```json
@@ -177,7 +234,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 7. Search Listings (Paginated)
+### 8. Search Listings (Paginated)
 - **POST** `/v1/search`
 - **Body:**
   ```json
@@ -221,7 +278,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"query": "jazz tickets", "filters": {"type": "event_ticket"}, "limit": 20, "offset": 0}'
   ```
 
-### 8. Create Purchase Policy
+### 9. Create Purchase Policy
 - **POST** `/v1/agents/:buyerAgentId/purchase-policies` *(Requires operator `X-Operator-Key`, not buyer-agent bearer auth)*
 - **Purpose:** Defines bounded purchase authority for a buyer agent before checkout reaches Stripe. Policies can auto-approve low-risk purchases or require human approval above a threshold. Agents never receive raw payment credentials and cannot create or approve their own policies.
 - **Body:**
@@ -263,7 +320,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"name":"Low-risk ticket policy","maxAutoApproveAmount":7500,"currency":"USD","allowedListingTypes":["event_ticket"],"requireHumanApprovalAboveAmount":7500,"requireHumanApprovalForOffers":true}'
   ```
 
-### 9. Create Checkout Intent
+### 10. Create Checkout Intent
 - **POST** `/v1/checkout-intents` *(Requires buyer/both type)*
 - **Body:**
   ```json
@@ -308,7 +365,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"listingId": "lst_xyz789", "quantity": 2, "successUrl": "http://localhost:3000/success?checkoutIntentId={CHECKOUT_INTENT_ID}", "cancelUrl": "http://localhost:3000/cancel?checkoutIntentId={CHECKOUT_INTENT_ID}"}'
   ```
 
-### 10. Get Orders (Paginated)
+### 11. Get Orders (Paginated)
 - **GET** `/v1/orders?role=buyer&limit=20&offset=0`
 - **Response (200 OK):**
   ```json
@@ -343,7 +400,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 11. Update Fulfillment
+### 12. Update Fulfillment
 - **POST** `/v1/orders/:id/fulfillment` *(Requires seller of the order)*
 - **Body:**
   ```json
@@ -370,7 +427,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"fulfillmentStatus": "fulfilled", "fulfillmentNote": "QR tickets emailed to buyer email address."}'
   ```
 
-### 12. Create Offer
+### 13. Create Offer
 - **POST** `/v1/listings/:id/offers` *(Requires buyer/both type)*
 - **Body:**
   ```json
@@ -412,7 +469,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"priceAmount": 7500, "quantity": 2, "expiresAt": "2026-05-31T09:35:17.000Z", "note": "Programmatic offer."}'
   ```
 
-### 13. Get List of Offers
+### 14. Get List of Offers
 - **GET** `/v1/offers?role=buyer&status=pending`
 - **Response (200 OK):**
   ```json
@@ -438,7 +495,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 14. Get Offer Details
+### 15. Get Offer Details
 - **GET** `/v1/offers/:id`
 - **Response (200 OK):**
   ```json
@@ -474,7 +531,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 15. Accept Offer
+### 16. Accept Offer
 - **POST** `/v1/offers/:id/accept` *(Requires listing owner/seller)*
 - **Response (200 OK):**
   ```json
@@ -496,7 +553,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 16. Reject Offer
+### 17. Reject Offer
 - **POST** `/v1/offers/:id/reject` *(Requires buyer or listing owner/seller)*
 - **Response (200 OK):**
   ```json
@@ -514,7 +571,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 17. Counter Offer
+### 18. Counter Offer
 - **POST** `/v1/offers/:id/counter` *(Requires listing owner/seller)*
 - **Body:**
   ```json
@@ -546,7 +603,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -d '{"counterPriceAmount": 8000, "counterQuantity": 2, "counterExpiresAt": "2026-05-31T09:35:17.000Z", "note": "Counter offer terms."}'
   ```
 
-### 18. Accept Counter Offer
+### 19. Accept Counter Offer
 - **POST** `/v1/offers/:id/accept-counter` *(Requires buyer)*
 - **Response (200 OK):**
   ```json
@@ -568,7 +625,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     -H "Authorization: Bearer cb_test_your_key_here"
   ```
 
-### 19. Cancel Offer
+### 20. Cancel Offer
 - **POST** `/v1/offers/:id/cancel` *(Requires buyer)*
 - **Response (200 OK):**
   ```json
@@ -594,7 +651,7 @@ These endpoints are for Seeed LLC operators, not buyer/seller agents. They
 require the `X-Operator-Key` header (see `OPERATOR_API_KEY`) instead of an
 agent bearer token.
 
-### 20. Operator Metrics
+### 21. Operator Metrics
 - **GET** `/v1/operator/metrics` *(Requires `X-Operator-Key`)*
 - Read-only live counts across core resources, plus persisted critical
   operational events (currently `CHECKOUT_PERSISTENCE_FAILED`). Groundwork
