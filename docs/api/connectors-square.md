@@ -64,7 +64,7 @@
   the source's current values; there's no diffing or partial-field merge.
 - **No BigCommerce/WooCommerce connectors yet.** Those are still separate,
   unstarted roadmap items. A Shopify import spike now exists reusing the same
-  canonical shape (fixture-only, no live mode yet) — see
+  canonical shape, with its own optional live sandbox mode — see
   `docs/api/connectors-shopify.md`.
 
 ## Live Sandbox Mode

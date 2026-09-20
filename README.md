@@ -84,7 +84,7 @@ This checks repository parity, required public content types, and public product
 - Multi-seller shopping carts.
 - Refunds, disputes, platform fees, or tax calculation.
 - Stripe Connect seller payouts.
-- Merchant system connectors: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`) and Shopify (`docs/api/connectors-shopify.md`). Shopify is fixture-driven only; Square is fixture-driven by default and optionally live against the operator's own Square Developer Sandbox account when `SQUARE_ACCESS_TOKEN` is configured — neither reaches a third-party merchant's live store, and no automatic/scheduled sync exists for either. No BigCommerce or WooCommerce connectors yet.
+- Merchant system connectors: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`) and Shopify (`docs/api/connectors-shopify.md`). Both are fixture-driven by default and optionally live against the operator's own sandbox account — Square's Developer Sandbox when `SQUARE_ACCESS_TOKEN` is configured, Shopify's a development store when `SHOPIFY_SHOP_DOMAIN`/`SHOPIFY_ACCESS_TOKEN` are configured — neither reaches a third-party merchant's live store, and no automatic/scheduled sync exists for either. No BigCommerce or WooCommerce connectors yet.
 
 ---
 
@@ -190,6 +190,12 @@ pnpm selftest:stripe
 # fixture unless SQUARE_ACCESS_TOKEN is set, in which case it hits your own
 # Square Developer Sandbox — see docs/api/connectors-square.md)
 pnpm selftest:square
+
+# Mode D: Shopify Mode (imports a catalog via the Shopify connector; uses the
+# fixture unless SHOPIFY_SHOP_DOMAIN and SHOPIFY_ACCESS_TOKEN are set, in
+# which case it hits your own Shopify development store — see
+# docs/api/connectors-shopify.md)
+pnpm selftest:shopify
 ```
 
 ---

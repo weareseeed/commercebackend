@@ -9,7 +9,9 @@ const mode = process.argv.includes('--stripe')
   ? 'stripe'
   : process.argv.includes('--square')
     ? 'square'
-    : 'mock';
+    : process.argv.includes('--shopify')
+      ? 'shopify'
+      : 'mock';
 
 async function run() {
   console.log(`Starting CommerceBackend self-test in [${mode.toUpperCase()}] mode...\n`);
@@ -138,6 +140,66 @@ async function run() {
       });
       if (listings.length === 0)
         throw new Error('No imported Square listings found for the seller agent');
+    });
+  } else if (mode === 'shopify') {
+    let shopifySellerAgentId = '';
+
+    await testStep('shopify seller agent created', async () => {
+      const res = await fetch(`${BASE_URL}/v1/agents`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: 'SelfTest Shopify Seller Agent',
+          type: 'seller',
+          ownerEmail: 'selftest-shopify-seller@example.com',
+        }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}`);
+      const body = await res.json();
+      shopifySellerAgentId = body.agent?.id;
+      if (!shopifySellerAgentId) throw new Error('Seller agent ID not returned');
+    });
+
+    await testStep('shopify catalog sync succeeded', async () => {
+      const operatorKey = process.env.OPERATOR_API_KEY;
+      if (!operatorKey) throw new Error('OPERATOR_API_KEY is not set');
+
+      const res = await fetch(`${BASE_URL}/v1/connectors/shopify/sync`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-operator-key': operatorKey,
+        },
+        body: JSON.stringify({ sellerAgentId: shopifySellerAgentId }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}: ${await res.text()}`);
+      const body = await res.json();
+      const { syncLog } = body;
+      if (!syncLog) throw new Error('No syncLog returned');
+
+      const { isPlaceholderShopifyToken } = await import('@commercebackend/connector-shopify');
+      const isLive = !isPlaceholderShopifyToken(process.env.SHOPIFY_ACCESS_TOKEN);
+      console.log(
+        `  [INFO] Catalog source: ${isLive ? 'LIVE Shopify Admin API' : 'static fixture (SHOPIFY_SHOP_DOMAIN/SHOPIFY_ACCESS_TOKEN not configured)'}`
+      );
+      console.log(
+        `  [INFO] Shopify sync: status=${syncLog.status} imported=${syncLog.itemsImported} failed=${syncLog.itemsFailed}`
+      );
+
+      if (syncLog.status === 'failed') {
+        throw new Error(`Sync failed: ${JSON.stringify(syncLog.errors)}`);
+      }
+      if (syncLog.itemsImported === 0) {
+        throw new Error('No items were imported');
+      }
+    });
+
+    await testStep('imported listings persisted for the seller', async () => {
+      const listings = await prisma.listing.findMany({
+        where: { sellerAgentId: shopifySellerAgentId, importSource: 'shopify' },
+      });
+      if (listings.length === 0)
+        throw new Error('No imported Shopify listings found for the seller agent');
     });
   } else {
     // 3. Create seller agent

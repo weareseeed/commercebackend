@@ -57,7 +57,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Initial ACP (Agentic Commerce Protocol) adapter — a working, scoped subset (product feed + checkout sessions over the existing Stripe-hosted checkout redirect); see `docs/api/protocol-acp.md` for the supported subset and clearly-labeled unsupported fields.
 - Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
 - Operator-triggered, read-only Square catalog import (fixture-driven by default; optionally live against the operator's own Square Developer Sandbox when a real `SQUARE_ACCESS_TOKEN` is configured, never a third-party merchant's account) mapping into ordinary agent-facing listings; see `docs/api/connectors-square.md`.
-- Operator-triggered, read-only Shopify catalog import spike (fixture-driven, no live Shopify API call), reusing the same canonical catalog shape; see `docs/api/connectors-shopify.md`.
+- Operator-triggered, read-only Shopify catalog import (fixture-driven by default; optionally live against the operator's own Shopify development store when `SHOPIFY_SHOP_DOMAIN`/`SHOPIFY_ACCESS_TOKEN` are configured, never a third-party merchant's store), reusing the same canonical catalog shape; see `docs/api/connectors-shopify.md`.
 - A per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) computed at request time and surfaced on `GET /v1/agents/me` and the new `GET /v1/agents/:id` public-profile lookup; groundwork for a future purchase-policy trust check, not itself an enforcement decision; see `docs/api/native-api.md`.
 
 ## Not supported in v0.2
@@ -68,7 +68,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Refunds or disputes.
 - Tax calculation.
 - Stripe Connect seller payouts.
-- Automatic/scheduled sync for any connector, or OAuth-based multi-merchant onboarding — every sync is operator-triggered and single-account. The Shopify connector is fixture-driven only; the Square connector is fixture-driven by default and optionally live against the operator's own Square Developer Sandbox account (see `docs/api/connectors-square.md`) — neither reaches a third-party merchant's live store. BigCommerce and WooCommerce connectors do not exist yet.
+- Automatic/scheduled sync for any connector, or OAuth-based multi-merchant onboarding — every sync is operator-triggered and single-account. Both the Square and Shopify connectors are fixture-driven by default and optionally live against the operator's own sandbox account — Square's Developer Sandbox (see `docs/api/connectors-square.md`) and Shopify's development store (see `docs/api/connectors-shopify.md`) — neither reaches a third-party merchant's live store. BigCommerce and WooCommerce connectors do not exist yet.
 - Full/certified ACP spec compliance (delegated payment token, session update/cancel, multi-item carts, tax, discounts, refunds — see `docs/api/protocol-acp.md`).
 - Conformance to any named external "UCP" standard — UCP here is CommerceBackend's own mapping layer (see `docs/api/protocol-ucp.md` for its scoped subset).
 

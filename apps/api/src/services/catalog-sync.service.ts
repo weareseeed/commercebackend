@@ -7,7 +7,7 @@ import {
 } from '@commercebackend/connector-square';
 import {
   CatalogMappingError as ShopifyCatalogMappingError,
-  loadShopifyCatalogFixture,
+  loadShopifyCatalog,
   mapShopifyProductToCanonical,
 } from '@commercebackend/connector-shopify';
 import { AppError } from '../plugins/error-handler';
@@ -129,14 +129,20 @@ export class CatalogSyncService {
   }
 
   /**
-   * Read-only catalog import spike (weekly backlog item 8): reads a static
-   * Shopify product-catalog fixture (no live Shopify API call), maps each
-   * product to the canonical catalog shape, and upserts it into `Listing`
-   * keyed on (importSource, externalId) so re-running the sync updates
-   * existing imported listings instead of duplicating them. A per-item
-   * mapping failure is recorded in the returned sync log, not thrown — the
-   * rest of the batch still imports. Mirrors `syncSquareCatalog` above; see
-   * `packages/connectors/shopify` for the mapping logic.
+   * Catalog import (weekly backlog item 8, later extended with an optional
+   * live mode): by default reads a static Shopify catalog fixture (no live
+   * Shopify API call). Configuring `SHOPIFY_SHOP_DOMAIN` and
+   * `SHOPIFY_ACCESS_TOKEN` switches this to fetch from the actual Shopify
+   * Admin API instead (see `@commercebackend/connector-shopify`'s
+   * `loadShopifyCatalog`). Either way, each product is mapped to the
+   * canonical catalog shape and upserted into `Listing` keyed on
+   * (importSource, externalId) so re-running the sync updates existing
+   * imported listings instead of duplicating them. A per-item mapping
+   * failure is recorded in the returned sync log, not thrown — the rest of
+   * the batch still imports. A failure to reach the catalog source at all
+   * (e.g. live API auth/network failure) is recorded as a single `failed`
+   * sync log entry rather than throwing. Mirrors `syncSquareCatalog` above;
+   * see `packages/connectors/shopify` for the mapping logic.
    */
   static async syncShopifyCatalog(sellerAgentId: string) {
     const sellerAgent = await prisma.agent.findUnique({ where: { id: sellerAgentId } });
@@ -147,7 +153,24 @@ export class CatalogSyncService {
       throw new AppError('VALIDATION_ERROR', 'sellerAgentId must belong to a seller or both-type agent', 400);
     }
 
-    const products = loadShopifyCatalogFixture();
+    let products;
+    try {
+      products = await loadShopifyCatalog();
+    } catch (err) {
+      return prisma.catalogSyncLog.create({
+        data: {
+          connector: SHOPIFY_CONNECTOR,
+          sellerAgentId,
+          status: 'failed',
+          itemsImported: 0,
+          itemsFailed: 1,
+          errors: [
+            { externalId: null, message: err instanceof Error ? err.message : 'Failed to reach Shopify catalog source' },
+          ] as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
     const errors: ConnectorImportError[] = [];
     let itemsImported = 0;
 
