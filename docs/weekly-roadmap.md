@@ -111,7 +111,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
 - [x] **10. Read-only operator dashboard.** Minimal admin views over the counts
   from item 4 (agents, listings, offers, orders, query logs, critical events).
   _DoD:_ operator can inspect sandbox state in a browser. — [#156](https://github.com/weareseeed/commercebackend/pull/156)
-- [ ] **11. Agent reputation signal (read-only).** Compute a per-agent
+- [x] **11. Agent reputation signal (read-only).** Compute a per-agent
   reputation summary (completed vs. failed checkouts, offer acceptance rate)
   surfaced on the existing agent lookup path, groundwork for future
   purchase-policy trust checks. _DoD:_ endpoint/response returns the computed

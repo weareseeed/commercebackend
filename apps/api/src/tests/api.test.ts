@@ -154,7 +154,18 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(intent, data);
         return intent;
       }),
-      count: vi.fn(async () => mockDb.checkoutIntents.length),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.checkoutIntents.filter((c) => {
+          if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && c.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(c.status)) return false;
+            } else if (c.status !== where.status) return false;
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     order: {
@@ -305,7 +316,21 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(offer, data);
         return offer;
       }),
-      count: vi.fn(async () => mockDb.offers.length),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.offers.filter((o) => {
+          if (where?.buyerAgentId && o.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(o.status)) return false;
+            } else if (o.status !== where.status) return false;
+          }
+          if (where?.listing?.sellerAgentId) {
+            const listing = mockDb.listings.find((l) => l.id === o.listingId);
+            if (!listing || listing.sellerAgentId !== where.listing.sellerAgentId) return false;
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     offerHistory: {
@@ -841,6 +866,210 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(responseAuth.statusCode).toBe(401);
       const authData = JSON.parse(responseAuth.body);
       expect(authData.error.code).toBe('UNAUTHORIZED');
+    });
+  });
+
+  describe('Agent Reputation (weekly item 11)', () => {
+    let repBuyerKey: string;
+    let repBuyerId: string;
+    let repSellerKey: string;
+    let repSellerId: string;
+    let repListingId: string;
+
+    beforeEach(async () => {
+      const buyerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Buyer', type: 'buyer', ownerEmail: 'buyer@reputation.test' },
+      });
+      const buyerBody = JSON.parse(buyerRes.body);
+      repBuyerKey = buyerBody.apiKey;
+      repBuyerId = buyerBody.agent.id;
+
+      const sellerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Seller', type: 'seller', ownerEmail: 'seller@reputation.test' },
+      });
+      const sellerBody = JSON.parse(sellerRes.body);
+      repSellerKey = sellerBody.apiKey;
+      repSellerId = sellerBody.agent.id;
+
+      const listing = await prisma.listing.create({
+        data: {
+          sellerAgentId: repSellerId,
+          title: 'Reputation Test Item',
+          description: 'Item used to seed reputation history.',
+          type: 'physical_good',
+          priceAmount: 1000,
+          currency: 'USD',
+          quantityAvailable: 10,
+          attributes: {},
+        },
+      });
+      repListingId = listing.id;
+    });
+
+    it('returns a zero-valued reputation summary for a fresh agent with no history', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { reputation } = JSON.parse(res.body).agent;
+      expect(reputation).toEqual({
+        checkouts: {
+          asBuyer: { completed: 0, failed: 0, completionRate: null },
+          asSeller: { completed: 0, failed: 0, completionRate: null },
+        },
+        offers: {
+          asBuyer: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+          asSeller: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+        },
+      });
+    });
+
+    it('computes completed vs. failed checkouts and offer acceptance rate from seeded history', async () => {
+      // 2 completed + 1 failed checkout between this buyer and seller.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'expired',
+        },
+      });
+      // A non-terminal checkout intent should not count either way.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'open',
+        },
+      });
+
+      // 1 accepted + 1 rejected offer on the seller's listing from this buyer.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 900,
+          quantity: 1,
+          status: 'accepted',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 800,
+          quantity: 1,
+          status: 'rejected',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      // A still-pending offer should not count either way.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 850,
+          quantity: 1,
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+
+      const buyerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+      const buyerReputation = JSON.parse(buyerRes.body).agent.reputation;
+      expect(buyerReputation.checkouts.asBuyer).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(buyerReputation.offers.asBuyer).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+
+      const sellerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repSellerKey}` },
+      });
+      const sellerReputation = JSON.parse(sellerRes.body).agent.reputation;
+      expect(sellerReputation.checkouts.asSeller).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(sellerReputation.offers.asSeller).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+    });
+
+    it("GET /v1/agents/:id returns another agent's public profile with reputation, omitting ownerEmail", async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { agent } = JSON.parse(res.body);
+      expect(agent.id).toBe(repSellerId);
+      expect(agent.name).toBe('Reputation Seller');
+      expect(agent.reputation).toBeDefined();
+      expect(agent.ownerEmail).toBeUndefined();
+      expect(agent.apiKeyHash).toBeUndefined();
+      expect(agent.apiKeySalt).toBeUndefined();
+    });
+
+    it('GET /v1/agents/:id returns 404 for an unknown agent id', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/agent_does_not_exist',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('AGENT_NOT_FOUND');
+    });
+
+    it('GET /v1/agents/:id rejects requests without a valid API key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+      });
+
+      expect(res.statusCode).toBe(401);
     });
   });
 

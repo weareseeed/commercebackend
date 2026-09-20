@@ -52,7 +52,8 @@
     "ucp_adapter",
     "square_catalog_connector_spike",
     "square_catalog_connector_live_sandbox_mode_optional",
-    "shopify_catalog_connector_spike"
+    "shopify_catalog_connector_spike",
+    "agent_reputation_signal"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",
