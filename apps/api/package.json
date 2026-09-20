@@ -18,6 +18,7 @@
     "selftest": "tsx scripts/selftest.ts",
     "selftest:mock": "tsx scripts/selftest.ts",
     "selftest:stripe": "tsx scripts/selftest.ts --stripe",
+    "selftest:square": "tsx scripts/selftest.ts --square",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
