@@ -40,14 +40,24 @@ interface ShopifyProductsResponse {
 
 /** Extracts the `rel="next"` URL from a Shopify Admin API `Link` response
  * header, e.g. `<https://shop.myshopify.com/...&page_info=abc>; rel="next"`.
- * Returns `undefined` when there is no next page. */
+ * Returns `undefined` when there is no next page. Parsed with plain string
+ * splitting rather than a regex, since the header content comes from an HTTP
+ * response and an unbounded regex over untrusted input is a ReDoS risk. */
 export function parseNextLinkHeader(linkHeader: string | null): string | undefined {
   if (!linkHeader) return undefined;
-  const parts = linkHeader.split(',');
-  for (const part of parts) {
-    const match = part.match(/<([^>]+)>;\s*rel="next"/);
-    if (match) return match[1];
+
+  for (const part of linkHeader.split(',')) {
+    const segments = part.split(';').map((segment) => segment.trim());
+    const urlSegment = segments[0];
+    const isNext = segments
+      .slice(1)
+      .some((segment) => segment.split(' ').join('') === 'rel="next"');
+
+    if (isNext && urlSegment.startsWith('<') && urlSegment.endsWith('>')) {
+      return urlSegment.slice(1, -1);
+    }
   }
+
   return undefined;
 }
 
