@@ -19,6 +19,7 @@
     "selftest:mock": "tsx scripts/selftest.ts",
     "selftest:stripe": "tsx scripts/selftest.ts --stripe",
     "selftest:square": "tsx scripts/selftest.ts --square",
+    "selftest:shopify": "tsx scripts/selftest.ts --shopify",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

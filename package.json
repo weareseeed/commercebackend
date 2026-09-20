@@ -45,6 +45,7 @@
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
     "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
     "selftest:square": "pnpm --filter @commercebackend/api selftest:square",
+    "selftest:shopify": "pnpm --filter @commercebackend/api selftest:shopify",
     "verify:discovery": "node scripts/verify-discovery-assets.mjs",
     "verify:discovery:public": "node scripts/verify-discovery-assets.mjs --public",
     "verify:discovery:strict": "node scripts/verify-discovery-assets.mjs --public --strict-parity",
