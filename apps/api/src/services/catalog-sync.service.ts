@@ -2,7 +2,7 @@ import { prisma, Prisma } from '@commercebackend/db';
 import {
   CatalogMappingError,
   ConnectorImportError,
-  loadSquareCatalogFixture,
+  loadSquareCatalog,
   mapSquareCatalogObjectToCanonical,
 } from '@commercebackend/connector-square';
 import {
@@ -17,13 +17,18 @@ const SHOPIFY_CONNECTOR = 'shopify';
 
 export class CatalogSyncService {
   /**
-   * Read-only catalog import spike (weekly backlog item 9): reads a static
-   * Square catalog fixture (no live Square API call), maps each item to the
-   * canonical catalog shape, and upserts it into `Listing` keyed on
-   * (importSource, externalId) so re-running the sync updates existing
-   * imported listings instead of duplicating them. A per-item mapping
-   * failure is recorded in the returned sync log, not thrown — the rest of
-   * the batch still imports.
+   * Catalog import (weekly backlog item 9, later extended with an optional
+   * live mode): by default reads a static Square catalog fixture (no live
+   * Square API call). Configuring a real `SQUARE_ACCESS_TOKEN` switches this
+   * to fetch from the actual Square Catalog API (sandbox by default; see
+   * `@commercebackend/connector-square`'s `loadSquareCatalog`). Either way,
+   * each item is mapped to the canonical catalog shape and upserted into
+   * `Listing` keyed on (importSource, externalId) so re-running the sync
+   * updates existing imported listings instead of duplicating them. A
+   * per-item mapping failure is recorded in the returned sync log, not
+   * thrown — the rest of the batch still imports. A failure to reach the
+   * catalog source at all (e.g. live API auth/network failure) is recorded
+   * as a single `failed` sync log entry rather than throwing.
    */
   static async syncSquareCatalog(sellerAgentId: string) {
     const sellerAgent = await prisma.agent.findUnique({ where: { id: sellerAgentId } });
@@ -34,7 +39,24 @@ export class CatalogSyncService {
       throw new AppError('VALIDATION_ERROR', 'sellerAgentId must belong to a seller or both-type agent', 400);
     }
 
-    const catalogObjects = loadSquareCatalogFixture();
+    let catalogObjects;
+    try {
+      catalogObjects = await loadSquareCatalog();
+    } catch (err) {
+      return prisma.catalogSyncLog.create({
+        data: {
+          connector: SQUARE_CONNECTOR,
+          sellerAgentId,
+          status: 'failed',
+          itemsImported: 0,
+          itemsFailed: 1,
+          errors: [
+            { externalId: null, message: err instanceof Error ? err.message : 'Failed to reach Square catalog source' },
+          ] as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
     const errors: ConnectorImportError[] = [];
     let itemsImported = 0;
 

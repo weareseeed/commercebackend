@@ -51,6 +51,7 @@
     "acp_adapter",
     "ucp_adapter",
     "square_catalog_connector_spike",
+    "square_catalog_connector_live_sandbox_mode_optional",
     "shopify_catalog_connector_spike"
   ],
   "not_supported_in_v0_2": [
@@ -61,7 +62,8 @@
     "platform_fees",
     "tax_calculation",
     "shipping_labels",
-    "live_or_automatic_merchant_connector_sync",
+    "automatic_or_scheduled_connector_sync",
+    "oauth_multi_merchant_connector_onboarding",
     "bigcommerce_woocommerce_connectors"
   ],
   "shipped_agent_interfaces": [

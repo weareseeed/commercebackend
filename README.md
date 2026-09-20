@@ -84,7 +84,7 @@ This checks repository parity, required public content types, and public product
 - Multi-seller shopping carts.
 - Refunds, disputes, platform fees, or tax calculation.
 - Stripe Connect seller payouts.
-- Merchant system connectors: initial, operator-triggered, read-only catalog import spikes exist for Square (`docs/api/connectors-square.md`) and Shopify (`docs/api/connectors-shopify.md`) — both fixture-driven, not live API integrations; no BigCommerce or WooCommerce connectors yet, and no live/automatic sync for either.
+- Merchant system connectors: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`) and Shopify (`docs/api/connectors-shopify.md`). Shopify is fixture-driven only; Square is fixture-driven by default and optionally live against the operator's own Square Developer Sandbox account when `SQUARE_ACCESS_TOKEN` is configured — neither reaches a third-party merchant's live store, and no automatic/scheduled sync exists for either. No BigCommerce or WooCommerce connectors yet.
 
 ---
 
@@ -185,6 +185,11 @@ pnpm selftest:mock
 
 # Mode B: Stripe Mode (connects to real Stripe test APIs, requires valid keys)
 pnpm selftest:stripe
+
+# Mode C: Square Mode (imports a catalog via the Square connector; uses the
+# fixture unless SQUARE_ACCESS_TOKEN is set, in which case it hits your own
+# Square Developer Sandbox — see docs/api/connectors-square.md)
+pnpm selftest:square
 ```
 
 ---
@@ -255,7 +260,7 @@ All endpoints conform to the standard error response layout and require request 
 - **No tax calculation**: Tax collection is omitted in this version.
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
-- **Merchant connectors**: initial, operator-triggered, read-only catalog import spikes exist for Square (`docs/api/connectors-square.md`) and Shopify (`docs/api/connectors-shopify.md`) — both fixture-driven, no live API calls, no automatic sync. No BigCommerce or WooCommerce connectors yet.
+- **Merchant connectors**: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`, fixture-driven by default, optionally live against the operator's own Square Developer Sandbox) and Shopify (`docs/api/connectors-shopify.md`, fixture-driven only). No OAuth-based merchant onboarding or automatic sync for either. No BigCommerce or WooCommerce connectors yet.
 - **ACP Scope**: A real but scoped subset (product feed + checkout sessions over the existing Stripe-hosted redirect); see `docs/api/protocol-acp.md` for unsupported fields — not a certified/full spec implementation.
 - **UCP Scope**: The UCP adapter (`docs/api/protocol-ucp.md`) supports single-listing order create/read mapped onto the existing Stripe-hosted-checkout-URL redirect model only — no delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.
