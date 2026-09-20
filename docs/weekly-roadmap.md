@@ -116,11 +116,11 @@ Every weekly item should ladder up to one of these long-horizon epics:
   surfaced on the existing agent lookup path, groundwork for future
   purchase-policy trust checks. _DoD:_ endpoint/response returns the computed
   signal for a seeded agent; tests cover the calculation. — [#167](https://github.com/weareseeed/commercebackend/pull/167)
-- [ ] **12. Incident runbook doc.** Write a first incident-response runbook
+- [x] **12. Incident runbook doc.** Write a first incident-response runbook
   covering `CHECKOUT_PERSISTENCE_FAILED` and other critical events surfaced by
   the operator metrics endpoint: what to check, who to page, and rollback
   steps. _DoD:_ `docs/operations/incident-runbook.md` exists and is linked from
-  `AGENTS.md`.
+  `AGENTS.md`. — [#168](https://github.com/weareseeed/commercebackend/pull/168)
 - [ ] **13. BigCommerce connector spike (read-only).** Same treatment as the
   Square (item 9) and Shopify (item 8) spikes: map a BigCommerce-shaped
   catalog product onto the existing canonical imported-catalog shape and
