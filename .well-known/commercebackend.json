@@ -39,10 +39,10 @@
     "mcp_server",
     "acp_adapter",
     "ucp_adapter",
-    "square_catalog_connector_spike"
+    "square_catalog_connector_spike",
+    "shopify_catalog_connector_spike"
   ],
   "planned_capabilities": [
-    "shopify_catalog_connector",
     "agent_flow_examples"
   ],
   "docs_links": {

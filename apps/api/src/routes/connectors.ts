@@ -3,13 +3,14 @@ import { z } from 'zod';
 import { authenticateOperator } from '../plugins/auth';
 import { CatalogSyncService } from '../services/catalog-sync.service';
 
-// Catalog connector routes (weekly backlog item 9: Square connector spike,
-// read-only). Operator-gated: triggering an external-catalog import is an
-// operational action, not something a buyer/seller agent's own bearer key
-// should be able to do. The imported listings themselves are ordinary
-// `Listing` rows and show up through the existing, unchanged agent-facing
-// search/listing endpoints — no new agent-facing surface here.
-const SyncSquareCatalogSchema = z.object({
+// Catalog connector routes (weekly backlog items 8/9: Shopify and Square
+// connector spikes, both read-only). Operator-gated: triggering an
+// external-catalog import is an operational action, not something a
+// buyer/seller agent's own bearer key should be able to do. The imported
+// listings themselves are ordinary `Listing` rows and show up through the
+// existing, unchanged agent-facing search/listing endpoints — no new
+// agent-facing surface here.
+const SyncCatalogSchema = z.object({
   sellerAgentId: z.string().min(1, 'sellerAgentId is required'),
 });
 
@@ -18,8 +19,18 @@ export async function connectorRoutes(fastify: FastifyInstance) {
     '/v1/connectors/square/sync',
     { preHandler: authenticateOperator },
     async (request, reply) => {
-      const input = SyncSquareCatalogSchema.parse(request.body);
+      const input = SyncCatalogSchema.parse(request.body);
       const syncLog = await CatalogSyncService.syncSquareCatalog(input.sellerAgentId);
+      return reply.status(201).send({ syncLog });
+    }
+  );
+
+  fastify.post(
+    '/v1/connectors/shopify/sync',
+    { preHandler: authenticateOperator },
+    async (request, reply) => {
+      const input = SyncCatalogSchema.parse(request.body);
+      const syncLog = await CatalogSyncService.syncShopifyCatalog(input.sellerAgentId);
       return reply.status(201).send({ syncLog });
     }
   );

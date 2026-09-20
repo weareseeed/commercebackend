@@ -1,32 +1,32 @@
-# Square Catalog Connector (read-only spike)
+# Shopify Catalog Connector (read-only spike)
 
-> **Scope note:** This is weekly backlog item 9, "Square connector spike
-> (read-only)" — the canonical imported-catalog model and connector
-> abstraction that item 8 ("Connector abstraction + Shopify import spike")
-> was meant to provide, applied to Square first. Item 8 has since shipped its
-> own Shopify import spike reusing the same shape — see
-> `docs/api/connectors-shopify.md`. This is a **read-only spike**, not a
-> production connector: there is no live Square API call anywhere in this
-> feature — it
-> reads a static fixture (`packages/connectors/square/src/fixtures/square-catalog-fixture.json`)
-> standing in for a Square "List Catalog" response, maps each catalog item to
-> CommerceBackend's canonical catalog shape, and writes ordinary `Listing`
-> rows from it. No Square credentials exist anywhere in this repo.
+> **Scope note:** This is weekly backlog item 8, "Connector abstraction +
+> Shopify import spike (read-only)." It reuses the canonical imported-catalog
+> model and sync-log pattern that shipped with the Square connector spike
+> (`docs/api/connectors-square.md`, weekly item 9), applied to a Shopify-shaped
+> catalog. It is a **read-only spike**, not a production connector: there is
+> no live Shopify API call anywhere in this feature — it reads a static
+> fixture (`packages/connectors/shopify/src/fixtures/shopify-catalog-fixture.json`)
+> standing in for a Shopify Admin API `GET /admin/api/2024-01/products.json`
+> response, maps each product to CommerceBackend's canonical catalog shape,
+> and writes ordinary `Listing` rows from it. No Shopify credentials exist
+> anywhere in this repo.
 
 ## What is supported
 
-- Mapping a Square-shaped catalog object (`CatalogObject`, `type: "ITEM"`)
-  to CommerceBackend's canonical catalog item shape
-  (`packages/connectors/square/src/types.ts`, meant to be reused by future
-  connectors such as Shopify — only Square implements it so far).
+- Mapping a Shopify-shaped `Product` object to CommerceBackend's canonical
+  catalog item shape (`packages/connectors/shopify/src/types.ts`), the same
+  shape the Square connector maps into.
 - Importing that fixture into real `Listing` rows, owned by an operator-
   specified seller agent, keyed on `(importSource, externalId)` so re-running
   the sync **updates** the same listings instead of duplicating them.
 - A `CatalogSyncLog` row recording the outcome of every sync: how many items
   imported, how many failed, and why.
-- Per-item failure isolation: one malformed catalog item (e.g. missing a
+- Per-item failure isolation: one malformed product (e.g. missing a variant
   price) is recorded in the sync log's `errors` array and skipped — it does
   not abort the rest of the batch.
+- Draft/archived Shopify products are skipped as not agent-shoppable, without
+  being counted as sync failures.
 - Imported listings are ordinary, unmodified `Listing` rows: they show up
   through the existing, unchanged `/v1/search` and `/v1/listings/:id`
   endpoints exactly like natively-created listings. No new agent-facing
@@ -34,10 +34,10 @@
 
 ## What is explicitly NOT supported
 
-- **No live Square API integration.** This reads a static fixture only.
-  Building a real Square OAuth + Catalog API client is out of scope for this
+- **No live Shopify API integration.** This reads a static fixture only.
+  Building a real Shopify OAuth + Admin API client is out of scope for this
   spike.
-- **One-way only.** Nothing is written back to Square. "Read-only" in the
+- **One-way only.** Nothing is written back to Shopify. "Read-only" in the
   roadmap item's name refers to this: CommerceBackend never mutates the
   source catalog.
 - **No scheduled/automatic sync.** An operator triggers a sync explicitly;
@@ -45,15 +45,17 @@
 - **No conflict resolution beyond last-write-wins.** Re-syncing an existing
   imported listing overwrites its title/description/price/quantity/type with
   the fixture's current values; there's no diffing or partial-field merge.
+- **No multi-currency support.** The fixture's variant prices are treated as
+  USD; Shopify's per-store currency setting is not read.
 - **No BigCommerce/WooCommerce connectors yet.** Those are still separate,
-  unstarted roadmap items. A Shopify import spike now exists reusing the same
-  canonical shape — see `docs/api/connectors-shopify.md`.
+  unstarted roadmap items; only the canonical shape is meant to be shared
+  with them.
 
 ---
 
-## 1. Sync Square Catalog
+## 1. Sync Shopify Catalog
 
-- **POST** `/v1/connectors/square/sync`
+- **POST** `/v1/connectors/shopify/sync`
 - **Auth:** `X-Operator-Key` (operator-only — see `docs/security.md`). This is
   an operational action, not something a buyer/seller agent's bearer key can
   trigger.
@@ -71,16 +73,16 @@
 ```json
 {
   "syncLog": {
-    "id": "sync_abc123",
-    "connector": "square",
+    "id": "sync_def456",
+    "connector": "shopify",
     "sellerAgentId": "agent_seller_123",
     "status": "partial",
     "itemsImported": 3,
     "itemsFailed": 1,
     "errors": [
-      { "externalId": "SQ_ITEM_MISSING_PRICE", "message": "Square item has no usable variation[0].item_variation_data.price_money." }
+      { "externalId": "9004", "message": "Shopify product has no usable variants[0].price." }
     ],
-    "createdAt": "2026-09-12T00:00:00.000Z"
+    "createdAt": "2026-09-18T00:00:00.000Z"
   }
 }
 ```
@@ -91,7 +93,7 @@ some failed), or `"failed"` (nothing imported).
 **Example curl:**
 
 ```bash
-curl -X POST http://localhost:4000/v1/connectors/square/sync \
+curl -X POST http://localhost:4000/v1/connectors/shopify/sync \
   -H "X-Operator-Key: your_operator_key" \
   -H "Content-Type: application/json" \
   -d '{"sellerAgentId": "agent_seller_123"}'
@@ -101,18 +103,12 @@ curl -X POST http://localhost:4000/v1/connectors/square/sync \
 
 ## 2. List Sync Logs
 
+Sync logs across all connectors (Square and Shopify) share one endpoint:
+
 - **GET** `/v1/connectors/sync-logs?limit=20&offset=0`
 - **Auth:** `X-Operator-Key`.
-- Returns recent sync log entries across all connectors, newest first.
-
-**Response (200 OK):**
-
-```json
-{
-  "syncLogs": [ { "id": "sync_abc123", "connector": "square", "status": "partial", "itemsImported": 3, "itemsFailed": 1, "...": "..." } ],
-  "pagination": { "limit": 20, "offset": 0 }
-}
-```
+- Returns recent sync log entries across all connectors, newest first. See
+  `docs/api/connectors-square.md` for the response shape.
 
 ---
 

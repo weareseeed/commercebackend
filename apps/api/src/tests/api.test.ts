@@ -3545,4 +3545,136 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(res.statusCode).toBe(401);
     });
   });
+
+  describe('Shopify Connector API (weekly item 8, read-only spike)', () => {
+    let shopifySellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Shopify Seller', type: 'seller', ownerEmail: 's@shopify-connector.test' },
+      });
+      shopifySellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('shopify');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(shopifySellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips draft/archived products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.some((l: any) => l.title === 'Unpublished Draft Product')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('draft'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@shopify-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('shopify');
+    });
+  });
 });
