@@ -126,7 +126,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   catalog product onto the existing canonical imported-catalog shape and
   import it via the existing sync-log endpoints. _DoD:_ a BigCommerce catalog
   fixture imports into listings using the same `/v1/connectors/*/sync`
-  pattern; sync log records outcome. — [PR pending]
+  pattern; sync log records outcome. — [#173](https://github.com/weareseeed/commercebackend/pull/173)
 - [ ] **14. Purchase-policy & budget primitive (read-only enforcement scaffold).**
   Groundwork for the agent-native primitives epic: a `PurchasePolicy` read
   path (already modeled in Prisma) gains a computed "would this checkout
