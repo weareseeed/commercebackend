@@ -121,12 +121,12 @@ Every weekly item should ladder up to one of these long-horizon epics:
   the operator metrics endpoint: what to check, who to page, and rollback
   steps. _DoD:_ `docs/operations/incident-runbook.md` exists and is linked from
   `AGENTS.md`. — [#168](https://github.com/weareseeed/commercebackend/pull/168)
-- [ ] **13. BigCommerce connector spike (read-only).** Same treatment as the
+- [x] **13. BigCommerce connector spike (read-only).** Same treatment as the
   Square (item 9) and Shopify (item 8) spikes: map a BigCommerce-shaped
   catalog product onto the existing canonical imported-catalog shape and
   import it via the existing sync-log endpoints. _DoD:_ a BigCommerce catalog
   fixture imports into listings using the same `/v1/connectors/*/sync`
-  pattern; sync log records outcome.
+  pattern; sync log records outcome. — [PR pending]
 - [ ] **14. Purchase-policy & budget primitive (read-only enforcement scaffold).**
   Groundwork for the agent-native primitives epic: a `PurchasePolicy` read
   path (already modeled in Prisma) gains a computed "would this checkout
@@ -134,6 +134,27 @@ Every weekly item should ladder up to one of these long-horizon epics:
   checkout-intent creation path without blocking checkout yet. _DoD:_ endpoint
   or response field reports a policy violation signal for a seeded buyer
   policy + checkout amount; tests cover under/at/over-limit cases.
+- [ ] **15. WooCommerce connector spike (read-only).** Completes the
+  Merchant reach epic's initial connector set: same treatment as the Square
+  (item 9), Shopify (item 8), and BigCommerce (item 13) spikes, mapping a
+  WooCommerce REST API (`wp-json/wc/v3/products`) product onto the existing
+  canonical imported-catalog shape. _DoD:_ a WooCommerce catalog fixture
+  imports into listings using the same `/v1/connectors/*/sync` pattern; sync
+  log records outcome.
+- [ ] **16. Checkout event ledger endpoint (read-only).** Groundwork for the
+  Operational credibility epic's "checkout event ledger": an append-only,
+  operator-gated endpoint listing checkout-intent state transitions (created,
+  paid, fulfillment updated, `CHECKOUT_PERSISTENCE_FAILED`) already producible
+  from existing tables, exposed for audit without changing checkout behavior.
+  _DoD:_ endpoint returns an ordered transition history for a seeded checkout
+  intent; operator-auth enforced; tests.
+- [ ] **17. Agent-to-agent negotiation example.** Groundwork for the Proven
+  reliability epic: a runnable `examples/agent-negotiation-flow` walking a
+  buyer and seller agent through offer → counteroffer → accept using the
+  existing offers API end to end, mirroring `examples/agent-buyer-flow`.
+  _DoD:_ the example runs against the sandbox and completes a checkout from a
+  negotiated (non-listed-price) offer; documented in the example's own
+  README.
 
 ## Human-led (design + human review first — do NOT auto-build)
 
