@@ -196,6 +196,12 @@ pnpm selftest:square
 # which case it hits your own Shopify development store — see
 # docs/api/connectors-shopify.md)
 pnpm selftest:shopify
+
+# Mode E: BigCommerce Mode (imports a catalog via the BigCommerce connector;
+# uses the fixture unless BIGCOMMERCE_STORE_HASH and BIGCOMMERCE_ACCESS_TOKEN
+# are set, in which case it hits your own BigCommerce store — see
+# docs/api/connectors-bigcommerce.md)
+pnpm selftest:bigcommerce
 ```
 
 ---
@@ -266,7 +272,7 @@ All endpoints conform to the standard error response layout and require request 
 - **No tax calculation**: Tax collection is omitted in this version.
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
-- **Merchant connectors**: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`, fixture-driven by default, optionally live against the operator's own Square Developer Sandbox) and Shopify (`docs/api/connectors-shopify.md`, fixture-driven only). No OAuth-based merchant onboarding or automatic sync for either. No BigCommerce or WooCommerce connectors yet.
+- **Merchant connectors**: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`, fixture-driven by default, optionally live against the operator's own Square Developer Sandbox), Shopify (`docs/api/connectors-shopify.md`, fixture-driven by default, optionally live against the operator's own Shopify development store), and BigCommerce (`docs/api/connectors-bigcommerce.md`, fixture-driven by default, optionally live against the operator's own BigCommerce store). No OAuth-based merchant onboarding or automatic sync for any of them. No WooCommerce connector yet.
 - **ACP Scope**: A real but scoped subset (product feed + checkout sessions over the existing Stripe-hosted redirect); see `docs/api/protocol-acp.md` for unsupported fields — not a certified/full spec implementation.
 - **UCP Scope**: The UCP adapter (`docs/api/protocol-ucp.md`) supports single-listing order create/read mapped onto the existing Stripe-hosted-checkout-URL redirect model only — no delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.

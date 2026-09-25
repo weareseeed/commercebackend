@@ -10,10 +10,16 @@ import {
   loadShopifyCatalog,
   mapShopifyProductToCanonical,
 } from '@commercebackend/connector-shopify';
+import {
+  CatalogMappingError as BigCommerceCatalogMappingError,
+  loadBigCommerceCatalog,
+  mapBigCommerceProductToCanonical,
+} from '@commercebackend/connector-bigcommerce';
 import { AppError } from '../plugins/error-handler';
 
 const SQUARE_CONNECTOR = 'square';
 const SHOPIFY_CONNECTOR = 'shopify';
+const BIGCOMMERCE_CONNECTOR = 'bigcommerce';
 
 export class CatalogSyncService {
   /**
@@ -233,6 +239,125 @@ export class CatalogSyncService {
     return prisma.catalogSyncLog.create({
       data: {
         connector: SHOPIFY_CONNECTOR,
+        sellerAgentId,
+        status,
+        itemsImported,
+        itemsFailed: errors.length,
+        errors: errors.length > 0 ? (errors as unknown as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  }
+
+  /**
+   * Catalog import (weekly backlog item 13: "BigCommerce connector spike").
+   * By default reads a static BigCommerce catalog fixture (no live
+   * BigCommerce API call). Configuring real `BIGCOMMERCE_STORE_HASH` and
+   * `BIGCOMMERCE_ACCESS_TOKEN` switches this to fetch from the actual
+   * BigCommerce Catalog API instead — the operator's own store, never a
+   * third-party merchant's (see `@commercebackend/connector-bigcommerce`'s
+   * `loadBigCommerceCatalog`). Either way, each product is mapped to the
+   * canonical catalog shape and upserted into `Listing` keyed on
+   * (importSource, externalId) so re-running the sync updates existing
+   * imported listings instead of duplicating them. A per-item mapping
+   * failure is recorded in the returned sync log, not thrown — the rest of
+   * the batch still imports. A failure to reach the catalog source at all
+   * (e.g. live API auth/network failure) is recorded as a single `failed`
+   * sync log entry rather than throwing. Mirrors `syncSquareCatalog` and
+   * `syncShopifyCatalog` above; see `packages/connectors/bigcommerce` for the
+   * mapping logic.
+   */
+  static async syncBigCommerceCatalog(sellerAgentId: string) {
+    const sellerAgent = await prisma.agent.findUnique({ where: { id: sellerAgentId } });
+    if (!sellerAgent) {
+      throw new AppError('AGENT_NOT_FOUND', 'Seller agent not found', 404);
+    }
+    if (sellerAgent.type !== 'seller' && sellerAgent.type !== 'both') {
+      throw new AppError('VALIDATION_ERROR', 'sellerAgentId must belong to a seller or both-type agent', 400);
+    }
+
+    let products;
+    try {
+      products = await loadBigCommerceCatalog();
+    } catch (err) {
+      return prisma.catalogSyncLog.create({
+        data: {
+          connector: BIGCOMMERCE_CONNECTOR,
+          sellerAgentId,
+          status: 'failed',
+          itemsImported: 0,
+          itemsFailed: 1,
+          errors: [
+            {
+              externalId: null,
+              message: err instanceof Error ? err.message : 'Failed to reach BigCommerce catalog source',
+            },
+          ] as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    const errors: ConnectorImportError[] = [];
+    let itemsImported = 0;
+
+    for (const product of products) {
+      let canonicalItem;
+      try {
+        canonicalItem = mapBigCommerceProductToCanonical(product);
+      } catch (err) {
+        if (err instanceof BigCommerceCatalogMappingError) {
+          errors.push({ externalId: err.externalId, message: err.message });
+          continue;
+        }
+        throw err;
+      }
+
+      // Disabled BigCommerce products are not agent-shoppable listings.
+      if (!canonicalItem) continue;
+
+      const existing = await prisma.listing.findFirst({
+        where: { importSource: BIGCOMMERCE_CONNECTOR, externalId: canonicalItem.externalId },
+      });
+
+      if (existing) {
+        await prisma.listing.update({
+          where: { id: existing.id },
+          data: {
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            attributes: canonicalItem.attributes,
+          },
+        });
+      } else {
+        await prisma.listing.create({
+          data: {
+            sellerAgentId,
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            attributes: canonicalItem.attributes,
+            importSource: BIGCOMMERCE_CONNECTOR,
+            externalId: canonicalItem.externalId,
+          },
+        });
+      }
+
+      itemsImported += 1;
+    }
+
+    const status = errors.length === 0 ? 'success' : itemsImported > 0 ? 'partial' : 'failed';
+
+    return prisma.catalogSyncLog.create({
+      data: {
+        connector: BIGCOMMERCE_CONNECTOR,
         sellerAgentId,
         status,
         itemsImported,
