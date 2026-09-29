@@ -96,6 +96,7 @@ When a change touches `llms.txt`, `llms-full.txt`, `/.well-known/commercebackend
 
 ```bash
 pnpm verify:discovery:strict
+pnpm verify:github-metadata
 ```
 
 This verifier checks:
@@ -104,8 +105,9 @@ This verifier checks:
 - required discovery text/JSON fields
 - expected public content types for the canonical text and JSON endpoints
 - public production parity at `https://www.commercebackend.com`
+- live GitHub repository description, homepage URL, and topic drift versus `apps/landing/public/.well-known/commercebackend.json`
 
-If strict parity fails, the script reports the first differing text line or the JSON field path that drifted, which helps distinguish stale repository artifacts from stale production deployment bytes. When normalized content matches but raw bytes differ, it also flags likely line-ending normalization so maintainers can check the deploy/CDN path before treating the site as stale.
+If strict parity fails, the script reports the first differing text line or the JSON field path that drifted, which helps distinguish stale repository artifacts from stale production deployment bytes. When normalized content matches but raw bytes differ, it also flags likely line-ending normalization so maintainers can check the deploy/CDN path before treating the site as stale. The GitHub metadata verifier surfaces description, homepage, and topic drift as warnings by default so nightly maintenance stays grounded in the current live repo state; run `pnpm verify:github-metadata -- --strict` when you want that drift to fail the command.
 
 ---
 
