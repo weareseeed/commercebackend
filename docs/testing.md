@@ -15,6 +15,8 @@ NODE_ENV=test pnpm test
 
 Use `NODE_ENV=test pnpm test` so the suite runs with the expected mocked test configuration and does not depend on production-style Stripe validation.
 
+On a clean clone, `pnpm typecheck` and `pnpm test` auto-build missing workspace package outputs before they run. That build also generates the Prisma client.
+
 ## Automated Vitest suite
 
 CommerceBackend uses Vitest for unit and API-level integration coverage.
