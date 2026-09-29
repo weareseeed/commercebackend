@@ -26,7 +26,7 @@ You are a coding agent contributing to CommerceBackend, an open-source agent-fir
 - Preserve the API contract unless the issue explicitly asks for a contract change.
 - Update docs and examples when endpoint behavior changes.
 - Use `NODE_ENV=test pnpm test` when local env validation would otherwise require production Stripe/DB credentials.
-- Run `pnpm lint`, `pnpm typecheck`, `pnpm build`, and tests before requesting review.
+- Run `pnpm verify` before requesting review. (`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test`.)
 - Major Stripe, Prisma, Fastify, Zod, and TypeScript upgrades need dedicated migration issues and human review.
 
 ## Output expected
