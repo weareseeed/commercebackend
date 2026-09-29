@@ -12,7 +12,14 @@ describe('mapSquareCatalogObjectToCanonical', () => {
         name: 'Test Item',
         description: 'A test item',
         category: 'physical_good',
-        variations: [{ item_variation_data: { price_money: { amount: 1000, currency: 'USD' }, inventory_count: 5 } }],
+        variations: [
+          {
+            item_variation_data: {
+              price_money: { amount: 1000, currency: 'USD' },
+              inventory_count: 5,
+            },
+          },
+        ],
       },
     });
 
@@ -47,9 +54,9 @@ describe('mapSquareCatalogObjectToCanonical', () => {
   });
 
   it('throws CatalogMappingError when item_data.name is missing', () => {
-    expect(() => mapSquareCatalogObjectToCanonical({ type: 'ITEM', id: 'SQ_3', item_data: {} })).toThrow(
-      CatalogMappingError
-    );
+    expect(() =>
+      mapSquareCatalogObjectToCanonical({ type: 'ITEM', id: 'SQ_3', item_data: {} })
+    ).toThrow(CatalogMappingError);
   });
 
   it('throws CatalogMappingError when there is no usable price', () => {

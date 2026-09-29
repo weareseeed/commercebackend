@@ -74,6 +74,10 @@ When a dependency PR fails, classify it before acting:
 - If the failure is a real compatibility break, fix it in a dedicated PR or open/update a migration issue.
 - Use `docs/maintenance/dependency-triage.md` for the maintainer workflow and note template.
 
+## Incident Response
+
+When a critical operational event fires (currently `CHECKOUT_PERSISTENCE_FAILED`, surfaced on `GET /v1/operator/metrics` and the operator dashboard), or a checkout intent is stuck in `payment_inventory_conflict`, use `docs/operations/incident-runbook.md` for what to check, who to page, and rollback steps. Both of these can involve money already captured by Stripe with no corresponding order — never attempt to reconcile, refund, or auto-remediate them yourself; they are `[HUMAN-LED]` per the money-path guardrails below and need explicit maintainer review.
+
 ## Money-Path Guardrails
 
 The following major upgrades are intentionally not drive-by maintenance tasks. They need dedicated migration plans, tests, and human review because they can affect payments, persistence, runtime compatibility, or request validation:

@@ -154,7 +154,18 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(intent, data);
         return intent;
       }),
-      count: vi.fn(async () => mockDb.checkoutIntents.length),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.checkoutIntents.filter((c) => {
+          if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && c.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(c.status)) return false;
+            } else if (c.status !== where.status) return false;
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     order: {
@@ -305,7 +316,21 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(offer, data);
         return offer;
       }),
-      count: vi.fn(async () => mockDb.offers.length),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.offers.filter((o) => {
+          if (where?.buyerAgentId && o.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(o.status)) return false;
+            } else if (o.status !== where.status) return false;
+          }
+          if (where?.listing?.sellerAgentId) {
+            const listing = mockDb.listings.find((l) => l.id === o.listingId);
+            if (!listing || listing.sellerAgentId !== where.listing.sellerAgentId) return false;
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     offerHistory: {
@@ -841,6 +866,210 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(responseAuth.statusCode).toBe(401);
       const authData = JSON.parse(responseAuth.body);
       expect(authData.error.code).toBe('UNAUTHORIZED');
+    });
+  });
+
+  describe('Agent Reputation (weekly item 11)', () => {
+    let repBuyerKey: string;
+    let repBuyerId: string;
+    let repSellerKey: string;
+    let repSellerId: string;
+    let repListingId: string;
+
+    beforeEach(async () => {
+      const buyerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Buyer', type: 'buyer', ownerEmail: 'buyer@reputation.test' },
+      });
+      const buyerBody = JSON.parse(buyerRes.body);
+      repBuyerKey = buyerBody.apiKey;
+      repBuyerId = buyerBody.agent.id;
+
+      const sellerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Seller', type: 'seller', ownerEmail: 'seller@reputation.test' },
+      });
+      const sellerBody = JSON.parse(sellerRes.body);
+      repSellerKey = sellerBody.apiKey;
+      repSellerId = sellerBody.agent.id;
+
+      const listing = await prisma.listing.create({
+        data: {
+          sellerAgentId: repSellerId,
+          title: 'Reputation Test Item',
+          description: 'Item used to seed reputation history.',
+          type: 'physical_good',
+          priceAmount: 1000,
+          currency: 'USD',
+          quantityAvailable: 10,
+          attributes: {},
+        },
+      });
+      repListingId = listing.id;
+    });
+
+    it('returns a zero-valued reputation summary for a fresh agent with no history', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { reputation } = JSON.parse(res.body).agent;
+      expect(reputation).toEqual({
+        checkouts: {
+          asBuyer: { completed: 0, failed: 0, completionRate: null },
+          asSeller: { completed: 0, failed: 0, completionRate: null },
+        },
+        offers: {
+          asBuyer: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+          asSeller: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+        },
+      });
+    });
+
+    it('computes completed vs. failed checkouts and offer acceptance rate from seeded history', async () => {
+      // 2 completed + 1 failed checkout between this buyer and seller.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'expired',
+        },
+      });
+      // A non-terminal checkout intent should not count either way.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'open',
+        },
+      });
+
+      // 1 accepted + 1 rejected offer on the seller's listing from this buyer.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 900,
+          quantity: 1,
+          status: 'accepted',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 800,
+          quantity: 1,
+          status: 'rejected',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      // A still-pending offer should not count either way.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 850,
+          quantity: 1,
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+
+      const buyerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+      const buyerReputation = JSON.parse(buyerRes.body).agent.reputation;
+      expect(buyerReputation.checkouts.asBuyer).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(buyerReputation.offers.asBuyer).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+
+      const sellerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repSellerKey}` },
+      });
+      const sellerReputation = JSON.parse(sellerRes.body).agent.reputation;
+      expect(sellerReputation.checkouts.asSeller).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(sellerReputation.offers.asSeller).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+    });
+
+    it("GET /v1/agents/:id returns another agent's public profile with reputation, omitting ownerEmail", async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { agent } = JSON.parse(res.body);
+      expect(agent.id).toBe(repSellerId);
+      expect(agent.name).toBe('Reputation Seller');
+      expect(agent.reputation).toBeDefined();
+      expect(agent.ownerEmail).toBeUndefined();
+      expect(agent.apiKeyHash).toBeUndefined();
+      expect(agent.apiKeySalt).toBeUndefined();
+    });
+
+    it('GET /v1/agents/:id returns 404 for an unknown agent id', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/agent_does_not_exist',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('AGENT_NOT_FOUND');
+    });
+
+    it('GET /v1/agents/:id rejects requests without a valid API key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+      });
+
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -3543,6 +3772,270 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         url: '/v1/connectors/sync-logs',
       });
       expect(res.statusCode).toBe(401);
+    });
+  });
+
+  describe('Shopify Connector API (weekly item 8, read-only spike)', () => {
+    let shopifySellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Shopify Seller', type: 'seller', ownerEmail: 's@shopify-connector.test' },
+      });
+      shopifySellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('shopify');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(shopifySellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips draft/archived products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.some((l: any) => l.title === 'Unpublished Draft Product')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('draft'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@shopify-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('shopify');
+    });
+  });
+
+  describe('BigCommerce Connector API (weekly item 13, read-only spike)', () => {
+    let bigcommerceSellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'BigCommerce Seller', type: 'seller', ownerEmail: 's@bigcommerce-connector.test' },
+      });
+      bigcommerceSellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('bigcommerce');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(bigcommerceSellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips disabled products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce');
+      expect(imported.some((l: any) => l.title === 'Discontinued Terminal Skin')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('disabled'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@bigcommerce-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('bigcommerce');
     });
   });
 });

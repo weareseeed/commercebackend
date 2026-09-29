@@ -18,6 +18,9 @@
     "selftest": "tsx scripts/selftest.ts",
     "selftest:mock": "tsx scripts/selftest.ts",
     "selftest:stripe": "tsx scripts/selftest.ts --stripe",
+    "selftest:square": "tsx scripts/selftest.ts --square",
+    "selftest:shopify": "tsx scripts/selftest.ts --shopify",
+    "selftest:bigcommerce": "tsx scripts/selftest.ts --bigcommerce",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,11 +30,13 @@
     "@commercebackend/protocol-acp": "workspace:*",
     "@commercebackend/protocol-ucp": "workspace:*",
     "@commercebackend/connector-square": "workspace:*",
-    "fastify": "^5.10.0",
+    "@commercebackend/connector-shopify": "workspace:*",
+    "@commercebackend/connector-bigcommerce": "workspace:*",
+    "fastify": "^5.12.5",
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^10.3.0",
     "fastify-raw-body": "^5.0.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.4",
     "zod": "^3.22.4"
   },
   "devDependencies": {

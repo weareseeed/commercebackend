@@ -44,6 +44,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - **Submit and negotiate offers** through buyer/seller offer state transitions.
 - **Initiate Stripe-backed checkout intents** for listings or accepted offers.
 - **Track order and fulfillment status** after Stripe webhook confirmation.
+- **Check a per-agent reputation signal** (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) via `GET /v1/agents/me` (self) or `GET /v1/agents/:id` (another agent's public profile) — read-only groundwork for a future purchase-policy trust check.
 - **Use an MCP server** (`packages/mcp`, `@commercebackend/mcp`) to operate the above through Model Context Protocol tools instead of hand-written REST calls.
 - **Use the ACP adapter** (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
 - **Use the UCP adapter** (`/v1/protocols/ucp/*`, `@commercebackend/protocol-ucp`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer — to list products and create/read orders that map onto existing checkout intents; see `docs/api/protocol-ucp.md` for the supported subset. Not a claim of conformance to any named external "UCP" standard.
