@@ -1,0 +1,44 @@
+<svg width="1200" height="627" viewBox="0 0 1200 627" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="627" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="1" stop-color="#0B1726"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="80" y1="80" x2="980" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#36CFFF"/>
+      <stop offset="1" stop-color="#22D3A6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="627" rx="28" fill="url(#bg)"/>
+  <circle cx="1040" cy="90" r="130" fill="#143052" opacity="0.9"/>
+  <circle cx="1110" cy="520" r="160" fill="#10263E" opacity="0.85"/>
+  <circle cx="140" cy="540" r="120" fill="#122B46" opacity="0.8"/>
+  <rect x="40" y="40" width="1120" height="547" rx="24" fill="#091423" stroke="#173255"/>
+
+  <rect x="72" y="72" width="296" height="42" rx="21" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="94" y="99" fill="#9BDCF8" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="600">Seeed LLC • weekly recap</text>
+
+  <text x="72" y="208" fill="#FFFFFF" font-family="Outfit, Inter, Arial, sans-serif" font-size="56" font-weight="800">Protocol Adapters</text>
+  <text x="72" y="268" fill="url(#accent)" font-family="Outfit, Inter, Arial, sans-serif" font-size="56" font-weight="800">&amp; a Catalog Connector Spike</text>
+  <text x="72" y="312" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Six merged PRs: key security, real ACP/UCP adapters,</text>
+  <text x="72" y="344" fill="#D7E7F5" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">an operator dashboard, and a Square catalog spike.</text>
+
+  <rect x="72" y="384" width="252" height="76" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="96" y="418" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">ACP adapter</text>
+  <text x="96" y="444" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="16">scoped, honestly labeled</text>
+
+  <rect x="336" y="384" width="252" height="76" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="360" y="418" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">UCP adapter</text>
+  <text x="360" y="444" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="16">our own mapping layer</text>
+
+  <rect x="600" y="384" width="252" height="76" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="624" y="418" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Operator view</text>
+  <text x="624" y="444" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="16">read-only, key-gated</text>
+
+  <rect x="864" y="384" width="256" height="76" rx="18" fill="#0F2238" stroke="#1E3A5F"/>
+  <text x="888" y="418" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Square spike</text>
+  <text x="888" y="444" fill="#8FB9D8" font-family="Inter, Arial, sans-serif" font-size="16">fixture-driven, per-item logs</text>
+
+  <text x="72" y="530" fill="#7EA4C2" font-family="Inter, Arial, sans-serif" font-size="20">Owned and maintained by Seeed LLC</text>
+  <text x="72" y="558" fill="#5A7FA0" font-family="Inter, Arial, sans-serif" font-size="18">github.com/weareseeed/commercebackend</text>
+</svg>
