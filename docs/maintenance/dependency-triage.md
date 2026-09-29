@@ -61,6 +61,14 @@ Operator response:
 
 Use GitHub CLI so the nightly maintainer note is grounded in the actual failing run, not guesswork.
 
+For a concise inventory of current Dependabot alerts, run:
+
+```bash
+pnpm security:dependabot:open
+```
+
+This prints the alert number, severity, dependency, fixed version, manifest path, and GitHub security URL for every currently open alert. Use `pnpm security:dependabot:all` when you need to compare open and fixed alerts in the same pass.
+
 ```bash
 gh pr list --label dependencies --state open
 ```
