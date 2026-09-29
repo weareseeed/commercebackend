@@ -62,10 +62,10 @@
 - **No conflict resolution beyond last-write-wins.** Re-syncing an existing
   imported listing overwrites its title/description/price/quantity/type with
   the source's current values; there's no diffing or partial-field merge.
-- **No BigCommerce/WooCommerce connectors yet.** Those are still separate,
-  unstarted roadmap items. A Shopify import spike now exists reusing the same
-  canonical shape, with its own optional live sandbox mode — see
-  `docs/api/connectors-shopify.md`.
+- **No WooCommerce connector yet.** That is still a separate, unstarted
+  roadmap item. Shopify and BigCommerce import spikes now exist reusing the
+  same canonical shape, each with its own optional live mode — see
+  `docs/api/connectors-shopify.md` and `docs/api/connectors-bigcommerce.md`.
 
 ## Live Sandbox Mode
 

@@ -65,9 +65,10 @@
   variant's top-level `inventory_quantity` field as returned by the Products
   endpoint; it does not call Shopify's separate Inventory Levels API to
   reconcile counts across multiple locations.
-- **No BigCommerce/WooCommerce connectors yet.** Those are still separate,
-  unstarted roadmap items; only the canonical shape is meant to be shared
-  with them.
+- **No WooCommerce connector yet.** That is still a separate, unstarted
+  roadmap item. A BigCommerce import spike now exists reusing the same
+  canonical shape, with its own optional live mode — see
+  `docs/api/connectors-bigcommerce.md`.
 
 ## Live Sandbox Mode
 
@@ -153,7 +154,8 @@ curl -X POST http://localhost:4000/v1/connectors/shopify/sync \
 
 ## 2. List Sync Logs
 
-Sync logs across all connectors (Square and Shopify) share one endpoint:
+Sync logs across all connectors (Square, Shopify, and BigCommerce) share one
+endpoint:
 
 - **GET** `/v1/connectors/sync-logs?limit=20&offset=0`
 - **Auth:** `X-Operator-Key`.

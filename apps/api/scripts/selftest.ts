@@ -11,7 +11,9 @@ const mode = process.argv.includes('--stripe')
     ? 'square'
     : process.argv.includes('--shopify')
       ? 'shopify'
-      : 'mock';
+      : process.argv.includes('--bigcommerce')
+        ? 'bigcommerce'
+        : 'mock';
 
 async function run() {
   console.log(`Starting CommerceBackend self-test in [${mode.toUpperCase()}] mode...\n`);
@@ -200,6 +202,66 @@ async function run() {
       });
       if (listings.length === 0)
         throw new Error('No imported Shopify listings found for the seller agent');
+    });
+  } else if (mode === 'bigcommerce') {
+    let bigcommerceSellerAgentId = '';
+
+    await testStep('bigcommerce seller agent created', async () => {
+      const res = await fetch(`${BASE_URL}/v1/agents`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: 'SelfTest BigCommerce Seller Agent',
+          type: 'seller',
+          ownerEmail: 'selftest-bigcommerce-seller@example.com',
+        }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}`);
+      const body = await res.json();
+      bigcommerceSellerAgentId = body.agent?.id;
+      if (!bigcommerceSellerAgentId) throw new Error('Seller agent ID not returned');
+    });
+
+    await testStep('bigcommerce catalog sync succeeded', async () => {
+      const operatorKey = process.env.OPERATOR_API_KEY;
+      if (!operatorKey) throw new Error('OPERATOR_API_KEY is not set');
+
+      const res = await fetch(`${BASE_URL}/v1/connectors/bigcommerce/sync`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-operator-key': operatorKey,
+        },
+        body: JSON.stringify({ sellerAgentId: bigcommerceSellerAgentId }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}: ${await res.text()}`);
+      const body = await res.json();
+      const { syncLog } = body;
+      if (!syncLog) throw new Error('No syncLog returned');
+
+      const { isPlaceholderBigCommerceToken } = await import('@commercebackend/connector-bigcommerce');
+      const isLive = !isPlaceholderBigCommerceToken(process.env.BIGCOMMERCE_ACCESS_TOKEN);
+      console.log(
+        `  [INFO] Catalog source: ${isLive ? 'LIVE BigCommerce Catalog API' : 'static fixture (BIGCOMMERCE_STORE_HASH/BIGCOMMERCE_ACCESS_TOKEN not configured)'}`
+      );
+      console.log(
+        `  [INFO] BigCommerce sync: status=${syncLog.status} imported=${syncLog.itemsImported} failed=${syncLog.itemsFailed}`
+      );
+
+      if (syncLog.status === 'failed') {
+        throw new Error(`Sync failed: ${JSON.stringify(syncLog.errors)}`);
+      }
+      if (syncLog.itemsImported === 0) {
+        throw new Error('No items were imported');
+      }
+    });
+
+    await testStep('imported listings persisted for the seller', async () => {
+      const listings = await prisma.listing.findMany({
+        where: { sellerAgentId: bigcommerceSellerAgentId, importSource: 'bigcommerce' },
+      });
+      if (listings.length === 0)
+        throw new Error('No imported BigCommerce listings found for the seller agent');
     });
   } else {
     // 3. Create seller agent

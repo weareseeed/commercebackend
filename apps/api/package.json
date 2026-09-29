@@ -20,6 +20,7 @@
     "selftest:stripe": "tsx scripts/selftest.ts --stripe",
     "selftest:square": "tsx scripts/selftest.ts --square",
     "selftest:shopify": "tsx scripts/selftest.ts --shopify",
+    "selftest:bigcommerce": "tsx scripts/selftest.ts --bigcommerce",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@commercebackend/protocol-ucp": "workspace:*",
     "@commercebackend/connector-square": "workspace:*",
     "@commercebackend/connector-shopify": "workspace:*",
+    "@commercebackend/connector-bigcommerce": "workspace:*",
     "fastify": "^5.10.0",
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^10.3.0",

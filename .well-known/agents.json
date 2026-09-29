@@ -54,6 +54,8 @@
     "square_catalog_connector_live_sandbox_mode_optional",
     "shopify_catalog_connector_spike",
     "shopify_catalog_connector_live_sandbox_mode_optional",
+    "bigcommerce_catalog_connector_spike",
+    "bigcommerce_catalog_connector_live_mode_optional",
     "agent_reputation_signal"
   ],
   "not_supported_in_v0_2": [
@@ -66,7 +68,7 @@
     "shipping_labels",
     "automatic_or_scheduled_connector_sync",
     "oauth_multi_merchant_connector_onboarding",
-    "bigcommerce_woocommerce_connectors"
+    "woocommerce_connector"
   ],
   "shipped_agent_interfaces": [
     {
@@ -98,6 +100,12 @@
       "status": "shipped_read_only_spike",
       "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/shopify",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-shopify.md"
+    },
+    {
+      "name": "BigCommerce catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/bigcommerce",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-bigcommerce.md"
     }
   ],
   "safety": {

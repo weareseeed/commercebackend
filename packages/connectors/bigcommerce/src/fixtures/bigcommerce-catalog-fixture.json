@@ -1,0 +1,53 @@
+{
+  "products": [
+    {
+      "id": 5001,
+      "name": "Agent Checkout Terminal",
+      "description": "<p>Countertop terminal that can hand off a sale to a buyer agent mid-checkout.</p>",
+      "type": "physical",
+      "price": 249.0,
+      "inventory_level": 15,
+      "availability": "available",
+      "categories": ["Physical Good"]
+    },
+    {
+      "id": 5002,
+      "name": "Agent License Pack (10 seats)",
+      "description": "<p>Digital license bundle for connecting ten buyer agents to a storefront.</p>",
+      "type": "digital",
+      "price": 39.0,
+      "inventory_level": 500,
+      "availability": "available",
+      "categories": ["Digital Good"]
+    },
+    {
+      "id": 5003,
+      "name": "Catalog Migration Support Session",
+      "description": "<p>One hour of guided help migrating a BigCommerce catalog to CommerceBackend.</p>",
+      "type": "physical",
+      "price": 300.0,
+      "inventory_level": 6,
+      "availability": "available",
+      "categories": ["Service"]
+    },
+    {
+      "id": 5004,
+      "name": "Malformed Fixture Item (no price)",
+      "description": "<p>Intentionally missing a price to exercise per-item failure handling.</p>",
+      "type": "physical",
+      "inventory_level": 3,
+      "availability": "available",
+      "categories": ["Physical Good"]
+    },
+    {
+      "id": 5005,
+      "name": "Discontinued Terminal Skin",
+      "description": "<p>Disabled in the BigCommerce control panel; should not be imported as a listing.</p>",
+      "type": "physical",
+      "price": 19.0,
+      "inventory_level": 0,
+      "availability": "disabled",
+      "categories": ["Physical Good"]
+    }
+  ]
+}

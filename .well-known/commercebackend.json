@@ -41,6 +41,7 @@
     "ucp_adapter",
     "square_catalog_connector_spike",
     "shopify_catalog_connector_spike",
+    "bigcommerce_catalog_connector_spike",
     "agent_reputation_signal"
   ],
   "planned_capabilities": [
