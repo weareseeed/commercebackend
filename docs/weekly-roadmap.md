@@ -133,7 +133,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   violate the buyer's spending limit?" check, surfaced read-only on the
   checkout-intent creation path without blocking checkout yet. _DoD:_ endpoint
   or response field reports a policy violation signal for a seeded buyer
-  policy + checkout amount; tests cover under/at/over-limit cases. — PR TBD
+  policy + checkout amount; tests cover under/at/over-limit cases. — [#179](https://github.com/weareseeed/commercebackend/pull/179)
 - [ ] **15. WooCommerce connector spike (read-only).** Completes the
   Merchant reach epic's initial connector set: same treatment as the Square
   (item 9), Shopify (item 8), and BigCommerce (item 13) spikes, mapping a
