@@ -43,9 +43,10 @@ CommerceBackend is for:
 7. Initiate Stripe Checkout sessions with `POST /v1/checkout-intents`.
 8. Read order and fulfillment status with `/v1/orders` endpoints.
 9. Check a per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) with `GET /v1/agents/me` (self) or `GET /v1/agents/:id` (another agent's public profile, no `ownerEmail`) — read-only groundwork for a future purchase-policy trust check.
-10. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
-11. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
-12. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
+10. Check a purchase-policy spending-limit signal on checkout-intent creation (`POST /v1/checkout-intents` response field `spendingLimitSignal`) — reports whether the checkout would push the buyer's trailing-period spend over an optional per-policy budget (`spendingLimitAmount` + `spendingLimitPeriodDays` on `PurchasePolicy`); read-only groundwork for a future enforcement decision, it never blocks checkout or changes `policyDecision`.
+11. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
+12. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
+13. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
 
 ## Core API map
 

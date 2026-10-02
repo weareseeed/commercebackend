@@ -281,6 +281,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 ### 9. Create Purchase Policy
 - **POST** `/v1/agents/:buyerAgentId/purchase-policies` *(Requires operator `X-Operator-Key`, not buyer-agent bearer auth)*
 - **Purpose:** Defines bounded purchase authority for a buyer agent before checkout reaches Stripe. Policies can auto-approve low-risk purchases or require human approval above a threshold. Agents never receive raw payment credentials and cannot create or approve their own policies.
+- **Optional spending-limit budget:** `spendingLimitAmount` (integer cents) and `spendingLimitPeriodDays` (integer days) are optional and must be set together (or both left unset). When set, they do not change `maxAutoApproveAmount`/`requireHumanApprovalAboveAmount` enforcement above — they only power the read-only `spendingLimitSignal` reported on checkout-intent creation (see below). This is groundwork for a future spending-limit enforcement decision, not itself an enforcement decision.
 - **Body:**
   ```json
   {
@@ -290,7 +291,9 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     "allowedListingTypes": ["event_ticket"],
     "allowedSellerAgentIds": [],
     "requireHumanApprovalAboveAmount": 7500,
-    "requireHumanApprovalForOffers": true
+    "requireHumanApprovalForOffers": true,
+    "spendingLimitAmount": 100000,
+    "spendingLimitPeriodDays": 30
   }
   ```
 - **Response (201 Created):**
@@ -307,6 +310,8 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
       "allowedSellerAgentIds": [],
       "requireHumanApprovalAboveAmount": 7500,
       "requireHumanApprovalForOffers": true,
+      "spendingLimitAmount": 100000,
+      "spendingLimitPeriodDays": 30,
       "createdAt": "2026-05-26T00:00:00.000Z",
       "updatedAt": "2026-05-26T00:00:00.000Z"
     }
@@ -317,7 +322,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
   curl -X POST http://localhost:4000/v1/agents/agent_buyer/purchase-policies \
     -H "X-Operator-Key: op_...redacted" \
     -H "Content-Type: application/json" \
-    -d '{"name":"Low-risk ticket policy","maxAutoApproveAmount":7500,"currency":"USD","allowedListingTypes":["event_ticket"],"requireHumanApprovalAboveAmount":7500,"requireHumanApprovalForOffers":true}'
+    -d '{"name":"Low-risk ticket policy","maxAutoApproveAmount":7500,"currency":"USD","allowedListingTypes":["event_ticket"],"requireHumanApprovalAboveAmount":7500,"requireHumanApprovalForOffers":true,"spendingLimitAmount":100000,"spendingLimitPeriodDays":30}'
   ```
 
 ### 10. Create Checkout Intent
@@ -347,6 +352,14 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
       "status": "open",
       "purchasePolicyId": "pol_123",
       "policyDecision": "policy_approved",
+      "spendingLimitSignal": {
+        "configured": true,
+        "limitAmount": 100000,
+        "periodDays": 30,
+        "periodSpendBeforeThisCheckout": 34000,
+        "projectedPeriodSpend": 51000,
+        "wouldExceedLimit": false
+      },
       "stripeCheckoutSessionId": "cs_test_session_id_123",
       "checkoutUrl": "https://checkout.stripe.com/pay/cs_test_session_id_123",
       "createdAt": "2026-05-24T00:00:00.000Z",
@@ -357,6 +370,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 - If policy requires human approval, the checkout intent is created with `status: "human_approval_required"`, `policyDecision: "human_approval_required"`, and no `stripeCheckoutSessionId` or `checkoutUrl`.
 - Approve with **POST** `/v1/checkout-intents/:id/approve` using `X-Operator-Key` to create the Stripe Checkout session. Buyer-agent bearer auth is rejected.
 - Reject with **POST** `/v1/checkout-intents/:id/reject` using `X-Operator-Key` and optional body `{ "reason": "Human declined purchase." }`; no Stripe session is created.
+- **`spendingLimitSignal` (weekly backlog item 14):** a read-only, non-blocking signal computed from the matched purchase policy's optional `spendingLimitAmount`/`spendingLimitPeriodDays` budget. `configured: false` (with all other fields `null`/`0`/`false`) means no matched policy or no spending limit is set. `wouldExceedLimit` reports whether this checkout's amount, added to the buyer's spend under that policy over the trailing `periodDays` window (checkout intents in `open`, `human_approval_required`, `human_approved`, or `paid` status), would exceed `limitAmount`. It never changes `status` or `policyDecision` — checkout proceeds the same whether or not it is `true`.
 - **Example Curl**:
   ```bash
   curl -X POST http://localhost:4000/v1/checkout-intents \
