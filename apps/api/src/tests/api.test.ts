@@ -166,6 +166,20 @@ vi.mock('@commercebackend/db', () => {
           return true;
         }).length;
       }),
+      findMany: vi.fn(async ({ where } = {}) => {
+        return mockDb.checkoutIntents.filter((c) => {
+          if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && c.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.purchasePolicyId && c.purchasePolicyId !== where.purchasePolicyId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(c.status)) return false;
+            } else if (c.status !== where.status) return false;
+          }
+          if (where?.createdAt?.gte && new Date(c.createdAt) < new Date(where.createdAt.gte)) return false;
+          return true;
+        });
+      }),
       deleteMany: vi.fn(),
     },
     order: {
@@ -1815,6 +1829,246 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(data.checkoutIntent.approvalRejectionReason).toBe('Human declined purchase.');
       expect(data.checkoutIntent.stripeCheckoutSessionId).toBeNull();
       expect(data.checkoutIntent.checkoutUrl).toBeNull();
+    });
+
+    describe('Purchase-policy spending-limit signal (weekly backlog item 14)', () => {
+      const seedPolicyWithSpendingLimit = (
+        agentId: string,
+        overrides: { spendingLimitAmount?: number | null; spendingLimitPeriodDays?: number | null } = {}
+      ) => {
+        const policy = {
+          id: `pol_${Math.random().toString(36).substring(2, 11)}`,
+          buyerAgentId: agentId,
+          name: 'Spending-limit test policy',
+          enabled: true,
+          maxAutoApproveAmount: 1_000_000,
+          currency: 'USD',
+          allowedListingTypes: [],
+          allowedSellerAgentIds: [],
+          requireHumanApprovalAboveAmount: 1_000_000,
+          requireHumanApprovalForOffers: false,
+          spendingLimitAmount: overrides.spendingLimitAmount ?? 10000,
+          spendingLimitPeriodDays: overrides.spendingLimitPeriodDays ?? 30,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockDb.purchasePolicies.push(policy);
+        return policy;
+      };
+
+      it('reports configured: false when the matched policy has no spending limit set', async () => {
+        seedAutoApprovePolicy(buyerId); // no spendingLimitAmount/spendingLimitPeriodDays
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: false,
+          limitAmount: null,
+          periodDays: null,
+          periodSpendBeforeThisCheckout: 0,
+          projectedPeriodSpend: 5000,
+          wouldExceedLimit: false,
+        });
+      });
+
+      it('reports wouldExceedLimit: false when the checkout stays under the spending limit', async () => {
+        seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 10000, spendingLimitPeriodDays: 30 });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Listing price is 5000; nothing spent yet this period, so projected spend is 5000 < 10000.
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: true,
+          limitAmount: 10000,
+          periodDays: 30,
+          periodSpendBeforeThisCheckout: 0,
+          projectedPeriodSpend: 5000,
+          wouldExceedLimit: false,
+        });
+        // The signal is read-only: it never blocks checkout or alters policyDecision.
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+      });
+
+      it('reports wouldExceedLimit: false when the checkout lands exactly at the spending limit', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 5000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_prior_at_limit',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 0,
+          amountTotal: 0,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Prior spend 0 + this checkout's 5000 == the 5000 limit: at the limit, not over it.
+        expect(data.checkoutIntent.spendingLimitSignal.projectedPeriodSpend).toBe(5000);
+        expect(data.checkoutIntent.spendingLimitSignal.wouldExceedLimit).toBe(false);
+      });
+
+      it('reports wouldExceedLimit: true when prior period spend plus this checkout exceeds the limit', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 8000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_prior_spend',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 6000,
+          amountTotal: 6000,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Prior spend 6000 + this checkout's 5000 = 11000 > 8000 limit.
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: true,
+          limitAmount: 8000,
+          periodDays: 30,
+          periodSpendBeforeThisCheckout: 6000,
+          projectedPeriodSpend: 11000,
+          wouldExceedLimit: true,
+        });
+        // Still read-only: the over-limit checkout is NOT blocked by this signal alone.
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.policyDecision).toBe('policy_approved');
+        expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+      });
+
+      it('excludes checkout intents outside the trailing spending-limit period', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 8000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_old_spend',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 6000,
+          amountTotal: 6000,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 45 days ago, outside the 30-day window
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.checkoutIntent.spendingLimitSignal.periodSpendBeforeThisCheckout).toBe(0);
+        expect(data.checkoutIntent.spendingLimitSignal.wouldExceedLimit).toBe(false);
+      });
+
+      it('lets operators set a spending limit on a purchase policy', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: `/v1/agents/${buyerId}/purchase-policies`,
+          headers: operatorHeaders,
+          payload: {
+            name: 'Policy with a monthly budget',
+            maxAutoApproveAmount: 50000,
+            currency: 'USD',
+            requireHumanApprovalAboveAmount: 50000,
+            spendingLimitAmount: 100000,
+            spendingLimitPeriodDays: 30,
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.purchasePolicy.spendingLimitAmount).toBe(100000);
+        expect(data.purchasePolicy.spendingLimitPeriodDays).toBe(30);
+      });
+
+      it('rejects a purchase policy that sets only one of the spending-limit fields', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: `/v1/agents/${buyerId}/purchase-policies`,
+          headers: operatorHeaders,
+          payload: {
+            name: 'Half-configured budget',
+            maxAutoApproveAmount: 50000,
+            currency: 'USD',
+            requireHumanApprovalAboveAmount: 50000,
+            spendingLimitAmount: 100000,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+      });
     });
   });
 

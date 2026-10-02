@@ -123,6 +123,12 @@ model CheckoutIntent {
   purchasePolicyId        String?
   purchasePolicy          PurchasePolicy? @relation(fields: [purchasePolicyId], references: [id], onDelete: SetNull)
   policyDecision          PurchasePolicyDecision?
+  // Read-only "would this checkout violate the buyer's spending limit?"
+  // signal computed at creation time (weekly backlog item 14). Separate from
+  // policyDecision/status above: it never blocks or alters checkout outcome,
+  // it only reports whether the policy's trailing-period budget would be
+  // exceeded. Null when no matching policy or no spending limit configured.
+  spendingLimitSignal     Json?
   approvalRequestedAt     DateTime?
   humanApprovedAt         DateTime?
   humanRejectedAt         DateTime?
@@ -171,6 +177,13 @@ model PurchasePolicy {
   allowedSellerAgentIds           String[] @default([])
   requireHumanApprovalAboveAmount Int
   requireHumanApprovalForOffers   Boolean  @default(false)
+  // Optional trailing-period spending budget, separate from the per-checkout
+  // thresholds above. Both null means no spending limit is configured. When
+  // both are set, checkout-intent creation reports (read-only, non-blocking)
+  // whether this checkout would push the buyer's spend for the trailing
+  // `spendingLimitPeriodDays` window over `spendingLimitAmount`.
+  spendingLimitAmount             Int?
+  spendingLimitPeriodDays         Int?
   createdAt                       DateTime @default(now())
   updatedAt                       DateTime @updatedAt
   checkoutIntents                 CheckoutIntent[]
