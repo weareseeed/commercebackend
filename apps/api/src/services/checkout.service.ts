@@ -1,10 +1,24 @@
 import { prisma } from '@commercebackend/db';
-import { CreateCheckoutIntentInput } from '@commercebackend/schemas';
+import { CreateCheckoutIntentInput, SpendingLimitSignal } from '@commercebackend/schemas';
 import { createStripeCheckoutSession } from '@commercebackend/payments-stripe';
 import { ListingsService } from './listings.service';
 import { AppError } from '../plugins/error-handler';
 
 type PolicyDecision = 'policy_approved' | 'human_approval_required' | 'no_policy';
+
+// Checkout intents in these statuses represent spend that is either
+// committed (awaiting a human or Stripe outcome) or completed. Statuses that
+// mean the checkout never went through (rejected, expired, cancelled,
+// failed, inventory conflict) do not count against the spending-limit
+// signal below.
+const SPEND_COUNTING_STATUSES: Array<'open' | 'human_approval_required' | 'human_approved' | 'paid'> = [
+  'open',
+  'human_approval_required',
+  'human_approved',
+  'paid',
+];
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type CheckoutIntentWithApproval = {
   id: string;
@@ -25,7 +39,7 @@ export class CheckoutService {
     listing: any,
     amountTotal: number,
     hasOffer: boolean
-  ): Promise<{ purchasePolicyId: string | null; policyDecision: PolicyDecision }> {
+  ): Promise<{ purchasePolicy: any | null; policyDecision: PolicyDecision }> {
     const purchasePolicy = await prisma.purchasePolicy.findFirst({
       where: {
         buyerAgentId,
@@ -36,7 +50,7 @@ export class CheckoutService {
     });
 
     if (!purchasePolicy) {
-      return { purchasePolicyId: null, policyDecision: 'human_approval_required' };
+      return { purchasePolicy: null, policyDecision: 'human_approval_required' };
     }
 
     const listingTypeAllowed =
@@ -52,12 +66,60 @@ export class CheckoutService {
 
     if (!listingTypeAllowed || !sellerAllowed || offerRequiresApproval || amountRequiresApproval) {
       return {
-        purchasePolicyId: purchasePolicy.id,
+        purchasePolicy,
         policyDecision: 'human_approval_required',
       };
     }
 
-    return { purchasePolicyId: purchasePolicy.id, policyDecision: 'policy_approved' };
+    return { purchasePolicy, policyDecision: 'policy_approved' };
+  }
+
+  // Read-only, non-blocking signal (weekly backlog item 14): reports whether
+  // this checkout would push the buyer's spend for the matched policy's
+  // trailing `spendingLimitPeriodDays` window over `spendingLimitAmount`. It
+  // never changes `status` or `policyDecision` above — a human/operator
+  // consumes it as groundwork for a future enforcement decision.
+  private static async evaluateSpendingLimitSignal(
+    purchasePolicy: { id: string; spendingLimitAmount: number | null; spendingLimitPeriodDays: number | null } | null,
+    buyerAgentId: string,
+    amountTotal: number
+  ): Promise<SpendingLimitSignal> {
+    if (!purchasePolicy || purchasePolicy.spendingLimitAmount == null || purchasePolicy.spendingLimitPeriodDays == null) {
+      return {
+        configured: false,
+        limitAmount: null,
+        periodDays: null,
+        periodSpendBeforeThisCheckout: 0,
+        projectedPeriodSpend: amountTotal,
+        wouldExceedLimit: false,
+      };
+    }
+
+    const periodStart = new Date(Date.now() - purchasePolicy.spendingLimitPeriodDays * MS_PER_DAY);
+
+    const recentIntents = await prisma.checkoutIntent.findMany({
+      where: {
+        buyerAgentId,
+        purchasePolicyId: purchasePolicy.id,
+        status: { in: SPEND_COUNTING_STATUSES },
+        createdAt: { gte: periodStart },
+      },
+    });
+
+    const periodSpendBeforeThisCheckout = recentIntents.reduce(
+      (sum: number, intent: any) => sum + intent.amountTotal,
+      0
+    );
+    const projectedPeriodSpend = periodSpendBeforeThisCheckout + amountTotal;
+
+    return {
+      configured: true,
+      limitAmount: purchasePolicy.spendingLimitAmount,
+      periodDays: purchasePolicy.spendingLimitPeriodDays,
+      periodSpendBeforeThisCheckout,
+      projectedPeriodSpend,
+      wouldExceedLimit: projectedPeriodSpend > purchasePolicy.spendingLimitAmount,
+    };
   }
 
   private static async createAndPersistStripeSession(
@@ -305,6 +367,12 @@ export class CheckoutService {
         Boolean(input.offerId)
       );
 
+      const spendingLimitSignal = await CheckoutService.evaluateSpendingLimitSignal(
+        policyEvaluation.purchasePolicy,
+        buyerAgentId,
+        amountTotal
+      );
+
       return await tx.checkoutIntent.create({
         data: {
           listingId: listing.id,
@@ -322,8 +390,9 @@ export class CheckoutService {
           checkoutUrl: null,
           successUrl: input.successUrl,
           cancelUrl: input.cancelUrl,
-          purchasePolicyId: policyEvaluation.purchasePolicyId,
+          purchasePolicyId: policyEvaluation.purchasePolicy?.id ?? null,
           policyDecision: policyEvaluation.policyDecision,
+          spendingLimitSignal,
           approvalRequestedAt:
             policyEvaluation.policyDecision === 'human_approval_required' ? new Date() : null,
           offerId: input.offerId || null,

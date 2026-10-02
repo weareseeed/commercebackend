@@ -23,6 +23,8 @@ export class PurchasePoliciesService {
         allowedSellerAgentIds: input.allowedSellerAgentIds,
         requireHumanApprovalAboveAmount: input.requireHumanApprovalAboveAmount,
         requireHumanApprovalForOffers: input.requireHumanApprovalForOffers,
+        spendingLimitAmount: input.spendingLimitAmount ?? null,
+        spendingLimitPeriodDays: input.spendingLimitPeriodDays ?? null,
       },
     });
   }
