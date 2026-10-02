@@ -127,13 +127,13 @@ Every weekly item should ladder up to one of these long-horizon epics:
   import it via the existing sync-log endpoints. _DoD:_ a BigCommerce catalog
   fixture imports into listings using the same `/v1/connectors/*/sync`
   pattern; sync log records outcome. — [#173](https://github.com/weareseeed/commercebackend/pull/173)
-- [ ] **14. Purchase-policy & budget primitive (read-only enforcement scaffold).**
+- [x] **14. Purchase-policy & budget primitive (read-only enforcement scaffold).**
   Groundwork for the agent-native primitives epic: a `PurchasePolicy` read
   path (already modeled in Prisma) gains a computed "would this checkout
   violate the buyer's spending limit?" check, surfaced read-only on the
   checkout-intent creation path without blocking checkout yet. _DoD:_ endpoint
   or response field reports a policy violation signal for a seeded buyer
-  policy + checkout amount; tests cover under/at/over-limit cases.
+  policy + checkout amount; tests cover under/at/over-limit cases. — PR TBD
 - [ ] **15. WooCommerce connector spike (read-only).** Completes the
   Merchant reach epic's initial connector set: same treatment as the Square
   (item 9), Shopify (item 8), and BigCommerce (item 13) spikes, mapping a
