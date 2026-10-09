@@ -140,7 +140,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   WooCommerce REST API (`wp-json/wc/v3/products`) product onto the existing
   canonical imported-catalog shape. _DoD:_ a WooCommerce catalog fixture
   imports into listings using the same `/v1/connectors/*/sync` pattern; sync
-  log records outcome.
+  log records outcome. — [#184](https://github.com/weareseeed/commercebackend/pull/184)
 - [ ] **16. Checkout event ledger endpoint (read-only).** Groundwork for the
   Operational credibility epic's "checkout event ledger": an append-only,
   operator-gated endpoint listing checkout-intent state transitions (created,
