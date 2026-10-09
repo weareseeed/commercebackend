@@ -70,8 +70,11 @@
 - **No inventory-location awareness in live mode.** Live mode reads each
   product's top-level `inventory_level` field as returned by the Products
   endpoint; it does not reconcile counts across multiple warehouses/locations.
-- **No WooCommerce connector yet.** That is still a separate, unstarted
-  roadmap item; only the canonical shape is meant to be shared with it.
+- **No shared connector-core package yet.** A WooCommerce connector now
+  exists too (`docs/api/connectors-woocommerce.md`, weekly item 15); each
+  connector still duplicates the canonical catalog shape independently (see
+  `packages/connectors/woocommerce/src/types.ts`) rather than importing it
+  from a shared package.
 
 ## Live Mode
 

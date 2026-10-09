@@ -134,7 +134,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   checkout-intent creation path without blocking checkout yet. _DoD:_ endpoint
   or response field reports a policy violation signal for a seeded buyer
   policy + checkout amount; tests cover under/at/over-limit cases. — [#179](https://github.com/weareseeed/commercebackend/pull/179)
-- [ ] **15. WooCommerce connector spike (read-only).** Completes the
+- [x] **15. WooCommerce connector spike (read-only).** Completes the
   Merchant reach epic's initial connector set: same treatment as the Square
   (item 9), Shopify (item 8), and BigCommerce (item 13) spikes, mapping a
   WooCommerce REST API (`wp-json/wc/v3/products`) product onto the existing
@@ -155,6 +155,15 @@ Every weekly item should ladder up to one of these long-horizon epics:
   _DoD:_ the example runs against the sandbox and completes a checkout from a
   negotiated (non-listed-price) offer; documented in the example's own
   README.
+- [ ] **18. Reputation-aware search ranking signal (read-only, groundwork).**
+  Groundwork for the Search & discovery at scale epic: extend the DB-level
+  search (item 2) to surface each result's existing per-agent reputation
+  signal (item 11, `GET /v1/agents/:id`) alongside it, and support an
+  opt-in query parameter that re-ranks results to favor higher-reputation
+  sellers without changing default ordering. _DoD:_ search results include a
+  `sellerReputationScore` field; an opt-in ranking parameter changes result
+  order in a seeded test case with mixed-reputation sellers; default
+  (no-parameter) ordering is unchanged; tests cover both modes.
 
 ## Human-led (design + human review first — do NOT auto-build)
 
