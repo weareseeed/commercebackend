@@ -30,7 +30,11 @@ export function isPlaceholderWooCommerceConsumerSecret(val: string | undefined):
  * BigCommerce's store-scoped `v3` base URL. Bump deliberately, not as a
  * drive-by change. */
 export function wooCommerceApiBaseUrl(siteUrl: string): string {
-  return `${siteUrl.replace(/\/+$/, '')}/wp-json/wc/v3`;
+  let trimmed = siteUrl;
+  while (trimmed.endsWith('/')) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  return `${trimmed}/wp-json/wc/v3`;
 }
 
 /**
