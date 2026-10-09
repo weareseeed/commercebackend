@@ -13,7 +13,9 @@ const mode = process.argv.includes('--stripe')
       ? 'shopify'
       : process.argv.includes('--bigcommerce')
         ? 'bigcommerce'
-        : 'mock';
+        : process.argv.includes('--woocommerce')
+          ? 'woocommerce'
+          : 'mock';
 
 async function run() {
   console.log(`Starting CommerceBackend self-test in [${mode.toUpperCase()}] mode...\n`);
@@ -262,6 +264,66 @@ async function run() {
       });
       if (listings.length === 0)
         throw new Error('No imported BigCommerce listings found for the seller agent');
+    });
+  } else if (mode === 'woocommerce') {
+    let woocommerceSellerAgentId = '';
+
+    await testStep('woocommerce seller agent created', async () => {
+      const res = await fetch(`${BASE_URL}/v1/agents`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: 'SelfTest WooCommerce Seller Agent',
+          type: 'seller',
+          ownerEmail: 'selftest-woocommerce-seller@example.com',
+        }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}`);
+      const body = await res.json();
+      woocommerceSellerAgentId = body.agent?.id;
+      if (!woocommerceSellerAgentId) throw new Error('Seller agent ID not returned');
+    });
+
+    await testStep('woocommerce catalog sync succeeded', async () => {
+      const operatorKey = process.env.OPERATOR_API_KEY;
+      if (!operatorKey) throw new Error('OPERATOR_API_KEY is not set');
+
+      const res = await fetch(`${BASE_URL}/v1/connectors/woocommerce/sync`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-operator-key': operatorKey,
+        },
+        body: JSON.stringify({ sellerAgentId: woocommerceSellerAgentId }),
+      });
+      if (res.status !== 201) throw new Error(`Status ${res.status}: ${await res.text()}`);
+      const body = await res.json();
+      const { syncLog } = body;
+      if (!syncLog) throw new Error('No syncLog returned');
+
+      const { isPlaceholderWooCommerceSiteUrl } = await import('@commercebackend/connector-woocommerce');
+      const isLive = !isPlaceholderWooCommerceSiteUrl(process.env.WOOCOMMERCE_SITE_URL);
+      console.log(
+        `  [INFO] Catalog source: ${isLive ? 'LIVE WooCommerce REST API' : 'static fixture (WOOCOMMERCE_SITE_URL/WOOCOMMERCE_CONSUMER_KEY/WOOCOMMERCE_CONSUMER_SECRET not configured)'}`
+      );
+      console.log(
+        `  [INFO] WooCommerce sync: status=${syncLog.status} imported=${syncLog.itemsImported} failed=${syncLog.itemsFailed}`
+      );
+
+      if (syncLog.status === 'failed') {
+        throw new Error(`Sync failed: ${JSON.stringify(syncLog.errors)}`);
+      }
+      if (syncLog.itemsImported === 0) {
+        throw new Error('No items were imported');
+      }
+    });
+
+    await testStep('imported listings persisted for the seller', async () => {
+      const listings = await prisma.listing.findMany({
+        where: { sellerAgentId: woocommerceSellerAgentId, importSource: 'woocommerce' },
+      });
+      if (listings.length === 0)
+        throw new Error('No imported WooCommerce listings found for the seller agent');
     });
   } else {
     // 3. Create seller agent

@@ -15,11 +15,17 @@ import {
   loadBigCommerceCatalog,
   mapBigCommerceProductToCanonical,
 } from '@commercebackend/connector-bigcommerce';
+import {
+  CatalogMappingError as WooCommerceCatalogMappingError,
+  loadWooCommerceCatalog,
+  mapWooCommerceProductToCanonical,
+} from '@commercebackend/connector-woocommerce';
 import { AppError } from '../plugins/error-handler';
 
 const SQUARE_CONNECTOR = 'square';
 const SHOPIFY_CONNECTOR = 'shopify';
 const BIGCOMMERCE_CONNECTOR = 'bigcommerce';
+const WOOCOMMERCE_CONNECTOR = 'woocommerce';
 
 export class CatalogSyncService {
   /**
@@ -358,6 +364,126 @@ export class CatalogSyncService {
     return prisma.catalogSyncLog.create({
       data: {
         connector: BIGCOMMERCE_CONNECTOR,
+        sellerAgentId,
+        status,
+        itemsImported,
+        itemsFailed: errors.length,
+        errors: errors.length > 0 ? (errors as unknown as Prisma.InputJsonValue) : undefined,
+      },
+    });
+  }
+
+  /**
+   * Catalog import (weekly backlog item 15: "WooCommerce connector spike").
+   * By default reads a static WooCommerce catalog fixture (no live
+   * WooCommerce API call). Configuring real `WOOCOMMERCE_SITE_URL`,
+   * `WOOCOMMERCE_CONSUMER_KEY`, and `WOOCOMMERCE_CONSUMER_SECRET` switches
+   * this to fetch from the actual WooCommerce REST API instead — the
+   * operator's own store, never a third-party merchant's (see
+   * `@commercebackend/connector-woocommerce`'s `loadWooCommerceCatalog`).
+   * Either way, each product is mapped to the canonical catalog shape and
+   * upserted into `Listing` keyed on (importSource, externalId) so
+   * re-running the sync updates existing imported listings instead of
+   * duplicating them. A per-item mapping failure is recorded in the
+   * returned sync log, not thrown — the rest of the batch still imports. A
+   * failure to reach the catalog source at all (e.g. live API auth/network
+   * failure) is recorded as a single `failed` sync log entry rather than
+   * throwing. Mirrors `syncSquareCatalog`, `syncShopifyCatalog`, and
+   * `syncBigCommerceCatalog` above; see `packages/connectors/woocommerce`
+   * for the mapping logic.
+   */
+  static async syncWooCommerceCatalog(sellerAgentId: string) {
+    const sellerAgent = await prisma.agent.findUnique({ where: { id: sellerAgentId } });
+    if (!sellerAgent) {
+      throw new AppError('AGENT_NOT_FOUND', 'Seller agent not found', 404);
+    }
+    if (sellerAgent.type !== 'seller' && sellerAgent.type !== 'both') {
+      throw new AppError('VALIDATION_ERROR', 'sellerAgentId must belong to a seller or both-type agent', 400);
+    }
+
+    let products;
+    try {
+      products = await loadWooCommerceCatalog();
+    } catch (err) {
+      return prisma.catalogSyncLog.create({
+        data: {
+          connector: WOOCOMMERCE_CONNECTOR,
+          sellerAgentId,
+          status: 'failed',
+          itemsImported: 0,
+          itemsFailed: 1,
+          errors: [
+            {
+              externalId: null,
+              message: err instanceof Error ? err.message : 'Failed to reach WooCommerce catalog source',
+            },
+          ] as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    const errors: ConnectorImportError[] = [];
+    let itemsImported = 0;
+
+    for (const product of products) {
+      let canonicalItem;
+      try {
+        canonicalItem = mapWooCommerceProductToCanonical(product);
+      } catch (err) {
+        if (err instanceof WooCommerceCatalogMappingError) {
+          errors.push({ externalId: err.externalId, message: err.message });
+          continue;
+        }
+        throw err;
+      }
+
+      // Non-published WooCommerce products are not agent-shoppable listings.
+      if (!canonicalItem) continue;
+
+      const existing = await prisma.listing.findFirst({
+        where: { importSource: WOOCOMMERCE_CONNECTOR, externalId: canonicalItem.externalId },
+      });
+
+      if (existing) {
+        await prisma.listing.update({
+          where: { id: existing.id },
+          data: {
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            attributes: canonicalItem.attributes,
+          },
+        });
+      } else {
+        await prisma.listing.create({
+          data: {
+            sellerAgentId,
+            title: canonicalItem.title,
+            description: canonicalItem.description,
+            type: canonicalItem.type,
+            status: canonicalItem.quantityAvailable > 0 ? 'active' : 'sold_out',
+            priceAmount: canonicalItem.priceAmount,
+            currency: canonicalItem.currency,
+            quantityAvailable: canonicalItem.quantityAvailable,
+            attributes: canonicalItem.attributes,
+            importSource: WOOCOMMERCE_CONNECTOR,
+            externalId: canonicalItem.externalId,
+          },
+        });
+      }
+
+      itemsImported += 1;
+    }
+
+    const status = errors.length === 0 ? 'success' : itemsImported > 0 ? 'partial' : 'failed';
+
+    return prisma.catalogSyncLog.create({
+      data: {
+        connector: WOOCOMMERCE_CONNECTOR,
         sellerAgentId,
         status,
         itemsImported,

@@ -42,6 +42,7 @@
     "square_catalog_connector_spike",
     "shopify_catalog_connector_spike",
     "bigcommerce_catalog_connector_spike",
+    "woocommerce_catalog_connector_spike",
     "agent_reputation_signal",
     "purchase_policy_spending_limit_signal"
   ],

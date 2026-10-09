@@ -1,0 +1,63 @@
+{
+  "products": [
+    {
+      "id": 6001,
+      "name": "Agent Checkout Widget",
+      "description": "<p>Embeddable widget that hands a sale off to a buyer agent mid-checkout.</p>",
+      "type": "simple",
+      "status": "publish",
+      "price": "189.00",
+      "stock_quantity": 22,
+      "stock_status": "instock",
+      "virtual": false,
+      "categories": [{ "id": 11, "name": "Physical Good" }]
+    },
+    {
+      "id": 6002,
+      "name": "Agent Plugin License (5 sites)",
+      "description": "<p>Digital license bundle for connecting five WooCommerce stores to CommerceBackend.</p>",
+      "type": "simple",
+      "status": "publish",
+      "price": "59.00",
+      "stock_quantity": 500,
+      "stock_status": "instock",
+      "virtual": true,
+      "categories": [{ "id": 12, "name": "Digital Good" }]
+    },
+    {
+      "id": 6003,
+      "name": "Catalog Migration Support Session",
+      "description": "<p>One hour of guided help migrating a WooCommerce catalog to CommerceBackend.</p>",
+      "type": "simple",
+      "status": "publish",
+      "price": "300.00",
+      "stock_quantity": 6,
+      "stock_status": "instock",
+      "virtual": false,
+      "categories": [{ "id": 13, "name": "Service" }]
+    },
+    {
+      "id": 6004,
+      "name": "Malformed Fixture Item (no price)",
+      "description": "<p>Intentionally missing a price to exercise per-item failure handling.</p>",
+      "type": "simple",
+      "status": "publish",
+      "stock_quantity": 3,
+      "stock_status": "instock",
+      "virtual": false,
+      "categories": [{ "id": 11, "name": "Physical Good" }]
+    },
+    {
+      "id": 6005,
+      "name": "Unpublished Draft Widget",
+      "description": "<p>Still a draft in WooCommerce; should not be imported as a listing.</p>",
+      "type": "simple",
+      "status": "draft",
+      "price": "19.00",
+      "stock_quantity": 0,
+      "stock_status": "outofstock",
+      "virtual": false,
+      "categories": [{ "id": 11, "name": "Physical Good" }]
+    }
+  ]
+}
