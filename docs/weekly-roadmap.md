@@ -147,7 +147,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   paid, fulfillment updated, `CHECKOUT_PERSISTENCE_FAILED`) already producible
   from existing tables, exposed for audit without changing checkout behavior.
   _DoD:_ endpoint returns an ordered transition history for a seeded checkout
-  intent; operator-auth enforced; tests. — [PR link added after opening]
+  intent; operator-auth enforced; tests. — [#188](https://github.com/weareseeed/commercebackend/pull/188)
 - [ ] **17. Agent-to-agent negotiation example.** Groundwork for the Proven
   reliability epic: a runnable `examples/agent-negotiation-flow` walking a
   buyer and seller agent through offer → counteroffer → accept using the
