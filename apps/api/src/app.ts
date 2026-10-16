@@ -16,6 +16,7 @@ import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
 import { sandboxRoutes } from './routes/sandbox';
 import { operatorRoutes } from './routes/operator';
+import { checkoutEventsRoutes } from './routes/checkout-events';
 import { protocolAcpRoutes } from './routes/protocol-acp';
 import { protocolUcpRoutes } from './routes/protocol-ucp';
 import { connectorRoutes } from './routes/connectors';
@@ -115,6 +116,7 @@ export function buildApp() {
   app.register(purchasePolicyRoutes);
   app.register(sandboxRoutes);
   app.register(operatorRoutes);
+  app.register(checkoutEventsRoutes);
   app.register(protocolAcpRoutes);
   app.register(protocolUcpRoutes);
   app.register(connectorRoutes);

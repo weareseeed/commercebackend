@@ -696,6 +696,37 @@ agent bearer token.
     -H "X-Operator-Key: $OPERATOR_API_KEY"
   ```
 
+### 22. Checkout Event Ledger
+- **GET** `/v1/operator/checkout-intents/:id/events` *(Requires `X-Operator-Key`)*
+- Read-only, ordered transition history for a single checkout intent:
+  `created`, approval-flow transitions (`human_approval_requested`,
+  `human_approved`, `human_rejected`), `paid`, `fulfillment_updated`, and any
+  matching `CHECKOUT_PERSISTENCE_FAILED` critical event. This is **synthesized
+  at request time** from existing `CheckoutIntent`/`Order`/`CriticalEvent`
+  fields — there is no dedicated append-only event table yet, so
+  `fulfillment_updated` reflects only the current fulfillment state, not
+  every intermediate change. Groundwork for the Operational credibility
+  epic's checkout event ledger; never changes checkout behavior.
+- **Response (200 OK):**
+  ```json
+  {
+    "checkoutIntentId": "chk_abc123",
+    "status": "paid",
+    "events": [
+      { "type": "created", "occurredAt": "2026-09-04T00:00:00.000Z", "detail": { "amountTotal": 4200, "currency": "USD" } },
+      { "type": "human_approval_requested", "occurredAt": "2026-09-04T00:00:05.000Z" },
+      { "type": "human_approved", "occurredAt": "2026-09-04T00:00:10.000Z" },
+      { "type": "paid", "occurredAt": "2026-09-04T00:00:20.000Z", "detail": { "orderId": "ord_xyz789" } }
+    ]
+  }
+  ```
+- **Errors**: `404 CHECKOUT_INTENT_NOT_FOUND` if the id does not exist.
+- **Example Curl**:
+  ```bash
+  curl http://localhost:4000/v1/operator/checkout-intents/chk_abc123/events \
+    -H "X-Operator-Key: $OPERATOR_API_KEY"
+  ```
+
 ---
 
 CommerceBackend is owned and maintained by Seeed LLC.

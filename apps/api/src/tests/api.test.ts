@@ -375,6 +375,23 @@ vi.mock('@commercebackend/db', () => {
           return true;
         }).length;
       }),
+      findMany: vi.fn(async ({ where, orderBy } = {}) => {
+        let matches = mockDb.criticalEvents.filter((e) => {
+          if (where?.code?.in) {
+            if (!where.code.in.includes(e.code)) return false;
+          } else if (where?.code && e.code !== where.code) {
+            return false;
+          }
+          return true;
+        });
+        if (orderBy?.createdAt) {
+          const direction = orderBy.createdAt === 'desc' ? -1 : 1;
+          matches = [...matches].sort(
+            (a, b) => direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+        }
+        return matches;
+      }),
       deleteMany: vi.fn(),
     },
     catalogSyncLog: {
@@ -3408,6 +3425,176 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       expect(body.criticalEvents.total).toBe(0);
       expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
+    });
+  });
+
+  describe('Checkout Event Ledger API', () => {
+    it('rejects requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_missing/events',
+      });
+      expect(res.statusCode).toBe(401);
+
+      const resWrongKey = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_missing/events',
+        headers: { 'x-operator-key': 'not_the_real_key' },
+      });
+      expect(resWrongKey.statusCode).toBe(401);
+    });
+
+    it('returns 404 for an unknown checkout intent', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/does_not_exist/events',
+        headers: operatorHeaders,
+      });
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('CHECKOUT_INTENT_NOT_FOUND');
+    });
+
+    it('returns an ordered transition history for a seeded open checkout intent', async () => {
+      const createdAt = new Date('2026-01-01T00:00:00.000Z');
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_open',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 1000,
+        amountTotal: 1000,
+        currency: 'USD',
+        status: 'open',
+        createdAt,
+        updatedAt: createdAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_open/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.checkoutIntentId).toBe('ledger_intent_open');
+      expect(body.status).toBe('open');
+      expect(body.events).toHaveLength(1);
+      expect(body.events[0].type).toBe('created');
+      expect(body.events[0].occurredAt).toBe(createdAt.toISOString());
+    });
+
+    it('orders approval, payment, fulfillment, and critical-event transitions chronologically', async () => {
+      const createdAt = new Date('2026-02-01T00:00:00.000Z');
+      const approvalRequestedAt = new Date('2026-02-01T00:01:00.000Z');
+      const humanApprovedAt = new Date('2026-02-01T00:02:00.000Z');
+      const orderCreatedAt = new Date('2026-02-01T00:03:00.000Z');
+      const fulfillmentUpdatedAt = new Date('2026-02-01T00:04:00.000Z');
+
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_full',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 2000,
+        amountTotal: 2000,
+        currency: 'USD',
+        status: 'paid',
+        approvalRequestedAt,
+        humanApprovedAt,
+        createdAt,
+        updatedAt: humanApprovedAt,
+      });
+
+      mockDb.orders.push({
+        id: 'ledger_order_full',
+        checkoutIntentId: 'ledger_intent_full',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountTotal: 2000,
+        currency: 'USD',
+        paymentStatus: 'paid',
+        fulfillmentStatus: 'fulfilled',
+        fulfillmentNote: 'Shipped via carrier X',
+        createdAt: orderCreatedAt,
+        updatedAt: fulfillmentUpdatedAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_full/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.events.map((e: any) => e.type)).toEqual([
+        'created',
+        'human_approval_requested',
+        'human_approved',
+        'paid',
+        'fulfillment_updated',
+      ]);
+      const paidEvent = body.events.find((e: any) => e.type === 'paid');
+      expect(paidEvent.detail.orderId).toBe('ledger_order_full');
+      const fulfillmentEvent = body.events.find((e: any) => e.type === 'fulfillment_updated');
+      expect(fulfillmentEvent.detail.fulfillmentStatus).toBe('fulfilled');
+      expect(fulfillmentEvent.detail.fulfillmentNote).toBe('Shipped via carrier X');
+    });
+
+    it('includes a CHECKOUT_PERSISTENCE_FAILED critical event matched by payload.checkoutIntentId', async () => {
+      const createdAt = new Date('2026-03-01T00:00:00.000Z');
+      const failedAt = new Date('2026-03-01T00:05:00.000Z');
+
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_failed',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 500,
+        amountTotal: 500,
+        currency: 'USD',
+        status: 'failed',
+        createdAt,
+        updatedAt: failedAt,
+      });
+
+      mockDb.criticalEvents.push({
+        id: 'ledger_evt_failed',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: {
+          checkoutIntentId: 'ledger_intent_failed',
+          stripeSessionId: 'cs_test_ledger',
+          error: 'DB write failed',
+        },
+        createdAt: failedAt,
+      });
+
+      // A critical event for a different checkout intent must not leak in.
+      mockDb.criticalEvents.push({
+        id: 'ledger_evt_other',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: { checkoutIntentId: 'some_other_intent' },
+        createdAt: failedAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_failed/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.events.map((e: any) => e.type)).toEqual(['created', 'CHECKOUT_PERSISTENCE_FAILED']);
+      const failureEvent = body.events.find((e: any) => e.type === 'CHECKOUT_PERSISTENCE_FAILED');
+      expect(failureEvent.detail.stripeSessionId).toBe('cs_test_ledger');
+      expect(failureEvent.detail.error).toBe('DB write failed');
     });
   });
 
