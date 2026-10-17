@@ -141,13 +141,13 @@ Every weekly item should ladder up to one of these long-horizon epics:
   canonical imported-catalog shape. _DoD:_ a WooCommerce catalog fixture
   imports into listings using the same `/v1/connectors/*/sync` pattern; sync
   log records outcome. — [#184](https://github.com/weareseeed/commercebackend/pull/184)
-- [ ] **16. Checkout event ledger endpoint (read-only).** Groundwork for the
+- [x] **16. Checkout event ledger endpoint (read-only).** Groundwork for the
   Operational credibility epic's "checkout event ledger": an append-only,
   operator-gated endpoint listing checkout-intent state transitions (created,
   paid, fulfillment updated, `CHECKOUT_PERSISTENCE_FAILED`) already producible
   from existing tables, exposed for audit without changing checkout behavior.
   _DoD:_ endpoint returns an ordered transition history for a seeded checkout
-  intent; operator-auth enforced; tests.
+  intent; operator-auth enforced; tests. — [#188](https://github.com/weareseeed/commercebackend/pull/188)
 - [ ] **17. Agent-to-agent negotiation example.** Groundwork for the Proven
   reliability epic: a runnable `examples/agent-negotiation-flow` walking a
   buyer and seller agent through offer → counteroffer → accept using the
@@ -164,6 +164,19 @@ Every weekly item should ladder up to one of these long-horizon epics:
   `sellerReputationScore` field; an opt-in ranking parameter changes result
   order in a seeded test case with mixed-reputation sellers; default
   (no-parameter) ordering is unchanged; tests cover both modes.
+- [ ] **19. Operator dashboard: checkout event ledger view (read-only).**
+  Groundwork for the Operational credibility epic: extend the read-only
+  operator dashboard (item 10) with a page that looks up a checkout intent
+  by id and renders the ordered event list from the new ledger endpoint
+  (item 16), for support/audit workflows without a raw API call. _DoD:_ the
+  operator dashboard can look up a seeded checkout intent by id and display
+  its transition history; tests cover the lookup.
+- [ ] **20. Agent reputation signal exposed via MCP (read-only).** Groundwork
+  for the Protocol leadership epic: expose the existing per-agent reputation
+  signal (item 11, `GET /v1/agents/:id`) as an MCP resource/tool in
+  `packages/mcp` so MCP clients have parity with the native API, matching
+  `docs/api/mcp-tool-spec.md` conventions. _DoD:_ an MCP client can fetch the
+  reputation signal for a seeded agent id; tests cover the tool.
 
 ## Human-led (design + human review first — do NOT auto-build)
 
