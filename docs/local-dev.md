@@ -78,6 +78,14 @@ After the API is reachable at `http://localhost:4000`, run:
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
 
+### 8. Run the agent negotiation walkthrough
+
+The same way, run the agent-to-agent negotiation example (offer → counteroffer → accept → checkout at the negotiated price):
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
+```
+
 ## Standard workspace commands
 
 ```bash
