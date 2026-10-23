@@ -42,12 +42,19 @@ Run the buyer-agent walkthrough after the API is available at `http://localhost:
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
 
+Run the agent-to-agent negotiation walkthrough (offer → counteroffer → accept → checkout at the negotiated price):
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
+```
+
 If you want to drive the sandbox from Gemini or another Google AI Studio client, set `GOOGLE_API_KEY` in your shell or local agent project. CommerceBackend itself does not require Google AI Studio to run the API; the key is only for the external agent you point at the sandbox.
 
 Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- Agent negotiation flow example: [`examples/agent-negotiation-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
@@ -297,6 +304,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
    - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
    - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
    - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+   - **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
    - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
    - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 3. Inspect the native API contract before generating integration code: [`docs/api/native-api.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md).
@@ -336,6 +344,7 @@ To assist autonomous AI agents in discovering, understanding, and integrating wi
 - **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 
 ---

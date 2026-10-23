@@ -24,8 +24,9 @@ Read these before taking action:
 
 1. `AGENTS.md`
 2. `agent-skill-kit/commercebackend-skill.md`
-3. `docs/api/native-api.md`
-4. `prompts/seller-agent.md`
+3. `examples/agent-negotiation-flow/README.md` (counteroffer negotiation flow)
+4. `docs/api/native-api.md`
+5. `prompts/seller-agent.md`
 
 ## Operating flow
 

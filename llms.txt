@@ -10,6 +10,7 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Agent Metadata**: https://www.commercebackend.com/.well-known/agents.json
 - **Agent Skill Kit**: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - **Buyer Agent Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow
+- **Agent Negotiation Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
 - **MCP Server**: https://github.com/weareseeed/commercebackend/tree/master/packages/mcp
 - **MCP Tool Spec**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
@@ -33,6 +34,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - Use `llms-full.txt` for complete model context.
 - Use `agent-skill-kit` for reusable buyer, seller, coding-agent, and evaluation instructions.
 - Use `examples/agent-buyer-flow` to run the buyer search, offer, and checkout pattern.
+- Use `examples/agent-negotiation-flow` to run a full buyer/seller counteroffer negotiation ending in checkout at the negotiated price.
 - Use `/prompts` for copy/paste-ready buyer, seller, and coding-agent prompts.
 - Use `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/commercebackend.mdc`, or `.windsurf/rules/commercebackend.md` for tool-specific coding-agent adapters.
 
@@ -81,8 +83,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 
 ## Roadmap
 
-- Connectors to third-party marketplaces.
-- Richer examples showing agent-to-agent commerce flows.
+- Additional example flows (e.g. reputation-aware search ranking, operator dashboard ledger views).
 
 ## Agent Skill Maintenance
 
