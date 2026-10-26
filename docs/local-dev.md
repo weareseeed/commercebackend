@@ -16,11 +16,10 @@ Use this path when you want the quickest local signal before making changes:
 ```bash
 pnpm install
 cp .env.example .env
-pnpm lint
-pnpm typecheck
-pnpm build
-NODE_ENV=test pnpm test
+pnpm verify
 ```
+
+`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test`.
 
 Use `NODE_ENV=test pnpm test` so the test suite runs with the expected mocked test configuration instead of production-style Stripe/database validation.
 
@@ -81,6 +80,7 @@ node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ## Standard workspace commands
 
 ```bash
+pnpm verify
 pnpm lint
 pnpm typecheck
 pnpm build

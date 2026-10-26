@@ -7,11 +7,14 @@ This document describes the current verification workflow for CommerceBackend v0
 For code changes, run the standard workspace checks:
 
 ```bash
+pnpm verify
 pnpm lint
 pnpm typecheck
 pnpm build
 NODE_ENV=test pnpm test
 ```
+
+`pnpm verify` is the shortcut for the full local verification bundle shown above.
 
 Use `NODE_ENV=test pnpm test` so the suite runs with the expected mocked test configuration and does not depend on production-style Stripe validation.
 
