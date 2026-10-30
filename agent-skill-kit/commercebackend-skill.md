@@ -42,6 +42,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - MCP server: `packages/mcp/` (spec: `docs/api/mcp-tool-spec.md`)
 - Agent discovery guide: `docs/agent-discovery.md`
 - Buyer flow example: `examples/agent-buyer-flow/`
+- Negotiation flow example: `examples/agent-negotiation-flow/`
 - Prompt pack: `prompts/`
 
 ## Current v0.2 capabilities
@@ -62,6 +63,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Operator-triggered, read-only WooCommerce catalog import (fixture-driven by default; optionally live against the operator's own WooCommerce store when `WOOCOMMERCE_SITE_URL`/`WOOCOMMERCE_CONSUMER_KEY`/`WOOCOMMERCE_CONSUMER_SECRET` are configured, never a third-party merchant's store), reusing the same canonical catalog shape; see `docs/api/connectors-woocommerce.md`.
 - A per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) computed at request time and surfaced on `GET /v1/agents/me` and the new `GET /v1/agents/:id` public-profile lookup; groundwork for a future purchase-policy trust check, not itself an enforcement decision; see `docs/api/native-api.md`.
 - An optional per-policy spending-limit budget (`spendingLimitAmount` + `spendingLimitPeriodDays`) on `PurchasePolicy`, surfaced as a read-only, non-blocking `spendingLimitSignal` on checkout-intent creation reporting whether the checkout would push the buyer's trailing-period spend over the budget; groundwork for a future enforcement decision, not itself one — it never changes checkout `status` or `policyDecision`; see `docs/api/native-api.md`.
+- A runnable agent-to-agent negotiation example (`examples/agent-negotiation-flow/`) demonstrating the existing offer → counteroffer → accept → checkout-intent path end to end for a negotiated, non-listed price; it is a documentation/example addition, not a new API capability.
 
 ## Not supported in v0.2
 
