@@ -154,7 +154,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   existing offers API end to end, mirroring `examples/agent-buyer-flow`.
   _DoD:_ the example runs against the sandbox and completes a checkout from a
   negotiated (non-listed-price) offer; documented in the example's own
-  README. — PR_LINK_PLACEHOLDER
+  README. — [#195](https://github.com/weareseeed/commercebackend/pull/195)
 - [ ] **18. Reputation-aware search ranking signal (read-only, groundwork).**
   Groundwork for the Search & discovery at scale epic: extend the DB-level
   search (item 2) to surface each result's existing per-agent reputation
