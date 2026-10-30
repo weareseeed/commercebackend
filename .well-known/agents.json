@@ -17,6 +17,7 @@
     "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
     "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
     "buyer_agent_example": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
+    "agent_negotiation_example": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow",
     "mcp_server": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
     "mcp_tool_spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
   },
@@ -58,7 +59,8 @@
     "bigcommerce_catalog_connector_live_mode_optional",
     "woocommerce_catalog_connector_spike",
     "woocommerce_catalog_connector_live_mode_optional",
-    "agent_reputation_signal"
+    "agent_reputation_signal",
+    "agent_negotiation_flow_example"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",

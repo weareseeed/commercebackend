@@ -86,6 +86,7 @@ The Offers feature introduces a structured state machine for price and quantity 
 - **commercebackend.json**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
 - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 
 ---
