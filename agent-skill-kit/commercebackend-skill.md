@@ -42,6 +42,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - MCP server: `packages/mcp/` (spec: `docs/api/mcp-tool-spec.md`)
 - Agent discovery guide: `docs/agent-discovery.md`
 - Buyer flow example: `examples/agent-buyer-flow/`
+- Agent-to-agent negotiation flow example: `examples/agent-negotiation-flow/`
 - Prompt pack: `prompts/`
 
 ## Current v0.2 capabilities
