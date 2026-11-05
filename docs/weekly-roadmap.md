@@ -148,13 +148,13 @@ Every weekly item should ladder up to one of these long-horizon epics:
   from existing tables, exposed for audit without changing checkout behavior.
   _DoD:_ endpoint returns an ordered transition history for a seeded checkout
   intent; operator-auth enforced; tests. — [#188](https://github.com/weareseeed/commercebackend/pull/188)
-- [ ] **17. Agent-to-agent negotiation example.** Groundwork for the Proven
+- [x] **17. Agent-to-agent negotiation example.** Groundwork for the Proven
   reliability epic: a runnable `examples/agent-negotiation-flow` walking a
   buyer and seller agent through offer → counteroffer → accept using the
   existing offers API end to end, mirroring `examples/agent-buyer-flow`.
   _DoD:_ the example runs against the sandbox and completes a checkout from a
   negotiated (non-listed-price) offer; documented in the example's own
-  README.
+  README. — [#193](https://github.com/weareseeed/commercebackend/pull/193)
 - [ ] **18. Reputation-aware search ranking signal (read-only, groundwork).**
   Groundwork for the Search & discovery at scale epic: extend the DB-level
   search (item 2) to surface each result's existing per-agent reputation

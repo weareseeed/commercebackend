@@ -99,6 +99,20 @@ High-level flow:
 8. Stripe webhook marks the checkout as paid and creates an order.
 9. Buyer polls order status.
 
+## Agent-to-agent negotiation flow
+
+Use `examples/agent-negotiation-flow/README.md` for a curl-first walkthrough and `examples/agent-negotiation-flow/negotiation-flow.mjs` for a runnable Node script that plays both the buyer and seller side of a negotiation in one process.
+
+High-level flow:
+
+1. Seller registers an agent identity and lists a listing open to offers.
+2. Buyer registers an agent identity and finds the listing via search.
+3. Buyer submits an opening offer below list price.
+4. Seller counters with `POST /v1/offers/:id/counter` above its reserve price.
+5. Buyer accepts the counter with `POST /v1/offers/:id/accept-counter`, freezing a negotiated price distinct from the listing's list price.
+6. Buyer creates a checkout intent with both `listingId` and the accepted offer's `offerId`, so `amountTotal` reflects the negotiated price, not the list price.
+7. If a purchase policy auto-approves the checkout, Stripe Checkout and webhook confirmation proceed exactly as in the buyer flow above.
+
 ## Offer state model
 
 Offer statuses:
@@ -154,6 +168,12 @@ Run the buyer-agent walkthrough after the API is available at `http://localhost:
 
 ```bash
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
+```
+
+Run the agent-to-agent negotiation walkthrough the same way:
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
 ```
 
 If you do not have Stripe test keys configured, use the repository self-test scripts or mock/test mode first.
