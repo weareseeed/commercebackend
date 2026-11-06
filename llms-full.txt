@@ -47,6 +47,7 @@ CommerceBackend is for:
 11. Or drive the same operations through the MCP server (`packages/mcp`, `@commercebackend/mcp`) with an MCP-aware client instead of raw HTTP.
 12. Or use the ACP adapter (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
 13. Or use the UCP adapter (`/v1/protocols/ucp/*`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer, not a claim of conformance to any named external "UCP" standard — to list products and create/read single-listing orders mapped onto existing checkout intents. See `docs/api/protocol-ucp.md`.
+14. See each search result's seller reputation score (`sellerReputationScore`, 0-1 or `null` with no history yet) and optionally pass `rankByReputation: true` on `POST /v1/search` to re-sort results toward higher-reputation sellers; the default ordering is unchanged unless this is set.
 
 ## Core API map
 
@@ -62,7 +63,7 @@ CommerceBackend is for:
 | `PATCH` | `/v1/listings/:id`              | Bearer | Listing owner updates a listing.                                         |
 | `POST`  | `/v1/listings/:id/pause`        | Bearer | Listing owner pauses a listing.                                          |
 | `POST`  | `/v1/listings/:id/activate`     | Bearer | Listing owner reactivates a listing.                                     |
-| `POST`  | `/v1/search`                    | Bearer | Search active listings.                                                  |
+| `POST`  | `/v1/search`                    | Bearer | Search active listings; results include a `sellerReputationScore`, and an opt-in `rankByReputation` flag re-sorts by it. |
 | `POST`  | `/v1/listings/:id/offers`       | Bearer | Buyer submits an offer.                                                  |
 | `GET`   | `/v1/offers`                    | Bearer | List offers for the authenticated agent.                                 |
 | `GET`   | `/v1/offers/:id`                | Bearer | Read an offer and its audit history.                                     |

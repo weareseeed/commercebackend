@@ -1,10 +1,12 @@
 import { prisma, Listing } from '@commercebackend/db';
 import { SearchFilters } from '@commercebackend/schemas';
+import { AgentsService } from './agents.service';
 
 export interface SearchResult {
   listing: Listing;
   matchReason: string;
   score: number;
+  sellerReputationScore: number | null;
 }
 
 export interface SearchProviderResult {
@@ -80,6 +82,7 @@ export class PostgresSearchProvider implements SearchProvider {
         listing,
         matchReason: 'Listing matches search filters.',
         score: 1.0,
+        sellerReputationScore: null as number | null,
       }));
       return { results, total };
     }
@@ -143,6 +146,7 @@ export class PostgresSearchProvider implements SearchProvider {
       listing: toListing(row),
       matchReason: buildMatchReason(row),
       score: Number((Number(row.matched_count) / keywords.length).toFixed(2)),
+      sellerReputationScore: null as number | null,
     }));
 
     return { results, total };
@@ -161,7 +165,8 @@ export class SearchService {
     query: string,
     filters: SearchFilters,
     limit: number,
-    offset: number
+    offset: number,
+    rankByReputation = false
   ) {
     const { results, total } = await this.provider.search(query, filters, limit, offset);
 
@@ -176,6 +181,22 @@ export class SearchService {
       });
     }
 
-    return { results, total };
+    const sellerIds = results.map((r) => r.listing.sellerAgentId);
+    const reputationScores = await AgentsService.getSellerReputationScores(sellerIds);
+    let rankedResults = results.map((result) => ({
+      ...result,
+      sellerReputationScore: reputationScores.get(result.listing.sellerAgentId) ?? null,
+    }));
+
+    if (rankByReputation) {
+      // Stable sort: favors higher seller-reputation scores while preserving
+      // the existing relevance/recency order as the tiebreaker (including
+      // among sellers with no reputation history yet, scored lowest).
+      rankedResults = [...rankedResults].sort(
+        (a, b) => (b.sellerReputationScore ?? -1) - (a.sellerReputationScore ?? -1)
+      );
+    }
+
+    return { results: rankedResults, total };
   }
 }

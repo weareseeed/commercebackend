@@ -1345,6 +1345,9 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(data.results[0].listing.title).toBe('Miami Jazz VIP Concert');
       expect(data.results[0].score).toBeDefined();
       expect(data.results[0].matchReason).toContain('title');
+      // Seller has no checkout/offer history yet, so the groundwork
+      // reputation signal (weekly backlog item 18) is null, not 0.
+      expect(data.results[0].sellerReputationScore).toBeNull();
 
       // Verify the query was logged
       expect(mockDb.queryLogs.length).toBe(1);
@@ -1418,6 +1421,140 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(secondPageData.results.length).toBe(1);
       expect(secondPageData.pagination.total).toBe(2);
       expect(secondPageData.results[0].listing.id).not.toBe(firstPageData.results[0].listing.id);
+    });
+
+    describe('reputation-aware ranking (weekly backlog item 18)', () => {
+      it('surfaces sellerReputationScore and only reorders results when rankByReputation is set', async () => {
+        const buyerRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Buyer', type: 'buyer', ownerEmail: 'buyer@ranking.test' },
+        });
+        const buyerId = JSON.parse(buyerRes.body).agent.id;
+
+        const sellerARes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Seller A', type: 'seller', ownerEmail: 'seller-a@ranking.test' },
+        });
+        const sellerAId = JSON.parse(sellerARes.body).agent.id;
+        const sellerAKey = JSON.parse(sellerARes.body).apiKey;
+
+        const sellerBRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Seller B', type: 'seller', ownerEmail: 'seller-b@ranking.test' },
+        });
+        const sellerBId = JSON.parse(sellerBRes.body).agent.id;
+        const sellerBKey = JSON.parse(sellerBRes.body).apiKey;
+
+        // Both listings share a title/description so they tie on keyword
+        // match score; only seller reputation should distinguish them.
+        const listingPayload = {
+          title: 'Reputation Ranking Gadget',
+          description: 'Gadget used for reputation ranking test',
+          type: 'physical_good' as const,
+          priceAmount: 2000,
+          quantityAvailable: 5,
+        };
+        const listingARes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerAKey}` },
+          payload: listingPayload,
+        });
+        const listingAId = JSON.parse(listingARes.body).listing.id;
+
+        const listingBRes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerBKey}` },
+          payload: listingPayload,
+        });
+        const listingBId = JSON.parse(listingBRes.body).listing.id;
+
+        // Listing A's seller: a failed checkout and a rejected offer -> reputation score 0.0.
+        await prisma.checkoutIntent.create({
+          data: {
+            listingId: listingAId,
+            buyerAgentId: buyerId,
+            sellerAgentId: sellerAId,
+            quantity: 1,
+            amountSubtotal: 2000,
+            amountTotal: 2000,
+            currency: 'USD',
+            status: 'expired',
+          },
+        });
+        await prisma.offer.create({
+          data: {
+            listingId: listingAId,
+            buyerAgentId: buyerId,
+            priceAmount: 1800,
+            quantity: 1,
+            status: 'rejected',
+            expiresAt: new Date(Date.now() + 3600_000),
+          },
+        });
+
+        // Listing B's seller: a completed checkout and an accepted offer -> reputation score 1.0.
+        await prisma.checkoutIntent.create({
+          data: {
+            listingId: listingBId,
+            buyerAgentId: buyerId,
+            sellerAgentId: sellerBId,
+            quantity: 1,
+            amountSubtotal: 2000,
+            amountTotal: 2000,
+            currency: 'USD',
+            status: 'paid',
+          },
+        });
+        await prisma.offer.create({
+          data: {
+            listingId: listingBId,
+            buyerAgentId: buyerId,
+            priceAmount: 1800,
+            quantity: 1,
+            status: 'accepted',
+            expiresAt: new Date(Date.now() + 3600_000),
+          },
+        });
+
+        const defaultResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/search',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: { query: 'Reputation Ranking Gadget' },
+        });
+        expect(defaultResponse.statusCode).toBe(200);
+        const defaultData = JSON.parse(defaultResponse.body);
+        expect(defaultData.results).toHaveLength(2);
+        // Default ordering (no rankByReputation) is unchanged by reputation:
+        // listing A and B tie on matched_count/createdAt, so the existing
+        // relevance ordering (insertion order) is preserved regardless of
+        // which seller has the higher reputation.
+        const defaultOrder = defaultData.results.map((r: any) => r.listing.id);
+        expect(defaultOrder).toEqual([listingAId, listingBId]);
+        const scoreById = Object.fromEntries(
+          defaultData.results.map((r: any) => [r.listing.id, r.sellerReputationScore])
+        );
+        expect(scoreById[listingAId]).toBe(0);
+        expect(scoreById[listingBId]).toBe(1);
+
+        const rankedResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/search',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: { query: 'Reputation Ranking Gadget', rankByReputation: true },
+        });
+        expect(rankedResponse.statusCode).toBe(200);
+        const rankedData = JSON.parse(rankedResponse.body);
+        // Opt-in ranking favors the higher-reputation seller's listing,
+        // flipping the default (insertion-order) ordering above.
+        expect(rankedData.results[0].listing.id).toBe(listingBId);
+        expect(rankedData.results[1].listing.id).toBe(listingAId);
+      });
     });
   });
 

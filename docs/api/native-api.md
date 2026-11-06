@@ -236,6 +236,11 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 
 ### 8. Search Listings (Paginated)
 - **POST** `/v1/search`
+- **`rankByReputation` (optional, default `false`):** opt-in, read-only re-ranking
+  (weekly backlog item 18). When `true`, results are re-sorted to favor listings
+  from higher-reputation sellers (see `sellerReputationScore` below); default
+  (`false`/omitted) ordering is unchanged. This never filters out listings, it
+  only changes their order.
 - **Body:**
   ```json
   {
@@ -244,7 +249,8 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
       "type": "event_ticket"
     },
     "limit": 20,
-    "offset": 0
+    "offset": 0,
+    "rankByReputation": false
   }
   ```
 - **Response (200 OK):**
@@ -260,7 +266,8 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
           "quantityAvailable": 42
         },
         "matchReason": "Matched title/description for jazz.",
-        "score": 1.0
+        "score": 1.0,
+        "sellerReputationScore": 0.92
       }
     ],
     "pagination": {
@@ -270,12 +277,18 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
     }
   }
   ```
+  `sellerReputationScore` is the listing seller's existing reputation signal
+  (`GET /v1/agents/:id`, weekly backlog item 11) — the average of their
+  seller-side checkout completion rate and offer acceptance rate — collapsed
+  to a single number from 0 to 1, or `null` when the seller has no decided
+  checkout/offer history yet. It is informational unless `rankByReputation`
+  is set; it is not itself a purchase-policy enforcement decision.
 - **Example Curl**:
   ```bash
   curl -X POST http://localhost:4000/v1/search \
     -H "Authorization: Bearer cb_test_your_key_here" \
     -H "Content-Type: application/json" \
-    -d '{"query": "jazz tickets", "filters": {"type": "event_ticket"}, "limit": 20, "offset": 0}'
+    -d '{"query": "jazz tickets", "filters": {"type": "event_ticket"}, "limit": 20, "offset": 0, "rankByReputation": true}'
   ```
 
 ### 9. Create Purchase Policy

@@ -53,6 +53,7 @@ const SearchListingsInput = z.object({
   query: z.string().min(1, 'query is required'),
   limit: z.number().int().min(1).max(50).optional(),
   offset: z.number().int().min(0).optional(),
+  rank_by_reputation: z.boolean().optional(),
 });
 
 const GetListingInput = z.object({
@@ -107,6 +108,7 @@ export const toolDefinitions = [
         query: args.query,
         limit: args.limit ?? 20,
         offset: args.offset ?? 0,
+        rankByReputation: args.rank_by_reputation ?? false,
       });
       return jsonResult(data);
     },
