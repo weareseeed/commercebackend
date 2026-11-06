@@ -155,7 +155,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   _DoD:_ the example runs against the sandbox and completes a checkout from a
   negotiated (non-listed-price) offer; documented in the example's own
   README. — [#193](https://github.com/weareseeed/commercebackend/pull/193)
-- [ ] **18. Reputation-aware search ranking signal (read-only, groundwork).**
+- [x] **18. Reputation-aware search ranking signal (read-only, groundwork).**
   Groundwork for the Search & discovery at scale epic: extend the DB-level
   search (item 2) to surface each result's existing per-agent reputation
   signal (item 11, `GET /v1/agents/:id`) alongside it, and support an
@@ -163,7 +163,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   sellers without changing default ordering. _DoD:_ search results include a
   `sellerReputationScore` field; an opt-in ranking parameter changes result
   order in a seeded test case with mixed-reputation sellers; default
-  (no-parameter) ordering is unchanged; tests cover both modes.
+  (no-parameter) ordering is unchanged; tests cover both modes. — [#199](https://github.com/weareseeed/commercebackend/pull/199)
 - [ ] **19. Operator dashboard: checkout event ledger view (read-only).**
   Groundwork for the Operational credibility epic: extend the read-only
   operator dashboard (item 10) with a page that looks up a checkout intent
@@ -177,6 +177,24 @@ Every weekly item should ladder up to one of these long-horizon epics:
   `packages/mcp` so MCP clients have parity with the native API, matching
   `docs/api/mcp-tool-spec.md` conventions. _DoD:_ an MCP client can fetch the
   reputation signal for a seeded agent id; tests cover the tool.
+- [ ] **21. MCP negotiation tool parity (counter, reject, cancel, accept-counter).**
+  Groundwork for the Protocol leadership epic: `packages/mcp` exposes
+  `create_offer` and `accept_offer` but not the rest of the negotiation
+  surface (`/v1/offers/:id/counter`, `/reject`, `/cancel`,
+  `/accept-counter`), so an MCP-only client cannot complete the flow
+  `examples/agent-negotiation-flow` demonstrates over raw HTTP. Add the
+  missing MCP tools mapping to those existing endpoints. _DoD:_ an MCP
+  client can run offer → counter → accept-counter → checkout entirely
+  through MCP tools; tests cover each new tool.
+- [ ] **22. Multi-currency search availability signal (read-only).** Groundwork
+  for the Marketplace maturity epic: `POST /v1/search` with a
+  `filters.currency` that doesn't match any active listing silently returns
+  zero results, giving a buyer agent no signal to try a different currency.
+  Add a read-only `availableCurrencies` field to the search response
+  listing the distinct currencies among listings matching the query/other
+  filters before the currency filter is applied. _DoD:_ search response
+  includes `availableCurrencies` reflecting matched listings' currencies;
+  tests cover single- and multi-currency catalogs.
 
 ## Human-led (design + human review first — do NOT auto-build)
 

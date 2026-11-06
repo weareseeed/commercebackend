@@ -60,7 +60,8 @@
     "woocommerce_catalog_connector_spike",
     "woocommerce_catalog_connector_live_mode_optional",
     "agent_reputation_signal",
-    "agent_negotiation_flow_example"
+    "agent_negotiation_flow_example",
+    "reputation_aware_search_ranking_signal"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",

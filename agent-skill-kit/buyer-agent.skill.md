@@ -32,8 +32,8 @@ Read these before taking action:
 ## Operating flow
 
 1. Register or load buyer credentials.
-2. Search listings with `POST /v1/search`.
-3. Rank listings by query fit, inventory, price, seller information, and listing attributes.
+2. Search listings with `POST /v1/search`. Each result includes `sellerReputationScore` (0-1, or `null` with no history yet); pass `rankByReputation: true` to re-sort results toward higher-reputation sellers instead of ranking by hand.
+3. Rank listings by query fit, inventory, price, seller information (including `sellerReputationScore`), and listing attributes.
 4. Read the selected listing with `GET /v1/listings/:id`.
 5. Submit an offer with `POST /v1/listings/:id/offers` when negotiation is needed.
 6. Wait for seller acceptance or counteroffer.
