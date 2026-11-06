@@ -1448,20 +1448,23 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         const sellerBId = JSON.parse(sellerBRes.body).agent.id;
         const sellerBKey = JSON.parse(sellerBRes.body).apiKey;
 
-        // Both listings share a title/description so they tie on keyword
-        // match score; only seller reputation should distinguish them.
-        const listingPayload = {
-          title: 'Reputation Ranking Gadget',
-          description: 'Gadget used for reputation ranking test',
-          type: 'physical_good' as const,
-          priceAmount: 2000,
-          quantityAvailable: 5,
-        };
+        // Listing A matches all 3 query keywords (higher relevance score);
+        // listing B only matches 2 (lower relevance score), so the default
+        // (no rankByReputation) order is deterministically A-then-B
+        // regardless of creation-timestamp precision. Seller reputation is
+        // assigned the other way around, so rankByReputation has to actually
+        // flip the order to prove it re-ranks by reputation.
         const listingARes = await app.inject({
           method: 'POST',
           url: '/v1/listings',
           headers: { authorization: `Bearer ${sellerAKey}` },
-          payload: listingPayload,
+          payload: {
+            title: 'Reputation Ranking Gadget',
+            description: 'Gadget used for reputation ranking test',
+            type: 'physical_good' as const,
+            priceAmount: 2000,
+            quantityAvailable: 5,
+          },
         });
         const listingAId = JSON.parse(listingARes.body).listing.id;
 
@@ -1469,7 +1472,16 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
           method: 'POST',
           url: '/v1/listings',
           headers: { authorization: `Bearer ${sellerBKey}` },
-          payload: listingPayload,
+          payload: {
+            // Deliberately omits "ranking" from both title and description
+            // so it matches only 2 of the 3 query keywords (unlike listing
+            // A, which matches all 3) - see comment above.
+            title: 'Reputation Gadget',
+            description: 'Gadget used for a reputation score test',
+            type: 'physical_good' as const,
+            priceAmount: 2000,
+            quantityAvailable: 5,
+          },
         });
         const listingBId = JSON.parse(listingBRes.body).listing.id;
 
@@ -1531,9 +1543,9 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         const defaultData = JSON.parse(defaultResponse.body);
         expect(defaultData.results).toHaveLength(2);
         // Default ordering (no rankByReputation) is unchanged by reputation:
-        // listing A and B tie on matched_count/createdAt, so the existing
-        // relevance ordering (insertion order) is preserved regardless of
-        // which seller has the higher reputation.
+        // listing A matches all 3 query keywords vs. listing B's 2, so A
+        // ranks first by the existing relevance score, even though A's
+        // seller has the *weaker* reputation (seeded below).
         const defaultOrder = defaultData.results.map((r: any) => r.listing.id);
         expect(defaultOrder).toEqual([listingAId, listingBId]);
         const scoreById = Object.fromEntries(
@@ -1551,7 +1563,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         expect(rankedResponse.statusCode).toBe(200);
         const rankedData = JSON.parse(rankedResponse.body);
         // Opt-in ranking favors the higher-reputation seller's listing,
-        // flipping the default (insertion-order) ordering above.
+        // flipping the default relevance-based ordering above.
         expect(rankedData.results[0].listing.id).toBe(listingBId);
         expect(rankedData.results[1].listing.id).toBe(listingAId);
       });
