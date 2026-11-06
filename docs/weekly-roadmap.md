@@ -163,7 +163,7 @@ Every weekly item should ladder up to one of these long-horizon epics:
   sellers without changing default ordering. _DoD:_ search results include a
   `sellerReputationScore` field; an opt-in ranking parameter changes result
   order in a seeded test case with mixed-reputation sellers; default
-  (no-parameter) ordering is unchanged; tests cover both modes. — [#WEEKLY_PR_PLACEHOLDER]
+  (no-parameter) ordering is unchanged; tests cover both modes. — [#199](https://github.com/weareseeed/commercebackend/pull/199)
 - [ ] **19. Operator dashboard: checkout event ledger view (read-only).**
   Groundwork for the Operational credibility epic: extend the read-only
   operator dashboard (item 10) with a page that looks up a checkout intent
