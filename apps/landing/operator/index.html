@@ -79,6 +79,9 @@
         gap: 12px;
         align-items: end;
       }
+      form.config.single-field {
+        grid-template-columns: 1fr auto;
+      }
       .field {
         display: flex;
         flex-direction: column;
@@ -271,6 +274,31 @@
           <tbody id="critical-body"></tbody>
         </table>
         <p class="empty" id="critical-empty" style="display: none;">No critical events recorded.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Checkout event ledger</h2>
+        <p>
+          Look up a single checkout intent's ordered transition history from
+          <code>GET /v1/operator/checkout-intents/:id/events</code> — for support and audit
+          workflows, without a raw API call.
+        </p>
+        <form class="config single-field" id="ledger-form">
+          <div class="field">
+            <label for="ledger-checkout-intent-id">Checkout intent ID</label>
+            <input type="text" id="ledger-checkout-intent-id" placeholder="chk_abc123" autocomplete="off" />
+          </div>
+          <button type="submit" id="ledger-lookup-btn">Look up</button>
+        </form>
+        <div class="status" id="ledger-status"></div>
+        <div class="generated-at" id="ledger-summary"></div>
+        <table id="ledger-table" style="display: none;">
+          <thead>
+            <tr><th>Type</th><th>Occurred at</th><th>Detail</th></tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+        <p class="empty" id="ledger-empty" style="display: none;">No events recorded for this checkout intent.</p>
       </section>
     </main>
     <script type="module" src="app.js"></script>

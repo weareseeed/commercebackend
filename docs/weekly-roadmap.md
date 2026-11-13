@@ -164,19 +164,34 @@ Every weekly item should ladder up to one of these long-horizon epics:
   `sellerReputationScore` field; an opt-in ranking parameter changes result
   order in a seeded test case with mixed-reputation sellers; default
   (no-parameter) ordering is unchanged; tests cover both modes.
-- [ ] **19. Operator dashboard: checkout event ledger view (read-only).**
+- [x] **19. Operator dashboard: checkout event ledger view (read-only).**
   Groundwork for the Operational credibility epic: extend the read-only
   operator dashboard (item 10) with a page that looks up a checkout intent
   by id and renders the ordered event list from the new ledger endpoint
   (item 16), for support/audit workflows without a raw API call. _DoD:_ the
   operator dashboard can look up a seeded checkout intent by id and display
-  its transition history; tests cover the lookup.
+  its transition history; tests cover the lookup. — [#203](https://github.com/weareseeed/commercebackend/pull/203)
 - [ ] **20. Agent reputation signal exposed via MCP (read-only).** Groundwork
   for the Protocol leadership epic: expose the existing per-agent reputation
   signal (item 11, `GET /v1/agents/:id`) as an MCP resource/tool in
   `packages/mcp` so MCP clients have parity with the native API, matching
   `docs/api/mcp-tool-spec.md` conventions. _DoD:_ an MCP client can fetch the
   reputation signal for a seeded agent id; tests cover the tool.
+- [ ] **21. Operator dashboard: connector sync log view (read-only).**
+  Groundwork for the Operational credibility and Merchant reach epics:
+  extend the read-only operator dashboard (item 10) with a page listing
+  `CatalogSyncLog` rows (status, connector, seller, timestamps) across the
+  Square/Shopify/BigCommerce/WooCommerce connectors (items 8, 9, 13, 15), so
+  an operator can audit import outcomes without a raw API call. _DoD:_ the
+  operator dashboard lists seeded sync logs across at least two connectors,
+  newest first; tests cover the view.
+- [ ] **22. Checkout event ledger exposed via MCP (read-only).** Groundwork
+  for the Protocol leadership epic: expose the existing checkout event
+  ledger endpoint (item 16, operator-gated) as an MCP resource/tool in
+  `packages/mcp` so MCP clients have parity with the native API, matching
+  `docs/api/mcp-tool-spec.md` conventions. _DoD:_ an MCP client can fetch the
+  ordered transition history for a seeded checkout intent id; tests cover
+  the tool.
 
 ## Human-led (design + human review first — do NOT auto-build)
 
