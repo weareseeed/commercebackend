@@ -706,7 +706,11 @@ agent bearer token.
   fields — there is no dedicated append-only event table yet, so
   `fulfillment_updated` reflects only the current fulfillment state, not
   every intermediate change. Groundwork for the Operational credibility
-  epic's checkout event ledger; never changes checkout behavior.
+  epic's checkout event ledger; never changes checkout behavior. The
+  read-only operator dashboard (`apps/landing/operator/`) has a "Checkout
+  event ledger" panel that looks up a checkout intent by id and renders this
+  endpoint's response as a table, for support/audit workflows without a raw
+  API call.
 - **Response (200 OK):**
   ```json
   {
