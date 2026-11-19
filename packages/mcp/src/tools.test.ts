@@ -56,8 +56,32 @@ describe('commercebackend_search_listings', () => {
 
     const result = await invokeTool(getTool('commercebackend_search_listings'), { query: 'widget' }, ctx);
 
-    expect(client.post).toHaveBeenCalledWith('/v1/search', { query: 'widget', limit: 20, offset: 0 });
+    expect(client.post).toHaveBeenCalledWith('/v1/search', {
+      query: 'widget',
+      limit: 20,
+      offset: 0,
+      rankByReputation: false,
+    });
     expect(result.isError).toBeUndefined();
+  });
+
+  it('passes rank_by_reputation through as rankByReputation', async () => {
+    const client = makeClient();
+    (client.post as ReturnType<typeof vi.fn>).mockResolvedValue({ results: [] });
+    const ctx: ToolContext = { client, config: makeConfig() };
+
+    await invokeTool(
+      getTool('commercebackend_search_listings'),
+      { query: 'widget', rank_by_reputation: true },
+      ctx
+    );
+
+    expect(client.post).toHaveBeenCalledWith('/v1/search', {
+      query: 'widget',
+      limit: 20,
+      offset: 0,
+      rankByReputation: true,
+    });
   });
 
   it('rejects missing query without calling the API', async () => {

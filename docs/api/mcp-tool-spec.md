@@ -79,10 +79,16 @@ Input schema:
   "properties": {
     "query": { "type": "string" },
     "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
-    "offset": { "type": "integer", "minimum": 0 }
+    "offset": { "type": "integer", "minimum": 0 },
+    "rank_by_reputation": { "type": "boolean" }
   }
 }
 ```
+
+Each result includes a read-only `sellerReputationScore` (0-1, or `null` when the
+seller has no decided checkout/offer history yet). Passing `rank_by_reputation: true`
+re-sorts results to favor higher-reputation sellers; omitting it (or passing `false`)
+keeps the default relevance/recency ordering unchanged.
 
 ### `commercebackend_get_listing`
 
