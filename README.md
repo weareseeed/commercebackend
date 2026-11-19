@@ -53,6 +53,7 @@ If you want to drive the sandbox from Gemini or another Google AI Studio client,
 Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
+- Machine-readable project metadata: [`/.well-known/commercebackend.json`](https://www.commercebackend.com/.well-known/commercebackend.json)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
 - Agent negotiation flow example: [`examples/agent-negotiation-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
