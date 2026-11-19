@@ -1764,6 +1764,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(data.checkoutIntent.policyDecision).toBe('human_approval_required');
       expect(data.checkoutIntent.purchasePolicyId).toBeNull();
       expect(data.checkoutIntent.checkoutUrl).toBeNull();
+      expect(data.checkoutIntent.policyDecisionReasons).toEqual(['NO_POLICY']);
     });
 
     it('should reject buyer-agent attempts to create their own purchase policies', async () => {
@@ -2894,6 +2895,17 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
         }),
       });
       expect(resBRetry.statusCode).toBe(200);
+
+      // Exactly one PAYMENT_INVENTORY_CONFLICT critical event is recorded, even after a webhook retry.
+      const conflictEvents = mockDb.criticalEvents.filter((e) => e.code === 'PAYMENT_INVENTORY_CONFLICT');
+      expect(conflictEvents).toHaveLength(1);
+      expect(conflictEvents[0].payload).toMatchObject({
+        checkoutIntentId: intentB.id,
+        listingId: listing.id,
+        stripePaymentIntentId: 'pi_b',
+        quantityRequested: 1,
+        quantityAvailable: 0,
+      });
     });
 
     it('should reject invalid Stripe signatures', async () => {
@@ -3574,6 +3586,29 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       expect(body.criticalEvents.total).toBe(0);
       expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
+      expect(body.criticalEvents.byCode.PAYMENT_INVENTORY_CONFLICT).toBe(0);
+      expect(body.pendingApprovals).toEqual({ count: 0, oldestRequestedAt: null });
+    });
+
+    it('reports pending approvals and inventory-conflict events', async () => {
+      mockDb.checkoutIntents.push(
+        { id: 'pend_new', status: 'human_approval_required', approvalRequestedAt: new Date('2026-11-02T00:00:00Z') },
+        { id: 'pend_old', status: 'human_approval_required', approvalRequestedAt: new Date('2026-11-01T00:00:00Z') },
+        { id: 'not_pending', status: 'human_approved', approvalRequestedAt: new Date('2026-10-01T00:00:00Z') }
+      );
+      mockDb.criticalEvents.push({
+        id: 'conflict_evt_1',
+        code: 'PAYMENT_INVENTORY_CONFLICT',
+        payload: {},
+        createdAt: new Date(),
+      });
+
+      const res = await app.inject({ method: 'GET', url: '/v1/operator/metrics', headers: operatorHeaders });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.pendingApprovals).toEqual({ count: 2, oldestRequestedAt: '2026-11-01T00:00:00.000Z' });
+      expect(body.criticalEvents.byCode.PAYMENT_INVENTORY_CONFLICT).toBe(1);
     });
   });
 

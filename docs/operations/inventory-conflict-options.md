@@ -1,6 +1,6 @@
 # `payment_inventory_conflict`: decision options
 
-Status: **decision needed from the maintainers.** This is a `[HUMAN-LED]`
+Status: **stage 1 (detection) implemented; stage 3 (operator-triggered refund) still to design.** Maintainers chose B then D. This is a `[HUMAN-LED]`
 money-path item; see `docs/weekly-roadmap.md` and
 `docs/operations/incident-runbook.md` section 2.
 
