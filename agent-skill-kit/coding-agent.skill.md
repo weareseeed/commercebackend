@@ -31,6 +31,7 @@ CommerceBackend is owned by Seeed LLC, not Seeed Studio.
 
 - `apps/api`: Fastify API, routes, services, tests.
 - `apps/landing/public`: public discovery assets such as `llms.txt` and `.well-known/commercebackend.json`.
+- `packages/mcp`: MCP server (`@commercebackend/mcp`) exposing the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
 - `packages/schemas`: shared Zod schemas and TypeScript types.
 - `docs`: architecture, API, security, testing, and agent discovery docs.
 - `examples`: runnable examples.
@@ -47,6 +48,8 @@ pnpm typecheck
 pnpm build
 NODE_ENV=test pnpm test
 ```
+
+`pnpm typecheck` and `pnpm test` auto-build missing workspace artifacts before they run. That build also generates the Prisma client for the workspace.
 
 For docs/static-discovery-only changes, still run formatting/build checks when practical. Validate JSON with a parser and verify Markdown links that changed.
 

@@ -29,7 +29,7 @@ Use this skill when you need to:
 - cite the canonical public discovery files;
 - route an AI coding agent to the right docs before making changes.
 
-Do not use this skill to claim unsupported capabilities such as refunds, Stripe Connect payouts, tax calculation, auctions, multi-seller carts, or production-ready ACP/UCP adapters.
+Do not use this skill to claim unsupported capabilities such as refunds, Stripe Connect payouts, tax calculation, auctions, multi-seller carts, a full/certified ACP spec implementation (see `docs/api/protocol-acp.md` for the actual supported subset), or conformance to any named external "UCP" standard (the UCP adapter is real and tested, but it is CommerceBackend's own vendor-neutral mapping layer — see `docs/api/protocol-ucp.md`).
 
 ## Canonical links
 
@@ -39,8 +39,10 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Full LLM context: https://www.commercebackend.com/llms-full.txt
 - Machine-readable metadata: https://www.commercebackend.com/.well-known/commercebackend.json
 - API contract: `docs/api/native-api.md`
+- MCP server: `packages/mcp/` (spec: `docs/api/mcp-tool-spec.md`)
 - Agent discovery guide: `docs/agent-discovery.md`
 - Buyer flow example: `examples/agent-buyer-flow/`
+- Agent-to-agent negotiation flow example: `examples/agent-negotiation-flow/`
 - Prompt pack: `prompts/`
 
 ## Current v0.2 capabilities
@@ -52,7 +54,16 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Stripe-backed checkout intents for listings or accepted offers.
 - Stripe webhook reconciliation for paid checkout sessions.
 - Buyer/seller order lookup and seller fulfillment status updates.
-- ACP/UCP mapping stubs for future protocol adapters.
+- An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order tools over the Model Context Protocol; see `docs/api/mcp-tool-spec.md`.
+- Initial ACP (Agentic Commerce Protocol) adapter — a working, scoped subset (product feed + checkout sessions over the existing Stripe-hosted checkout redirect); see `docs/api/protocol-acp.md` for the supported subset and clearly-labeled unsupported fields.
+- Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
+- Operator-triggered, read-only Square catalog import (fixture-driven by default; optionally live against the operator's own Square Developer Sandbox when a real `SQUARE_ACCESS_TOKEN` is configured, never a third-party merchant's account) mapping into ordinary agent-facing listings; see `docs/api/connectors-square.md`.
+- Operator-triggered, read-only Shopify catalog import (fixture-driven by default; optionally live against the operator's own Shopify development store when `SHOPIFY_SHOP_DOMAIN`/`SHOPIFY_ACCESS_TOKEN` are configured, never a third-party merchant's store), reusing the same canonical catalog shape; see `docs/api/connectors-shopify.md`.
+- Operator-triggered, read-only BigCommerce catalog import (fixture-driven by default; optionally live against the operator's own BigCommerce store when `BIGCOMMERCE_STORE_HASH`/`BIGCOMMERCE_ACCESS_TOKEN` are configured, never a third-party merchant's store), reusing the same canonical catalog shape; see `docs/api/connectors-bigcommerce.md`.
+- Operator-triggered, read-only WooCommerce catalog import (fixture-driven by default; optionally live against the operator's own WooCommerce store when `WOOCOMMERCE_SITE_URL`/`WOOCOMMERCE_CONSUMER_KEY`/`WOOCOMMERCE_CONSUMER_SECRET` are configured, never a third-party merchant's store), reusing the same canonical catalog shape; see `docs/api/connectors-woocommerce.md`.
+- A per-agent reputation signal (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) computed at request time and surfaced on `GET /v1/agents/me` and the new `GET /v1/agents/:id` public-profile lookup; groundwork for a future purchase-policy trust check, not itself an enforcement decision; see `docs/api/native-api.md`.
+- An optional per-policy spending-limit budget (`spendingLimitAmount` + `spendingLimitPeriodDays`) on `PurchasePolicy`, surfaced as a read-only, non-blocking `spendingLimitSignal` on checkout-intent creation reporting whether the checkout would push the buyer's trailing-period spend over the budget; groundwork for a future enforcement decision, not itself one — it never changes checkout `status` or `policyDecision`; see `docs/api/native-api.md`.
+- A per-listing `sellerReputationScore` surfaced on `POST /v1/search` results (the listing seller's existing reputation signal, collapsed to 0-1 or `null` with no history yet), plus an opt-in `rankByReputation` request flag that re-sorts results to favor higher-reputation sellers; default (no-flag) ordering is unchanged; see `docs/api/native-api.md`.
 
 ## Not supported in v0.2
 
@@ -62,8 +73,9 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Refunds or disputes.
 - Tax calculation.
 - Stripe Connect seller payouts.
-- Shopify, BigCommerce, WooCommerce, or Square sync connectors.
-- Production-ready ACP/UCP protocol adapters.
+- Automatic/scheduled sync for any connector, or OAuth-based multi-merchant onboarding — every sync is operator-triggered and single-account. The Square, Shopify, BigCommerce, and WooCommerce connectors are all fixture-driven by default and optionally live against the operator's own account — Square's Developer Sandbox (see `docs/api/connectors-square.md`), Shopify's development store (see `docs/api/connectors-shopify.md`), the operator's own BigCommerce store (see `docs/api/connectors-bigcommerce.md`), and the operator's own WooCommerce store (see `docs/api/connectors-woocommerce.md`) — none reach a third-party merchant's live store.
+- Full/certified ACP spec compliance (delegated payment token, session update/cancel, multi-item carts, tax, discounts, refunds — see `docs/api/protocol-acp.md`).
+- Conformance to any named external "UCP" standard — UCP here is CommerceBackend's own mapping layer (see `docs/api/protocol-ucp.md` for its scoped subset).
 
 ## Standard local verification
 
@@ -77,6 +89,8 @@ NODE_ENV=test pnpm test
 ```
 
 Use `NODE_ENV=test pnpm test` for the test suite so production Stripe/database validation does not block tests.
+
+`pnpm typecheck` and `pnpm test` auto-build missing workspace artifacts on a clean clone before they run. That build also generates the Prisma client for the workspace.
 
 ## Safety rules
 

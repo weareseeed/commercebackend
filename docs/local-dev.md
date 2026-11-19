@@ -24,6 +24,8 @@ NODE_ENV=test pnpm test
 
 Use `NODE_ENV=test pnpm test` so the test suite runs with the expected mocked test configuration instead of production-style Stripe/database validation.
 
+`pnpm typecheck` and `pnpm test` auto-build any missing workspace artifacts before they start. That build also generates the Prisma client for `@commercebackend/db`, so on a clean clone you should not need to run `pnpm build` manually just to make the standard verification commands work.
+
 ## Sandbox workflow
 
 Use this path when you want a deterministic local API, Prisma-managed PostgreSQL state, seeded fixtures, and the sandbox smoke tools.
@@ -76,6 +78,14 @@ After the API is reachable at `http://localhost:4000`, run:
 
 ```bash
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
+```
+
+### 8. Run the agent negotiation walkthrough
+
+The same way, run the agent-to-agent negotiation example (offer → counteroffer → accept → checkout at the negotiated price):
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
 ```
 
 ## Standard workspace commands
