@@ -1,4 +1,4 @@
-# CommerceBackend v0.2.1
+# CommerceBackend v0.2.2
 
 CommerceBackend is an open-source, agent-first commerce backend. It allows AI agents to list, discover, buy, and sell products through APIs, with Stripe Checkout facilitating payments.
 
@@ -42,6 +42,12 @@ Run the buyer-agent walkthrough after the API is available at `http://localhost:
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
 
+Run the agent-to-agent negotiation walkthrough (offer → counteroffer → accept → checkout at the negotiated price):
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
+```
+
 If you want to drive the sandbox from Gemini or another Google AI Studio client, set `GOOGLE_API_KEY` in your shell or local agent project. CommerceBackend itself does not require Google AI Studio to run the API; the key is only for the external agent you point at the sandbox.
 
 Agent entry points:
@@ -49,11 +55,12 @@ Agent entry points:
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
 - Machine-readable project metadata: [`/.well-known/commercebackend.json`](https://www.commercebackend.com/.well-known/commercebackend.json)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- Agent negotiation flow example: [`examples/agent-negotiation-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - Prompt pack: [`prompts/`](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 - Repository guide: [`AGENTS.md`](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 - Agent metadata: [`/.well-known/agents.json`](https://www.commercebackend.com/.well-known/agents.json)
-- MCP tool spec: [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
+- MCP server: [`packages/mcp`](https://github.com/weareseeed/commercebackend/tree/master/packages/mcp) (`@commercebackend/mcp`), spec at [`docs/api/mcp-tool-spec.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md)
 - Hosted sandbox quickstart: [`/docs/sandbox/`](https://www.commercebackend.com/docs/sandbox/)
 
 If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-discovery assets, run:
@@ -68,14 +75,15 @@ This checks repository parity, required public content types, and public product
 
 ## Supported in v0.2 (Agent-Commerce Loop)
 
-- **Agent Identity**: Registration and bearer API key credentials (raw keys returned once, only SHA-256 hashes stored, hashes are unique).
+- **Agent Identity**: Registration and bearer API key credentials (raw keys returned once, only scrypt-derived hashes stored, hashes are unique).
 - **Fixed-price Listings**: Listing CRUD, pausing, activating, and inventory tracking.
 - **Listing Search**: Score-based search matching terms across title, description, and JSON attributes. Logs queries to `AgentQueryLog`. Supports pagination.
 - **Offers and Counteroffers**: Buyer/seller negotiation with pending, accepted, countered, rejected, expired, cancelled, and checkout-pending states.
 - **Checkout Intents**: Initiating Stripe-backed hosted payment sessions for listings or accepted offers (persisted first, using Stripe idempotency keys, fails gracefully on API error).
 - **Stripe Checkout Webhook**: Webhook processing (`checkout.session.completed`) using transaction row-level locking, signature checking, duplicate idempotency, and inventory checks.
 - **Fulfillment**: Seller agents can retrieve orders and update fulfillment status, and buyer agents can track status.
-- **ACP & UCP protocol stubs**: Initial mapping logic for Agentic Commerce Protocol (ACP) and Universal Commerce Protocol (UCP).
+- **ACP adapter**: Working inbound/outbound mapping (product feed + checkout sessions) for a scoped subset of the Agentic Commerce Protocol (ACP); see `docs/api/protocol-acp.md`.
+- **UCP adapter**: CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer, with a working inbound/outbound mapping and API entry points (`/v1/protocols/ucp/*`); see [`docs/api/protocol-ucp.md`](docs/api/protocol-ucp.md) for the supported subset. Not a claim of conformance to any named external "UCP" standard.
 
 ## Explicitly NOT Supported in v0.2
 
@@ -84,7 +92,7 @@ This checks repository parity, required public content types, and public product
 - Multi-seller shopping carts.
 - Refunds, disputes, platform fees, or tax calculation.
 - Stripe Connect seller payouts.
-- Merchant system connectors (Shopify, WooCommerce, Square, etc.).
+- Merchant system connectors: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`), Shopify (`docs/api/connectors-shopify.md`), BigCommerce (`docs/api/connectors-bigcommerce.md`), and WooCommerce (`docs/api/connectors-woocommerce.md`). All are fixture-driven by default and optionally live against the operator's own sandbox/store account — neither reaches a third-party merchant's live store, and no automatic/scheduled sync exists for any of them.
 
 ---
 
@@ -185,7 +193,57 @@ pnpm selftest:mock
 
 # Mode B: Stripe Mode (connects to real Stripe test APIs, requires valid keys)
 pnpm selftest:stripe
+
+# Mode C: Square Mode (imports a catalog via the Square connector; uses the
+# fixture unless SQUARE_ACCESS_TOKEN is set, in which case it hits your own
+# Square Developer Sandbox — see docs/api/connectors-square.md)
+pnpm selftest:square
+
+# Mode D: Shopify Mode (imports a catalog via the Shopify connector; uses the
+# fixture unless SHOPIFY_SHOP_DOMAIN and SHOPIFY_ACCESS_TOKEN are set, in
+# which case it hits your own Shopify development store — see
+# docs/api/connectors-shopify.md)
+pnpm selftest:shopify
+
+# Mode E: BigCommerce Mode (imports a catalog via the BigCommerce connector;
+# uses the fixture unless BIGCOMMERCE_STORE_HASH and BIGCOMMERCE_ACCESS_TOKEN
+# are set, in which case it hits your own BigCommerce store — see
+# docs/api/connectors-bigcommerce.md)
+pnpm selftest:bigcommerce
+
+# Mode F: WooCommerce Mode (imports a catalog via the WooCommerce connector;
+# uses the fixture unless WOOCOMMERCE_SITE_URL, WOOCOMMERCE_CONSUMER_KEY, and
+# WOOCOMMERCE_CONSUMER_SECRET are set, in which case it hits your own
+# WooCommerce store — see docs/api/connectors-woocommerce.md)
+pnpm selftest:woocommerce
 ```
+
+---
+
+## Deployment
+
+CommerceBackend ships a production container image ([`Dockerfile`](https://github.com/weareseeed/commercebackend/blob/master/Dockerfile)) that runs on Cloud Run, Railway, Fly, or any container platform. It listens on `$PORT`, runs as a non-root user, and applies migrations on boot when `RUN_MIGRATIONS=true`.
+
+```bash
+docker build -t commercebackend-api .
+# Prod-like local stack (Postgres + API):
+docker compose -f infra/docker-compose.app.yml up --build
+```
+
+See the [deploy runbook](https://github.com/weareseeed/commercebackend/blob/master/docs/deploy/README.md) for the Cloud Run and Railway paths, required environment/secrets ([`.env.hosted.example`](https://github.com/weareseeed/commercebackend/blob/master/.env.hosted.example)), and the launch checklist.
+
+### Operational environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CORS_ORIGIN` | `*` | `*` or a comma-separated origin allowlist (browser callers only). |
+| `RATE_LIMIT_MAX` | `300` | Per-IP request ceiling applied globally outside tests. |
+| `RATE_LIMIT_WINDOW` | `1 minute` | Window for the rate limit. |
+| `TRUST_PROXY` | `true` | Trust `X-Forwarded-For` for the real client IP behind a reverse proxy, so per-IP rate limiting keys correctly. Set to `false` only with no proxy in front. |
+| `RUN_MIGRATIONS` | — | `true` applies pending migrations on container start. |
+| `RUN_SEED` | — | `true` resets and seeds sandbox fixtures on start (demo only). |
+
+`/health`, `/ready`, and the Stripe webhook are exempt from rate limiting.
 
 ---
 
@@ -195,7 +253,7 @@ All endpoints conform to the standard error response layout and require request 
 
 | Method  | Endpoint                        | Auth   | Description                                            |
 | ------- | ------------------------------- | ------ | ------------------------------------------------------ |
-| `GET`   | `/health`                       | Public | Liveness status (version `0.2.1`)                      |
+| `GET`   | `/health`                       | Public | Liveness status (version `0.2.2`)                      |
 | `GET`   | `/ready`                        | Public | Readiness status (verifies database & Stripe config)   |
 | `POST`  | `/v1/agents`                    | Public | Register a buyer/seller agent (returns API key once)   |
 | `GET`   | `/v1/agents/me`                 | Bearer | Get details of authenticated agent                     |
@@ -228,8 +286,9 @@ All endpoints conform to the standard error response layout and require request 
 - **No tax calculation**: Tax collection is omitted in this version.
 - **No auctions**: Offer negotiation is supported, but auction mechanics are not.
 - **No multi-seller cart**: Orders are single-item only.
-- **No merchant connectors**: No Shopify, BigCommerce, WooCommerce, or Square sync.
-- **ACP/UCP Stubs**: Adapters are placeholder mapping templates and are not production-ready.
+- **Merchant connectors**: initial, operator-triggered, read-only catalog imports exist for Square (`docs/api/connectors-square.md`, fixture-driven by default, optionally live against the operator's own Square Developer Sandbox), Shopify (`docs/api/connectors-shopify.md`, fixture-driven by default, optionally live against the operator's own Shopify development store), BigCommerce (`docs/api/connectors-bigcommerce.md`, fixture-driven by default, optionally live against the operator's own BigCommerce store), and WooCommerce (`docs/api/connectors-woocommerce.md`, fixture-driven by default, optionally live against the operator's own WooCommerce store). No OAuth-based merchant onboarding or automatic sync for any of them.
+- **ACP Scope**: A real but scoped subset (product feed + checkout sessions over the existing Stripe-hosted redirect); see `docs/api/protocol-acp.md` for unsupported fields — not a certified/full spec implementation.
+- **UCP Scope**: The UCP adapter (`docs/api/protocol-ucp.md`) supports single-listing order create/read mapped onto the existing Stripe-hosted-checkout-URL redirect model only — no delegated/tokenized payment handoff, order update/cancel, multi-item carts, tax, discounts, or refunds.
 - **Inventory Model**: Decrements occur inside the webhook transaction, but does not support advance reservations; concurrent high-demand checkouts may trigger a `payment_inventory_conflict` state requiring manual review.
 - **Fulfillment**: Fulfillment is status-only; no shipping labels, tracking APIs, or digital delivery automation.
 
@@ -246,6 +305,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
    - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
    - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
    - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+   - **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
    - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
    - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 3. Inspect the native API contract before generating integration code: [`docs/api/native-api.md`](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md).
@@ -285,6 +345,7 @@ To assist autonomous AI agents in discovering, understanding, and integrating wi
 - **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
 - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
+- **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - **Prompt Pack**: [prompts/](https://github.com/weareseeed/commercebackend/tree/master/prompts)
 
 ---

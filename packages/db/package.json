@@ -1,6 +1,6 @@
 {
   "name": "@commercebackend/db",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "author": "Seeed LLC",
   "license": "Apache-2.0",
@@ -12,20 +12,20 @@
   "main": "./dist/client.js",
   "types": "./dist/client.d.ts",
   "scripts": {
-    "build": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma generate && tsc'",
-    "db:generate": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma generate'",
-    "db:migrate": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate dev'",
-    "db:push": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma db push'",
-    "migrate": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate deploy'",
-    "reset": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate reset --force --skip-seed'",
-    "seed": "bash -lc 'set -a; [ -f ../../.env ] && . ../../.env; set +a; tsx src/seed.ts'",
+    "build": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma generate && tsc'",
+    "db:generate": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma generate'",
+    "db:migrate": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate dev'",
+    "db:push": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma db push'",
+    "migrate": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate deploy'",
+    "reset": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; prisma migrate reset --force --skip-seed'",
+    "seed": "bash -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; tsx src/seed.ts'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2"
+    "@prisma/client": "^5.10.2",
+    "prisma": "^5.10.2"
   },
   "devDependencies": {
-    "prisma": "^5.10.2",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0"
   }
