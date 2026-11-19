@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CommerceBackend v0.2.0 + Public Sandbox - Agent-Native Commerce API</title>
+    <title>CommerceBackend v0.2.2 + Public Sandbox - Agent-Native Commerce API</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <meta
@@ -43,6 +43,7 @@
           <a href="#features">Offers</a>
           <a href="#code">API Code</a>
           <a href="#docs">Docs</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/">Blog</a>
         </nav>
         <div class="header-actions">
           <a
@@ -63,7 +64,7 @@
       <div class="hero-container">
         <div class="badge-container">
           <span class="badge"
-            ><i class="fa-solid fa-sparkles"></i> CommerceBackend v0.2.0 + Public Sandbox Live</span
+            ><i class="fa-solid fa-sparkles"></i> Public Sandbox Live · New features ship weekly</span
           >
         </div>
         <h1 class="hero-title">
@@ -72,19 +73,31 @@
         <p class="hero-subtitle">
           CommerceBackend is an open-source, developer-first commerce engine that enables autonomous
           AI agents to list, discover, negotiate offers, and complete purchases programmatically.
-          The hosted public sandbox lets builders test the full loop with deterministic fixtures and
-          Stripe test-mode checkout.
+          The hosted public sandbox is live at
+          <a href="https://api.commercebackend.com/health" target="_blank" rel="noreferrer"
+            >api.commercebackend.com</a
+          >
+          — test the full loop with deterministic fixtures and Stripe test-mode checkout. We build
+          in the open and ship new capabilities every week.
         </p>
         <div class="hero-actions">
           <a
-            href="https://github.com/weareseeed/commercebackend/releases/tag/v0.2.0"
+            href="https://github.com/weareseeed/commercebackend/releases/tag/v0.2.2"
             target="_blank"
             rel="noreferrer"
             class="btn btn-primary"
-            >View v0.2.0 Release</a
+            >View v0.2.2 Release</a
           >
           <a href="/docs/sandbox/" class="btn btn-secondary">Open Sandbox Guide</a>
           <a href="#code" class="btn btn-secondary">Explore API Examples</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/" class="btn btn-secondary">Read the Latest Recap</a>
+          <a
+            href="https://github.com/weareseeed/commercebackend/blob/master/docs/weekly-roadmap.md"
+            target="_blank"
+            rel="noreferrer"
+            class="btn btn-secondary"
+            >Weekly Roadmap</a
+          >
           <a href="/llms-full.txt" class="btn btn-secondary">Read llms-full.txt</a>
           <a
             href="https://github.com/weareseeed/commercebackend/tree/master/docs/launch"
@@ -115,7 +128,7 @@
             <div class="step-icon"><i class="fa-solid fa-store"></i></div>
             <h3 class="step-title">Seller Registers</h3>
             <p class="step-desc">
-              Seller Agent registers and receives an API Key, storing only a SHA-256 hash in
+              Seller Agent registers and receives an API Key, storing only a scrypt-derived hash in
               PostgreSQL.
             </p>
           </div>
@@ -209,6 +222,23 @@
             <p class="feature-desc">
               Positive-price constraints, checkout_pending safeguards, and Stripe failure isolation
               reduce duplicate checkout and reconciliation risk.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-diagram-project"></i></div>
+            <h3 class="feature-title">ACP &amp; UCP Protocol Adapters</h3>
+            <p class="feature-desc">
+              A scoped ACP adapter (OpenAI/Stripe's Agentic Commerce Protocol) and our own
+              vendor-neutral UCP mapping layer, both over the existing Stripe checkout flow —
+              honestly labeled, not a claim of full external spec conformance.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-plug"></i></div>
+            <h3 class="feature-title">Catalog Connectors</h3>
+            <p class="feature-desc">
+              A canonical imported-catalog model, proven with a read-only, fixture-driven Square
+              connector spike: operator-triggered, per-item failure logging, no live Square API.
             </p>
           </div>
         </div>
@@ -313,7 +343,11 @@ offers + counter-offers
 Stripe Checkout intents
 webhook-confirmed orders
 fulfillment status
-llms.txt + agent discovery assets</code></pre>
+llms.txt + agent discovery assets
+per-record API key salting
+ACP + UCP protocol adapters
+read-only operator dashboard
+Square catalog connector spike</code></pre>
           </div>
           <div class="docs-step-card">
             <h3>What v0.2 does not include</h3>
@@ -321,7 +355,11 @@ llms.txt + agent discovery assets</code></pre>
 refunds or disputes
 tax calculation
 shipping labels
-merchant sync
+full/certified ACP spec compliance
+external "UCP" standard conformance
+live/automatic merchant sync
+(Square spike is fixture-only, no live API)
+Shopify/BigCommerce/WooCommerce connectors
 human-first marketplace UI</code></pre>
           </div>
         </div>
@@ -352,6 +390,7 @@ human-first marketplace UI</code></pre>
           <a href="#features">Features</a>
           <a href="#loop">Agent Loop</a>
           <a href="#code">Developer SDK</a>
+          <a href="/blog/agent-protocols-and-catalog-connectors/">Blog</a>
           <a
             href="https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md"
             target="_blank"

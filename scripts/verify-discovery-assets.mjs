@@ -8,6 +8,7 @@ const ASSETS = [
   {
     path: '/llms.txt',
     localPath: 'apps/landing/public/llms.txt',
+    expectedContentTypes: ['text/plain'],
     requiredNeedles: [
       'CommerceBackend is an open-source, agent-first commerce backend',
       'Seeed LLC',
@@ -17,12 +18,14 @@ const ASSETS = [
   {
     path: '/llms-full.txt',
     localPath: 'apps/landing/public/llms-full.txt',
+    expectedContentTypes: ['text/plain'],
     requiredNeedles: ['CommerceBackend Full LLM Context', 'Entity boundary', 'Agent safety rules'],
   },
   {
     path: '/.well-known/commercebackend.json',
     localPath: 'apps/landing/public/.well-known/commercebackend.json',
     json: true,
+    expectedContentTypes: ['application/json'],
     requiredFields: ['name', 'owner', 'project_links', 'agent_safety', 'agent_skill_kit'],
     requiredNeedles: ['Seeed LLC', 'Joshua / Seeed AI Operations'],
   },
@@ -30,6 +33,7 @@ const ASSETS = [
     path: '/.well-known/agents.json',
     localPath: 'apps/landing/public/.well-known/agents.json',
     json: true,
+    expectedContentTypes: ['application/json'],
     requiredFields: ['name', 'owner', 'agent_entry_points', 'agent_roles', 'safety'],
     requiredNeedles: ['CommerceBackend', 'Seeed LLC'],
   },
@@ -91,6 +95,34 @@ function summarizeTextDiff(localContent, remoteContent) {
   }
 
   return null;
+}
+
+function summarizeRawByteDrift(local, remote) {
+  const causes = [];
+
+  if (local.bytes !== remote.bytes) {
+    causes.push(`byte-count local=${local.bytes} public=${remote.bytes}`);
+  }
+
+  if (local.lineEndings !== remote.lineEndings) {
+    causes.push(`line-endings local=${local.lineEndings} public=${remote.lineEndings}`);
+  }
+
+  if (causes.length === 0) {
+    causes.push('normalized content matches but raw bytes differ');
+  }
+
+  let remediation = 'review the deploy pipeline or CDN behavior before treating this as stale content';
+
+  if (local.lineEndings === 'LF' && remote.lineEndings === 'CRLF') {
+    remediation =
+      'public output appears to be newline-normalized to CRLF; check the deploy/CDN path before escalating as stale discovery content';
+  } else if (local.lineEndings === 'CRLF' && remote.lineEndings === 'LF') {
+    remediation =
+      'repository copy uses CRLF while public output is LF; normalize repository line endings if literal-byte parity matters';
+  }
+
+  return `${causes.join('; ')}; ${remediation}`;
 }
 
 function collectJsonDiffs(localValue, remoteValue, path = '$', diffs = []) {
@@ -183,6 +215,26 @@ function assertJson(label, text, fields) {
   return parsed;
 }
 
+function assertContentType(label, contentType, expectedContentTypes) {
+  if (!expectedContentTypes?.length) {
+    return;
+  }
+
+  if (!contentType || contentType === 'unknown') {
+    throw new Error(
+      `${label} is missing a content-type header; expected one of: ${expectedContentTypes.join(', ')}`
+    );
+  }
+
+  const matches = expectedContentTypes.some((expectedType) => contentType.includes(expectedType));
+
+  if (!matches) {
+    throw new Error(
+      `${label} returned unexpected content-type ${contentType}; expected one of: ${expectedContentTypes.join(', ')}`
+    );
+  }
+}
+
 async function verifyLocal(asset) {
   const content = await readFile(join(process.cwd(), asset.localPath), 'utf8');
   assertNeedles(asset.localPath, content, asset.requiredNeedles);
@@ -238,8 +290,10 @@ async function fetchPublic(asset) {
     throw new Error(`${url} returned HTTP ${response.status}: ${content.slice(0, 200)}`);
   }
 
+  const contentType = response.headers.get('content-type') || 'unknown';
+  assertContentType(url, contentType, asset.expectedContentTypes);
   assertNeedles(url, content, asset.requiredNeedles);
-  if (asset.json || response.headers.get('content-type')?.includes('json')) {
+  if (asset.json || contentType.includes('json')) {
     assertJson(url, content, asset.requiredFields);
   }
 
@@ -247,7 +301,7 @@ async function fetchPublic(asset) {
     url,
     content,
     status: response.status,
-    contentType: response.headers.get('content-type') || 'unknown',
+    contentType,
     bytes: Buffer.byteLength(content),
     sha256: sha256(content),
     normalizedSha256: sha256(normalizeText(content)),
@@ -294,9 +348,7 @@ for (const asset of ASSETS) {
         local.sha256 !== remote.sha256
       ) {
         warnings += 1;
-        console.warn(
-          `discovery verification warning for ${asset.path}: normalized content matches but raw bytes differ; local-bytes=${local.bytes} public-bytes=${remote.bytes}; local-line-endings=${local.lineEndings} public-line-endings=${remote.lineEndings}`
-        );
+        console.warn(`discovery verification warning for ${asset.path}: ${summarizeRawByteDrift(local, remote)}`);
       }
     }
   } catch (error) {

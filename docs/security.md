@@ -4,12 +4,13 @@ This document explains the security architecture, authorization boundaries, and 
 
 ## 1. Agent API Key Security
 
-- **Generation**: High-entropy API keys are generated using `crypto.randomBytes(24)` with environment-based prefixes (`cb_live_` or `cb_test_`).
+- **Generation**: New API keys are `<prefix><16-hex keyId>.<48-hex secret>` (environment-based prefixes `cb_live_` or `cb_test_`), generated from `crypto.randomBytes`. The `keyId` is a public lookup token; it grants nothing on its own.
 - **One-time Return**: The raw key is returned exactly once during the agent registration response payload.
-- **Hashed Storage**: Only the SHA-256 hash of the API key is stored in the database (`Agent.apiKeyHash`), which is configured with a `@unique` constraint.
-- **Redaction**: The `apiKeyHash` field is stripped from all outgoing agent responses, including agent creation and `GET /v1/agents/me`.
-- **Timing Attacks**: A timing-safe comparison helper `timingSafeCompare` is provided for comparing secrets to prevent side-channel attacks.
-- **Log Hygiene**: Raw API keys and Authorization headers are automatically redacted from all application logs.
+- **Hashed Storage**: The API key is never stored raw. It is hashed with `scrypt` (a memory-hard KDF) and a **per-record random salt** (`Agent.apiKeySalt`); the result is stored in `Agent.apiKeyHash` (`@unique`). Verification looks the row up by the public `apiKeyId`, then recomputes the salted hash and compares it — a leaked hash can't be replayed against other keys via a shared rainbow table.
+- **Legacy keys**: Agents created before this per-record-salt migration have `apiKeySalt`/`apiKeyId` left `null` and keep authenticating via the old shared-salt hash path (`hashApiKey` in `packages/db/src/auth-utils.ts`) — no backfill required, no forced key rotation.
+- **Redaction**: The `apiKeyHash` and `apiKeySalt` fields are stripped from all outgoing agent responses (including agent creation and `GET /v1/agents/me`) and from application logs via Fastify's logger redaction.
+- **Timing Attacks**: A timing-safe comparison helper (`constantTimeEquals`) is used when comparing the recomputed hash to the stored one, and for the operator key, to prevent side-channel attacks.
+- **Log Hygiene**: Raw API keys, key hashes, key salts, and Authorization headers are automatically redacted from all application logs.
 
 ---
 

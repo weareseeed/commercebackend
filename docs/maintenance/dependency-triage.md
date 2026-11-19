@@ -109,7 +109,29 @@ When triaging current open CommerceBackend alerts, apply these guardrails:
 - Treat Windows-only path-handling advisories as real but scope-limited when maintainers are not serving those dev surfaces on Windows.
 - Treat transitive minimatch/eslint-chain alerts as tooling risk until proven to affect runtime request handling.
 
-## 4. Maintainer note template for transient policy failures
+## 4. Operator evidence commands
+
+Use GitHub CLI so the nightly maintainer note is grounded in the actual failing run, not guesswork.
+
+```bash
+gh pr list --label dependencies --state open
+```
+
+Inspect the failing PR checks:
+
+```bash
+gh pr view <pr-number> --json title,url,statusCheckRollup
+```
+
+Read only the failed job output:
+
+```bash
+gh run view <run-id> --log-failed
+```
+
+When the failure is a release-age gate, capture the exact package/version and cutoff timestamp from the log before writing a note.
+
+## 5. Maintainer note template for transient policy failures
 
 ```text
 CI failed on a supply-chain policy gate, not on application compatibility.
@@ -117,6 +139,8 @@ CI failed on a supply-chain policy gate, not on application compatibility.
 Observed failure:
 - ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION
 - package: <name>@<version>
+- published: <timestamp from log>
+- cutoff: <timestamp from log>
 
 Action:
 - do not merge or bypass policy yet
@@ -124,7 +148,7 @@ Action:
 - re-run CI and only investigate further if the failure persists
 ```
 
-## 5. Maintainer note template for scoped security alerts
+## 6. Maintainer note template for scoped security alerts
 
 ```text
 Reviewed the alert and classified the current exposure scope before escalating it.
@@ -144,7 +168,14 @@ Action:
 - update safely through a patch/minor PR or a dedicated migration issue
 ```
 
-## 6. What not to do
+## 7. After the age window passes
+
+1. Rebase or recreate the Dependabot PR.
+2. Re-run CI.
+3. If the release-age violation disappears and checks pass, continue normal review.
+4. If the release-age violation disappears but typecheck, test, or build fails, reclassify the PR as a real compatibility problem.
+
+## 8. What not to do
 
 - Do not treat every red Dependabot PR as a broken application build.
 - Do not weaken supply-chain policy just to clear a transient failure.

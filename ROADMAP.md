@@ -6,7 +6,7 @@ This roadmap is intentionally conservative. If a feature affects payments, inven
 
 ## Current status
 
-### Shipped foundation — v0.1 through v0.2.1
+### Shipped foundation — v0.1 through v0.2.2
 
 CommerceBackend currently provides the open-source foundation for agents to list, discover, negotiate, and purchase through APIs.
 
@@ -28,10 +28,20 @@ What exists now:
   - `/llms-full.txt`
   - `/.well-known/commercebackend.json`
 - Public discovery asset verification script.
+- Production container image (multi-stage Docker) and a host-agnostic deploy
+  runbook for Cloud Run and Railway (`docs/deploy/`), with migrate/seed-on-boot.
+- Operational hardening: per-IP rate limiting (health/webhook exempt),
+  configurable CORS allowlist, constant-time operator-key comparison, request
+  body-size limits, and a strict registration/search abuse cap.
+- Live hosted public sandbox at `https://api.commercebackend.com` (Stripe test
+  mode), rate limits verified enforcing behind the proxy.
 - Apache-2.0 license.
 
 Current release:
 
+- `v0.2.2` — public sandbox live on its own domain, containerized deploy path,
+  and operational/abuse hardening (rate limiting, CORS, constant-time operator
+  auth, body limits).
 - `v0.2.1` — post-v0.2 hardening and discovery verification.
 
 ## v0.3 — Connector imports, search correctness, and controlled checkout design
@@ -103,7 +113,7 @@ Planned work:
 
 - Fuller ACP adapter implementation.
 - Fuller UCP adapter implementation.
-- MCP server or adapter spike.
+- ~~MCP server or adapter spike.~~ Shipped ahead of schedule: `packages/mcp` (`@commercebackend/mcp`), see `docs/api/mcp-tool-spec.md`.
 - Agent skill kit refinements.
 - Claude/Copilot/Cursor/Windsurf adapter maintenance.
 - Runnable buyer-agent and seller-agent examples against the sandbox.
@@ -127,7 +137,7 @@ Candidate work:
 
 ## Explicit limitations today
 
-CommerceBackend v0.2.1 does not include:
+CommerceBackend v0.2.2 does not include:
 
 - Refunds.
 - Disputes.
