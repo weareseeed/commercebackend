@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 const DEFAULT_BASE_URL = 'https://www.commercebackend.com';
+const packageManifest = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8'));
+const expectedReleaseTarget = `v${packageManifest.version}`;
 const ASSETS = [
   {
     path: '/llms.txt',
@@ -14,12 +16,14 @@ const ASSETS = [
       'Seeed LLC',
       'Agent Skill Kit',
     ],
+    releaseTargetLine: `**Current Release Target**: ${expectedReleaseTarget}`,
   },
   {
     path: '/llms-full.txt',
     localPath: 'apps/landing/public/llms-full.txt',
     expectedContentTypes: ['text/plain'],
     requiredNeedles: ['CommerceBackend Full LLM Context', 'Entity boundary', 'Agent safety rules'],
+    releaseTargetLine: `- Current release target: ${expectedReleaseTarget}`,
   },
   {
     path: '/.well-known/commercebackend.json',
@@ -28,6 +32,7 @@ const ASSETS = [
     expectedContentTypes: ['application/json'],
     requiredFields: ['name', 'owner', 'project_links', 'agent_safety', 'agent_skill_kit'],
     requiredNeedles: ['Seeed LLC', 'Joshua / Seeed AI Operations'],
+    releaseTargetField: 'current_release_target',
   },
   {
     path: '/.well-known/agents.json',
@@ -215,6 +220,23 @@ function assertJson(label, text, fields) {
   return parsed;
 }
 
+function assertReleaseTarget(label, text, asset, parsedJson) {
+  if (asset.releaseTargetLine && !text.includes(asset.releaseTargetLine)) {
+    throw new Error(
+      `${label} is missing expected release target line: ${asset.releaseTargetLine}`
+    );
+  }
+
+  if (asset.releaseTargetField) {
+    const json = parsedJson || JSON.parse(text);
+    if (json[asset.releaseTargetField] !== expectedReleaseTarget) {
+      throw new Error(
+        `${label} has ${asset.releaseTargetField}=${formatValue(json[asset.releaseTargetField])}; expected ${formatValue(expectedReleaseTarget)}`
+      );
+    }
+  }
+}
+
 function assertContentType(label, contentType, expectedContentTypes) {
   if (!expectedContentTypes?.length) {
     return;
@@ -238,9 +260,11 @@ function assertContentType(label, contentType, expectedContentTypes) {
 async function verifyLocal(asset) {
   const content = await readFile(join(process.cwd(), asset.localPath), 'utf8');
   assertNeedles(asset.localPath, content, asset.requiredNeedles);
+  let parsedJson;
   if (asset.json || extname(asset.localPath) === '.json') {
-    assertJson(asset.localPath, content, asset.requiredFields);
+    parsedJson = assertJson(asset.localPath, content, asset.requiredFields);
   }
+  assertReleaseTarget(asset.localPath, content, asset, parsedJson);
   return {
     content,
     bytes: Buffer.byteLength(content),
@@ -293,9 +317,11 @@ async function fetchPublic(asset) {
   const contentType = response.headers.get('content-type') || 'unknown';
   assertContentType(url, contentType, asset.expectedContentTypes);
   assertNeedles(url, content, asset.requiredNeedles);
+  let parsedJson;
   if (asset.json || contentType.includes('json')) {
-    assertJson(url, content, asset.requiredFields);
+    parsedJson = assertJson(url, content, asset.requiredFields);
   }
+  assertReleaseTarget(url, content, asset, parsedJson);
 
   return {
     url,
