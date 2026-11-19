@@ -26,6 +26,21 @@ function rate(numerator: number, denominator: number): number | null {
   return denominator > 0 ? numerator / denominator : null;
 }
 
+/**
+ * Collapses an agent's seller-side reputation (completed-checkout rate and
+ * offer-acceptance rate) into a single 0-1 score for ranking contexts (e.g.
+ * search result re-ranking, weekly backlog item 18). Returns null when the
+ * seller has no decided history on either signal yet, so "no data" stays
+ * distinguishable from "known poor reputation" (score 0).
+ */
+function sellerReputationScore(reputation: AgentReputation): number | null {
+  const { completionRate } = reputation.checkouts.asSeller;
+  const { acceptanceRate } = reputation.offers.asSeller;
+  const signals = [completionRate, acceptanceRate].filter((v): v is number => v !== null);
+  if (signals.length === 0) return null;
+  return Number((signals.reduce((sum, v) => sum + v, 0) / signals.length).toFixed(4));
+}
+
 export class AgentsService {
   static async createAgent(input: CreateAgentInput) {
     const prefix = process.env.NODE_ENV === 'production' ? 'cb_live_' : 'cb_test_';
@@ -130,5 +145,18 @@ export class AgentsService {
         },
       },
     };
+  }
+
+  /**
+   * Batches the seller-reputation score (see `sellerReputationScore` above)
+   * for a set of agent ids, e.g. the distinct sellers behind one page of
+   * search results. Returns a map keyed by agent id.
+   */
+  static async getSellerReputationScores(agentIds: string[]): Promise<Map<string, number | null>> {
+    const uniqueIds = [...new Set(agentIds)];
+    const scores = await Promise.all(
+      uniqueIds.map(async (id) => [id, sellerReputationScore(await AgentsService.getReputation(id))] as const)
+    );
+    return new Map(scores);
   }
 }
