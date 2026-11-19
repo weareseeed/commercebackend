@@ -13,6 +13,12 @@ spec-driven layout:
 
 When a change ships, fold its deltas into `specs/` and archive the change.
 
+Validation: run `openspec validate --all --strict` with the OpenSpec CLI. The
+files were checked against the CLI's structural rules by a script (Purpose and
+Requirements sections, SHALL/MUST wording, at least one scenario per
+requirement, delta headers, proposal and tasks present) but have **not** been run
+through the CLI itself.
+
 Rules that override anything here: `AGENTS.md` and `CLAUDE.md`. Changes tagged
 `[HUMAN-LED]` need explicit Seeed approval and a design review before code, and
 are not built by the autonomous weekly routine. Seeed LLC is unrelated to Seeed

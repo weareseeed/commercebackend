@@ -1,10 +1,18 @@
 # Checkout and Human Approval
 
+## Purpose
+Turn a buyer agent's purchase intent into a Stripe checkout, gated by purchase
+policy and human approval.
+
 ## Requirements
 
 ### Requirement: Persist before payment
 A checkout intent SHALL be persisted before a Stripe session is created, using
 Stripe idempotency keys.
+
+#### Scenario: Intent exists first
+- **WHEN** a checkout is created
+- **THEN** the checkout intent row exists before the Stripe session is requested
 
 ### Requirement: Policy evaluation before payment
 The system SHALL evaluate the buyer agent's enabled `PurchasePolicy` (matching
@@ -38,6 +46,15 @@ SHALL NOT approve their own checkouts or create policies.
 - **THEN** status becomes `human_rejected`, no Stripe session is created, and
   any linked offer reverts to `accepted`
 
+#### Scenario: Agent attempts approval
+- **WHEN** a buyer agent calls the approve endpoint
+- **THEN** the request is rejected
+
 ### Requirement: Spending limit is advisory
 `spendingLimitSignal` SHALL report whether a checkout would exceed an optional
 policy budget and SHALL NOT change `status` or `policyDecision`.
+
+#### Scenario: Over the limit
+- **WHEN** a checkout would exceed the configured spending limit
+- **THEN** `wouldExceedLimit` is true
+- **AND** `status` and `policyDecision` are the same as without the limit

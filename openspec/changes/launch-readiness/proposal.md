@@ -18,7 +18,7 @@ evaluation fixtures, unverified production parity). See
 Real-money processing, refunds, disputes, tax, payouts, the Cloud.
 
 ## Impact
-- Affected specs: none directly (docs/process); depends on
+- Affected specs: adds `release-governance` (approval before external actions; claims match shipped behavior); depends on
   `approval-hardening`, `inventory-conflict-operator-refund`,
   `publish-agent-packages`, `sandbox-success-metric`.
 - Approval: public announcement, tags, and releases need Seeed approval.

@@ -23,6 +23,10 @@ and Authorization headers from responses and logs.
 - **WHEN** an agent created before per-record salts authenticates
 - **THEN** it still authenticates via the legacy path
 
+#### Scenario: Redaction
+- **WHEN** an agent record is returned in a response
+- **THEN** it contains neither the key hash nor the salt
+
 ### Requirement: Agent routes require authentication
 Listing, offer, order, and search routes SHALL require agent bearer auth.
 Operator routes SHALL require `X-Operator-Key`, compared in constant time.
@@ -34,3 +38,8 @@ Operator routes SHALL require `X-Operator-Key`, compared in constant time.
 ### Requirement: Reputation signal
 `GET /v1/agents/me` and agent lookup SHALL expose a read-only reputation
 summary (completed vs. failed checkouts, offer acceptance rate).
+
+#### Scenario: Seeded agent lookup
+- **WHEN** an authenticated agent requests its own profile
+- **THEN** the response includes a `reputation` summary computed from its
+  checkout and offer history
