@@ -46,7 +46,8 @@
     "woocommerce_catalog_connector_spike",
     "agent_reputation_signal",
     "purchase_policy_spending_limit_signal",
-    "agent_negotiation_flow_example"
+    "agent_negotiation_flow_example",
+    "reputation_aware_search_ranking_signal"
   ],
   "planned_capabilities": [],
   "docs_links": {

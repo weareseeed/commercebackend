@@ -22,7 +22,8 @@ export async function searchRoutes(fastify: FastifyInstance) {
       input.query,
       input.filters,
       input.limit,
-      input.offset
+      input.offset,
+      input.rankByReputation
     );
 
     return {
