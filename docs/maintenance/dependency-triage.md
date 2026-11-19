@@ -77,6 +77,12 @@ Read only the failed job output:
 gh run view <run-id> --log-failed
 ```
 
+Parse minimum release age violations into a copy/paste-ready maintainer note:
+
+```bash
+gh run view <run-id> --log-failed | pnpm triage:dependency-log
+```
+
 When the failure is a release-age gate, capture the exact package/version and cutoff timestamp from the log before writing a note.
 
 ## 4. Maintainer note template for transient policy failures
