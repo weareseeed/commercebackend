@@ -6,7 +6,7 @@ CommerceBackend is an open-source, agent-first commerce backend designed specifi
 
 The core architecture centers around six key domain entities:
 
-1. **Agent**: The identity representing a buyer agent, seller agent, or both. Authentication is facilitated through bearer API keys hashed with SHA-256 for secure storage.
+1. **Agent**: The identity representing a buyer agent, seller agent, or both. Authentication is facilitated through bearer API keys hashed with `scrypt` and a per-record random salt for secure storage (see `docs/security.md`).
 2. **Listing**: Represents a fixed-price product, service, ticket, or digital item sold by a seller agent.
 3. **Offer**: Captures buyer-submitted proposed price and quantity terms, plus the seller accept/reject/counter workflow and immutable final negotiated terms once accepted.
 4. **CheckoutIntent**: Tracks a buyer agent's explicit intent to purchase a listing or accepted offer and anchors Stripe Checkout session creation.
@@ -33,9 +33,15 @@ Buyer Agent / Seller Agent
   Seller Agent Fulfillment
 ```
 
-## ACP / UCP Protocol Adapters
+## Purchase policy and human approval
 
-ACP (Agentic Commerce Protocol) and UCP (Universal Commerce Protocol) are housed as external packages (`@commercebackend/protocol-acp` and `@commercebackend/protocol-ucp`). They currently operate as mapping stubs that translate internal listing-oriented types into standardized protocol formats. This keeps the internal data model decoupled from external protocol specifications while leaving room for future protocol adapters without overstating current implementation maturity.
+Before a Stripe Checkout session exists, a checkout intent is evaluated against the buyer agent's `PurchasePolicy` (`CheckoutService.evaluatePurchasePolicy`). A buyer with no enabled policy for the listing's currency always gets `human_approval_required`. Otherwise the intent is auto-approved only when the listing type and seller are allowed and the amount is within the policy's auto-approve and approval thresholds; offer checkouts can be forced to human approval. A `human_approval_required` intent has no Stripe session until an operator calls `POST /v1/checkout-intents/:id/approve` (operator key; buyer agents cannot approve), or it ends as `human_rejected`. A read-only `spendingLimitSignal` reports whether the checkout would exceed the policy's spending limit; it is **not yet enforced**. Transitions are visible through the operator checkout event ledger.
+
+## Protocol adapters, MCP, and connectors
+
+- **ACP** (`packages/protocols/acp`) and **UCP** (`packages/protocols/ucp`) are working, tested inbound/outbound adapters for a documented subset; see `docs/api/protocol-acp.md` and `docs/api/protocol-ucp.md`. UCP is CommerceBackend's own vendor-neutral mapping layer, not a claim of conformance to an external standard. The internal data model stays independent of both protocols.
+- **MCP** (`packages/mcp`) exposes the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
+- **Connectors** (`packages/connectors/{shopify,square,bigcommerce,woocommerce}`) provide read-only, operator-triggered catalog imports into the canonical imported-catalog model, with sync logs. They are fixture-driven by default; there is no automatic sync and no checkout through a third-party store.
 
 ---
 

@@ -53,6 +53,7 @@ const STAT_LABELS = [
   ['checkoutIntents', 'Checkout intents'],
   ['orders', 'Orders'],
   ['queryLogs', 'Query logs'],
+  ['pendingApprovals', 'Pending approvals'],
 ];
 
 baseUrlInput.value = readSessionStorage(STORAGE_KEYS.baseUrl) || DEFAULT_BASE_URL;
@@ -175,7 +176,10 @@ async function fetchMetrics() {
   generatedAtEl.textContent = data.generatedAt
     ? `Last generated: ${new Date(data.generatedAt).toLocaleString()}`
     : 'Last generated: unknown';
-  renderCounts(data.counts || {});
+  renderCounts({
+    ...(data.counts || {}),
+    pendingApprovals: data.pendingApprovals ? data.pendingApprovals.count : undefined,
+  });
   renderCriticalEvents(data.criticalEvents || { total: 0, byCode: {} });
 }
 
