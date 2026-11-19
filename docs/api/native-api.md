@@ -385,6 +385,7 @@ All requests and responses use JSON. Unsuccessful responses follow the standard 
 - If policy requires human approval, the checkout intent is created with `status: "human_approval_required"`, `policyDecision: "human_approval_required"`, and no `stripeCheckoutSessionId` or `checkoutUrl`.
 - Approve with **POST** `/v1/checkout-intents/:id/approve` using `X-Operator-Key` to create the Stripe Checkout session. Buyer-agent bearer auth is rejected.
 - Reject with **POST** `/v1/checkout-intents/:id/reject` using `X-Operator-Key` and optional body `{ "reason": "Human declined purchase." }`; no Stripe session is created.
+- **`policyDecisionReasons`:** array of codes explaining why a checkout required human approval: `NO_POLICY`, `LISTING_TYPE_NOT_ALLOWED`, `SELLER_NOT_ALLOWED`, `OFFER_REQUIRES_APPROVAL`, `AMOUNT_ABOVE_AUTO_APPROVE`, `AMOUNT_ABOVE_APPROVAL_THRESHOLD`. Empty when the policy auto-approved. Informational only; it does not change the decision. Intents created before this field existed return an empty array.
 - **`spendingLimitSignal` (weekly backlog item 14):** a read-only, non-blocking signal computed from the matched purchase policy's optional `spendingLimitAmount`/`spendingLimitPeriodDays` budget. `configured: false` (with all other fields `null`/`0`/`false`) means no matched policy or no spending limit is set. `wouldExceedLimit` reports whether this checkout's amount, added to the buyer's spend under that policy over the trailing `periodDays` window (checkout intents in `open`, `human_approval_required`, `human_approved`, or `paid` status), would exceed `limitAmount`. It never changes `status` or `policyDecision` — checkout proceeds the same whether or not it is `true`.
 - **Example Curl**:
   ```bash
@@ -683,7 +684,7 @@ agent bearer token.
 ### 21. Operator Metrics
 - **GET** `/v1/operator/metrics` *(Requires `X-Operator-Key`)*
 - Read-only live counts across core resources, plus persisted critical
-  operational events (currently `CHECKOUT_PERSISTENCE_FAILED`). Groundwork
+  operational events (`CHECKOUT_PERSISTENCE_FAILED`, `PAYMENT_INVENTORY_CONFLICT`) and a `pendingApprovals` summary (checkout intents waiting in `human_approval_required`). Groundwork
   for the planned v0.4 read-only operator dashboard.
 - **Response (200 OK):**
   ```json
@@ -697,10 +698,15 @@ agent bearer token.
       "orders": 15,
       "queryLogs": 133
     },
+    "pendingApprovals": {
+      "count": 0,
+      "oldestRequestedAt": null
+    },
     "criticalEvents": {
       "total": 0,
       "byCode": {
-        "CHECKOUT_PERSISTENCE_FAILED": 0
+        "CHECKOUT_PERSISTENCE_FAILED": 0,
+        "PAYMENT_INVENTORY_CONFLICT": 0
       }
     }
   }
@@ -721,7 +727,11 @@ agent bearer token.
   fields — there is no dedicated append-only event table yet, so
   `fulfillment_updated` reflects only the current fulfillment state, not
   every intermediate change. Groundwork for the Operational credibility
-  epic's checkout event ledger; never changes checkout behavior.
+  epic's checkout event ledger; never changes checkout behavior. The
+  read-only operator dashboard (`apps/landing/operator/`) has a "Checkout
+  event ledger" panel that looks up a checkout intent by id and renders this
+  endpoint's response as a table, for support/audit workflows without a raw
+  API call.
 - **Response (200 OK):**
   ```json
   {

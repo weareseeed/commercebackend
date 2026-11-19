@@ -50,7 +50,9 @@ export class OrdersService {
       if (listing.quantityAvailable < intent.quantity) {
         // Handle payment_inventory_conflict operational state:
         // Do not create order, do not decrement inventory.
-        // TODO: v0.1 requires manual review / refund for this state.
+        // Money has been captured with no order. Refunds stay human-led; record a
+        // critical event so operators can find and review it (see
+        // docs/operations/inventory-conflict-options.md).
         await tx.checkoutIntent.update({
           where: { id: checkoutIntentId },
           data: {
@@ -58,6 +60,19 @@ export class OrdersService {
             stripePaymentIntentId,
           },
         });
+
+        const conflictPayload = {
+          checkoutIntentId,
+          listingId: intent.listingId,
+          offerId: intent.offerId || null,
+          stripePaymentIntentId: stripePaymentIntentId ?? null,
+          quantityRequested: intent.quantity,
+          quantityAvailable: listing.quantityAvailable,
+        };
+        await tx.criticalEvent.create({
+          data: { code: 'PAYMENT_INVENTORY_CONFLICT', payload: conflictPayload },
+        });
+        console.error(JSON.stringify({ level: 'critical', code: 'PAYMENT_INVENTORY_CONFLICT', ...conflictPayload }));
 
         if (intent.offerId) {
           await tx.offer.update({

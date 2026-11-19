@@ -27,7 +27,9 @@ Use these canonical public resources before inferring project behavior:
 - `apps/landing` — public landing site and deployable discovery assets.
 - `packages/db` — Prisma schema, migrations, and database helpers.
 - `packages/mcp` — MCP server (`@commercebackend/mcp`) exposing the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
-- `packages/protocol` — ACP/UCP protocol mapping stubs and shared protocol types.
+- `packages/protocols/acp`, `packages/protocols/ucp` — ACP and UCP adapters (working mappings for a documented subset; see `docs/api/protocol-*.md`).
+- `packages/connectors/*` — read-only Shopify, Square, BigCommerce, and WooCommerce catalog import connectors.
+- `packages/schemas`, `packages/payments/stripe`, `packages/sdk-js` — shared schemas, Stripe helpers, and the JavaScript SDK.
 - `docs` — public technical documentation.
 
 ## Safe Local Workflow
