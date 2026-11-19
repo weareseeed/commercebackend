@@ -1,0 +1,4 @@
+- [ ] 1. Maintainers pick the metric, target, and review date
+- [ ] 2. List the counters required; confirm none are personal data
+- [ ] 3. Add read-only counters to `GET /v1/operator/metrics` with tests
+- [ ] 4. Document the metric and where to read it

@@ -379,6 +379,9 @@ Detailed documentation on development guides, security, testing, and payment set
 - [Native API Contract Specifications](https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md)
 - [System Architecture](https://github.com/weareseeed/commercebackend/blob/master/docs/architecture/overview.md)
 
+- [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), [Changelog](CHANGELOG.md), [Security Policy](SECURITY.md)
+- [Launch readiness plan](docs/launch/launch-readiness-plan.md) and [OpenSpec](openspec/)
+
 ---
 
 ## Ownership

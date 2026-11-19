@@ -1,0 +1,6 @@
+- [ ] 1. Design review with maintainers
+- [ ] 2. `enforceSpendingLimit` flag on `PurchasePolicy` (migration) and `SPENDING_LIMIT_EXCEEDED` reason
+- [ ] 3. `CheckoutEvent` table, writers in every transition, ledger reads from it
+- [ ] 4. `approvalExpiresAt`, `approval_expired` status, sweep, `APPROVAL_EXPIRED` error
+- [ ] 5. Operator notification hook (`APPROVAL_WEBHOOK_URL`)
+- [ ] 6. Tests for each invariant; update docs, skill kit, discovery assets

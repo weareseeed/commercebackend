@@ -31,5 +31,22 @@
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
     "vitest": "^3.2.7"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "commerce",
+    "agents",
+    "ai-agents"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

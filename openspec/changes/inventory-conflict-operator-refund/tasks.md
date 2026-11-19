@@ -1,0 +1,6 @@
+- [ ] 1. Design doc: states, failure handling, Stripe permissions, accounting
+- [ ] 2. Seeed approval of the design
+- [ ] 3. Operator-only refund endpoint (idempotency key, test-mode only until approved)
+- [ ] 4. Ledger event and metrics for refunded conflicts
+- [ ] 5. Tests including partial-failure and retry cases
+- [ ] 6. Update incident runbook, docs, skill kit, discovery assets
