@@ -21,6 +21,12 @@ On a clean clone, `pnpm typecheck` and `pnpm test` auto-build missing workspace 
 
 CommerceBackend uses Vitest for unit and API-level integration coverage.
 
+### Temporary security note for the current Vitest line
+
+As of 2026-06-04, GitHub Dependabot reports `GHSA-5xrq-8626-4rwp` / `CVE-2026-47429` against the current Vitest major used in this repo. CommerceBackend's checked-in scripts use `vitest run`, not the Vitest UI or Browser Mode, so the normal local/CI verification path does not intentionally expose the affected networked surface.
+
+Until the planned Vitest 4 migration is complete, do not run Vitest UI or Browser Mode on a shared or network-exposed host for this repository, especially on Windows. If you must inspect UI behavior locally, keep it bound to localhost only and do not grant remote access.
+
 ### Run the test suite
 
 ```bash
