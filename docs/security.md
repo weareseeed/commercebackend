@@ -79,6 +79,7 @@ We enforce strict validation rules across the API based on the authenticated age
   - local-only dev tooling exposure;
   - CI-only or disabled workflow exposure.
 - Current open Vite, esbuild, minimatch, and Vitest findings should be described with their actual exposure conditions, not as blanket proof of a production API breach.
+- Exposure classification guides accurate communication; it does not remove the requirement to track and remediate an alert through a safe update or a migration plan.
 
 ---
 
