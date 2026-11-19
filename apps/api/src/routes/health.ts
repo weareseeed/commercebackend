@@ -24,17 +24,19 @@ const getStripeMode = (secretKey: string | undefined) => {
 };
 
 export async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get('/health', async (request, reply) => {
+  // Liveness/readiness probes are polled frequently by the platform; never
+  // rate-limit them.
+  fastify.get('/health', { config: { rateLimit: false } }, async (request, reply) => {
     return {
       ok: true,
       service: 'commercebackend-api',
-      version: '0.2.1',
+      version: '0.2.2',
       mode: env.SANDBOX_MODE ? 'sandbox' : env.NODE_ENV,
       stripeMode: getStripeMode(env.STRIPE_SECRET_KEY),
     };
   });
 
-  fastify.get('/ready', async (request, reply) => {
+  fastify.get('/ready', { config: { rateLimit: false } }, async (request, reply) => {
     let dbStatus = 'ok';
     const stripeMode = getStripeMode(env.STRIPE_SECRET_KEY);
     let stripeStatus = stripeMode === 'missing' ? 'missing' : 'configured';
