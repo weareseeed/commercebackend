@@ -12,7 +12,10 @@ async function request(path, options = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: {
-      'content-type': 'application/json',
+      // Only advertise a JSON body when one is actually sent. Fastify 5 rejects
+      // POSTs carrying `content-type: application/json` with an empty body
+      // (FST_ERR_CTP_EMPTY_JSON_BODY), which broke bodyless operator calls.
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
       ...(options.headers || {}),
     },
   });
