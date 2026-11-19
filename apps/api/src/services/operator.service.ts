@@ -8,7 +8,7 @@ const CRITICAL_EVENT_CODES = ['CHECKOUT_PERSISTENCE_FAILED', 'PAYMENT_INVENTORY_
 
 export class OperatorService {
   static async getMetrics(): Promise<OperatorMetricsResponse> {
-    const [agents, listings, offers, checkoutIntents, orders, queryLogs, criticalEventsTotal, pendingApprovalIntents, ...codeCounts] =
+    const [agents, listings, offers, checkoutIntents, orders, queryLogs, criticalEventsTotal, pendingApprovals, ...codeCounts] =
       await Promise.all([
         prisma.agent.count(),
         prisma.listing.count(),
@@ -17,7 +17,11 @@ export class OperatorService {
         prisma.order.count({}),
         prisma.agentQueryLog.count(),
         prisma.criticalEvent.count(),
-        prisma.checkoutIntent.findMany({ where: { status: 'human_approval_required' } }),
+        prisma.checkoutIntent.aggregate({
+          where: { status: 'human_approval_required' },
+          _count: { _all: true },
+          _min: { approvalRequestedAt: true },
+        }),
         ...CRITICAL_EVENT_CODES.map((code) => prisma.criticalEvent.count({ where: { code } })),
       ]);
 
@@ -25,11 +29,6 @@ export class OperatorService {
     CRITICAL_EVENT_CODES.forEach((code, index) => {
       byCode[code] = codeCounts[index];
     });
-
-    const pendingRequestedAt = (pendingApprovalIntents as any[])
-      .map((intent) => intent.approvalRequestedAt ?? intent.createdAt)
-      .filter(Boolean)
-      .map((value) => new Date(value).getTime());
 
     return {
       generatedAt: new Date().toISOString(),
@@ -42,8 +41,10 @@ export class OperatorService {
         queryLogs,
       },
       pendingApprovals: {
-        count: pendingApprovalIntents.length,
-        oldestRequestedAt: pendingRequestedAt.length ? new Date(Math.min(...pendingRequestedAt)).toISOString() : null,
+        count: pendingApprovals._count._all,
+        oldestRequestedAt: pendingApprovals._min.approvalRequestedAt
+          ? pendingApprovals._min.approvalRequestedAt.toISOString()
+          : null,
       },
       criticalEvents: {
         total: criticalEventsTotal,

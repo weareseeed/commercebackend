@@ -166,6 +166,14 @@ vi.mock('@commercebackend/db', () => {
           return true;
         }).length;
       }),
+      aggregate: vi.fn(async ({ where } = {}) => {
+        const matches = mockDb.checkoutIntents.filter((c) => !where?.status || c.status === where.status);
+        const times = matches.filter((c) => c.approvalRequestedAt).map((c) => new Date(c.approvalRequestedAt).getTime());
+        return {
+          _count: { _all: matches.length },
+          _min: { approvalRequestedAt: times.length ? new Date(Math.min(...times)) : null },
+        };
+      }),
       findMany: vi.fn(async ({ where } = {}) => {
         return mockDb.checkoutIntents.filter((c) => {
           if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
