@@ -78,6 +78,14 @@ After the API is reachable at `http://localhost:4000`, run:
 node examples/agent-buyer-flow/buyer-offer-flow.mjs
 ```
 
+### 8. Run the agent negotiation walkthrough
+
+The same way, run the agent-to-agent negotiation example (offer → counteroffer → accept → checkout at the negotiated price):
+
+```bash
+node examples/agent-negotiation-flow/negotiation-flow.mjs
+```
+
 ## Standard workspace commands
 
 ```bash
@@ -107,7 +115,7 @@ pnpm verify:discovery:strict
 - `/.well-known/commercebackend.json`
 - `/.well-known/agents.json`
 
-When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale. If normalized content matches but raw bytes drift, it prints a warning with byte counts and line-ending style for follow-up.
+When strict parity fails, the verifier reports the first differing text line or the JSON fields that drifted so operators can confirm whether the repository or the public deployment is stale. If normalized content matches but raw bytes drift, it prints a warning with byte counts, line-ending style, and likely deploy/CDN follow-up for faster triage.
 
 ---
 

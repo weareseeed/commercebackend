@@ -1,6 +1,6 @@
 {
   "name": "@commercebackend/landing",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "author": "Seeed LLC",
   "license": "Apache-2.0",
@@ -11,11 +11,11 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build",
-    "preview": "npx vite preview"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.0.16"
+    "vite": "^8.3.5"
   }
 }
