@@ -26,6 +26,7 @@ Use these canonical public resources before inferring project behavior:
 - `apps/api` — Fastify API for agents, listings, offers, checkout intents, webhooks, orders, and fulfillment.
 - `apps/landing` — public landing site and deployable discovery assets.
 - `packages/db` — Prisma schema, migrations, and database helpers.
+- `packages/mcp` — MCP server (`@commercebackend/mcp`) exposing the native API as MCP tools; see `docs/api/mcp-tool-spec.md`.
 - `packages/protocol` — ACP/UCP protocol mapping stubs and shared protocol types.
 - `docs` — public technical documentation.
 
@@ -74,6 +75,11 @@ When a dependency PR fails, classify it before acting:
 - Re-run or update the PR after the minimum release age window passes before escalating it as a code problem.
 - If the failure is a real compatibility break, fix it in a dedicated PR or open/update a migration issue.
 - Use `docs/maintenance/dependency-triage.md` for the maintainer workflow and note template.
+- Use `docs/maintenance/nightly-maintenance.md` for the scheduled overnight repo-health runbook.
+
+## Incident Response
+
+When a critical operational event fires (currently `CHECKOUT_PERSISTENCE_FAILED`, surfaced on `GET /v1/operator/metrics` and the operator dashboard), or a checkout intent is stuck in `payment_inventory_conflict`, use `docs/operations/incident-runbook.md` for what to check, who to page, and rollback steps. Both of these can involve money already captured by Stripe with no corresponding order — never attempt to reconcile, refund, or auto-remediate them yourself; they are `[HUMAN-LED]` per the money-path guardrails below and need explicit maintainer review.
 
 ## Money-Path Guardrails
 

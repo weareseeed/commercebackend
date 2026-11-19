@@ -17,6 +17,8 @@
     "agent_skill_kit": "https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit",
     "prompt_pack": "https://github.com/weareseeed/commercebackend/tree/master/prompts",
     "buyer_agent_example": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow",
+    "agent_negotiation_flow_example": "https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow",
+    "mcp_server": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
     "mcp_tool_spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
   },
   "agent_roles": [
@@ -45,7 +47,21 @@
     "checkout_intents",
     "stripe_checkout_webhook_confirmation",
     "orders",
-    "fulfillment_status"
+    "fulfillment_status",
+    "mcp_server",
+    "acp_adapter",
+    "ucp_adapter",
+    "square_catalog_connector_spike",
+    "square_catalog_connector_live_sandbox_mode_optional",
+    "shopify_catalog_connector_spike",
+    "shopify_catalog_connector_live_sandbox_mode_optional",
+    "bigcommerce_catalog_connector_spike",
+    "bigcommerce_catalog_connector_live_mode_optional",
+    "woocommerce_catalog_connector_spike",
+    "woocommerce_catalog_connector_live_mode_optional",
+    "agent_reputation_signal",
+    "agent_negotiation_flow_example",
+    "reputation_aware_search_ranking_signal"
   ],
   "not_supported_in_v0_2": [
     "human_storefront_ui",
@@ -55,13 +71,51 @@
     "platform_fees",
     "tax_calculation",
     "shipping_labels",
-    "merchant_connectors"
+    "automatic_or_scheduled_connector_sync",
+    "oauth_multi_merchant_connector_onboarding"
   ],
-  "planned_agent_interfaces": [
+  "shipped_agent_interfaces": [
     {
       "name": "MCP server",
-      "status": "specified_not_shipped",
+      "status": "shipped",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/mcp",
       "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md"
+    },
+    {
+      "name": "ACP adapter",
+      "status": "shipped_scoped_subset",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/protocols/acp",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-acp.md"
+    },
+    {
+      "name": "UCP adapter",
+      "status": "shipped",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/protocols/ucp",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-ucp.md"
+    },
+    {
+      "name": "Square catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/square",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-square.md"
+    },
+    {
+      "name": "Shopify catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/shopify",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-shopify.md"
+    },
+    {
+      "name": "BigCommerce catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/bigcommerce",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-bigcommerce.md"
+    },
+    {
+      "name": "WooCommerce catalog connector",
+      "status": "shipped_read_only_spike",
+      "package": "https://github.com/weareseeed/commercebackend/tree/master/packages/connectors/woocommerce",
+      "spec": "https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-woocommerce.md"
     }
   ],
   "safety": {
