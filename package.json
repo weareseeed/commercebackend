@@ -1,6 +1,6 @@
 {
   "name": "commercebackend-monorepo",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "author": "Seeed LLC",
   "license": "Apache-2.0",
@@ -45,6 +45,10 @@
     "selftest": "pnpm --filter @commercebackend/api selftest",
     "selftest:mock": "pnpm --filter @commercebackend/api selftest:mock",
     "selftest:stripe": "pnpm --filter @commercebackend/api selftest:stripe",
+    "selftest:square": "pnpm --filter @commercebackend/api selftest:square",
+    "selftest:shopify": "pnpm --filter @commercebackend/api selftest:shopify",
+    "selftest:bigcommerce": "pnpm --filter @commercebackend/api selftest:bigcommerce",
+    "selftest:woocommerce": "pnpm --filter @commercebackend/api selftest:woocommerce",
     "verify:discovery": "node scripts/verify-discovery-assets.mjs",
     "verify:discovery:public": "node scripts/verify-discovery-assets.mjs --public",
     "verify:discovery:strict": "node scripts/verify-discovery-assets.mjs --public --strict-parity",
@@ -56,12 +60,12 @@
     "format": "prettier --write \"**/*.{ts,json,md,yml,yaml}\""
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.6.6",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.5",
+    "prettier": "^3.9.10",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
     "vitest": "^3.2.7"

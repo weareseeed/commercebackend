@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protocol Adapters & a Catalog Connector Spike - CommerceBackend Blog</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <meta
+      name="description"
+      content="Two weeks of shipped CommerceBackend work: per-record API key salting, real ACP and UCP protocol adapters, a read-only operator dashboard, and a Square catalog connector spike."
+    />
+    <meta property="og:title" content="Protocol Adapters & a Catalog Connector Spike" />
+    <meta
+      property="og:description"
+      content="Per-record API key salting, real ACP/UCP protocol adapters, a read-only operator dashboard, and a fixture-driven Square catalog connector spike."
+    />
+    <meta property="og:image" content="/blog/commercebackend-protocols-square-recap.svg" />
+    <meta property="og:type" content="article" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: #0e1b2f;
+        --panel-2: #13233b;
+        --text: #edf3ff;
+        --muted: #9eb0cd;
+        --accent: #6aa8ff;
+        --accent-2: #7bf0d0;
+        --border: rgba(255, 255, 255, 0.1);
+        --code: #091423;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #102543 0%, var(--bg) 45%, #050b15 100%);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      h1, h2, h3 { line-height: 1.15; }
+      h1 {
+        font-size: clamp(2.2rem, 5vw, 3.6rem);
+        margin: 0 0 16px;
+      }
+      p, li { color: var(--muted); }
+      .lede {
+        max-width: 760px;
+        font-size: 1.08rem;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin: -8px 0 20px;
+      }
+      .hero-image {
+        width: 100%;
+        max-width: 420px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        margin: 24px 0 8px;
+        display: block;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 28px 0;
+      }
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        backdrop-filter: blur(8px);
+      }
+      .card h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+      .card .tag {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--accent-2);
+        background: rgba(123, 240, 208, 0.1);
+        border-radius: 999px;
+        padding: 3px 10px;
+        margin-bottom: 10px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(123, 240, 208, 0.12);
+        color: var(--accent-2);
+        margin-bottom: 16px;
+      }
+      pre {
+        overflow-x: auto;
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        color: var(--text);
+      }
+      code { font-family: "SFMono-Regular", Consolas, monospace; }
+      a { color: var(--accent); }
+      ul { padding-left: 20px; }
+      .section { margin-top: 38px; }
+      .callout {
+        border-left: 4px solid var(--accent-2);
+        padding: 14px 16px;
+        background: rgba(123, 240, 208, 0.06);
+        border-radius: 12px;
+      }
+      .callout.warn {
+        border-left-color: #f2b45e;
+        background: rgba(242, 180, 94, 0.08);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+      }
+      th, td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.95rem;
+      }
+      th { color: var(--text); }
+      td { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="back" href="/">← Back to CommerceBackend</a>
+      <div class="badge">Shipped in the last two weeks · six PRs, all merged</div>
+      <h1>Protocol Adapters, an Operator Dashboard, and a Catalog Connector Spike</h1>
+      <p class="meta">Posted 2026-09-14 · Seeed LLC</p>
+      <p class="lede">
+        Two weeks of the Friday backlog routine turned into six merged pull requests:
+        per-record API key salting, real ACP and UCP protocol adapters, a read-only
+        operator dashboard, and — most recently — a fixture-driven Square catalog
+        connector spike. Every item below shipped with tests and is described exactly
+        as it works today, including what it does not do yet.
+      </p>
+      <img
+        class="hero-image"
+        src="/blog/commercebackend-protocols-square-recap.svg"
+        alt="CommerceBackend: protocol adapters and catalog connectors recap graphic"
+        width="420"
+        height="420"
+      />
+
+      <div class="grid">
+        <section class="card">
+          <span class="tag">Security</span>
+          <h3>Per-record API key salt</h3>
+          <p>Every new agent key gets its own scrypt salt and a public lookup id instead of one shared salt for all keys.</p>
+        </section>
+        <section class="card">
+          <span class="tag">Protocols</span>
+          <h3>Real ACP adapter</h3>
+          <p>A scoped subset of OpenAI/Stripe's Agentic Commerce Protocol over our existing checkout flow.</p>
+        </section>
+        <section class="card">
+          <span class="tag">Protocols</span>
+          <h3>Real UCP adapter</h3>
+          <p>Our own vendor-neutral mapping layer for agent frameworks — not a claim of external "UCP" conformance.</p>
+        </section>
+        <section class="card">
+          <span class="tag">Ops</span>
+          <h3>Operator dashboard</h3>
+          <p>A read-only, operator-key-gated view for checking agents, orders, and sync activity.</p>
+        </section>
+        <section class="card">
+          <span class="tag">Merchant reach</span>
+          <h3>Square connector spike</h3>
+          <p>A canonical imported-catalog model, proven against a Square-shaped fixture, meant to be reused by future connectors.</p>
+        </section>
+      </div>
+
+      <section class="section">
+        <h2>Per-record API key salt</h2>
+        <p>
+          Agent API keys previously hashed against one shared, server-wide salt. New keys
+          now use a per-record salt, generated at issuance and stored alongside a public
+          <code>apiKeyId</code> that lets us look up the right salt before verifying the
+          secret — without ever storing the secret itself. Keys issued before this change
+          keep authenticating through the original shared-salt path; nothing was rotated
+          or invalidated.
+        </p>
+        <ul>
+          <li>New key format: <code>&lt;prefix&gt;&lt;16-hex keyId&gt;.&lt;secret&gt;</code>.</li>
+          <li>Verification is still scrypt-based; only the salting scheme changed.</li>
+          <li>Logger redaction was updated so the new salt field never appears in logs.</li>
+        </ul>
+        <p>See <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/security.md">docs/security.md</a> for the full design.</p>
+      </section>
+
+      <section class="section">
+        <h2>Real ACP adapter</h2>
+        <p>
+          CommerceBackend now exposes a scoped, honestly-labeled subset of the Agentic
+          Commerce Protocol (ACP) — the OpenAI/Stripe-authored spec — on top of our
+          existing Stripe-hosted-checkout-redirect flow. Inbound and outbound mappers
+          translate ACP's checkout-session shape to and from our native
+          <code>CheckoutIntent</code> model, so no money-path code changed underneath it.
+        </p>
+        <ul>
+          <li><code>GET /v1/acp/product-feed</code> — listings in ACP's product-feed shape.</li>
+          <li><code>POST /v1/acp/checkout-sessions</code> — create a checkout session, mapped onto a CheckoutIntent.</li>
+          <li><code>GET /v1/acp/checkout-sessions/:id</code> — read back session status.</li>
+        </ul>
+        <p>
+          This is <strong>not</strong> a claim of full or certified ACP spec compliance —
+          see <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-acp.md">docs/api/protocol-acp.md</a>
+          for exactly which parts of the spec are and aren't implemented.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Real UCP adapter</h2>
+        <p>
+          Alongside ACP, we shipped our own vendor-neutral mapping layer we call UCP —
+          a CommerceBackend-invented convention for framework portability, not a claim of
+          conformance to any external standard with that name. It maps the same native
+          checkout-intent model to a <code>products</code> / <code>orders</code> shape,
+          including a full order-status mapping so agent frameworks built against it get
+          consistent lifecycle states.
+        </p>
+        <ul>
+          <li><code>GET /v1/ucp/products</code></li>
+          <li><code>POST /v1/ucp/orders</code></li>
+          <li><code>GET /v1/ucp/orders/:id</code></li>
+        </ul>
+        <p>
+          Full mapping and status table in
+          <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/api/protocol-ucp.md">docs/api/protocol-ucp.md</a>.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Read-only operator dashboard</h2>
+        <p>
+          A static, operator-key-gated dashboard (served at <a href="/operator/">/operator/</a>)
+          gives a human operator visibility into agents, orders, and — as of this week —
+          catalog sync activity, without adding any destructive controls. It reads through
+          the same operator-only endpoints the API already exposes.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Square catalog connector spike</h2>
+        <p>
+          This week's largest piece of work is a <strong>read-only spike</strong>, not a
+          production connector. There is no live Square API call anywhere in it — it reads
+          a static fixture standing in for a Square "List Catalog" response, maps each
+          catalog object onto CommerceBackend's canonical catalog-item shape, and writes
+          ordinary <code>Listing</code> rows from it. No Square credentials exist anywhere
+          in this repository.
+        </p>
+        <table>
+          <thead>
+            <tr><th>What it does</th><th>How</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Maps Square-shaped catalog items</td>
+              <td>A typed <code>CanonicalCatalogItem</code> shape, meant to be reused by future connectors (Shopify, BigCommerce, WooCommerce).</td>
+            </tr>
+            <tr>
+              <td>Imports without duplicating</td>
+              <td>Listings are keyed on <code>(importSource, externalId)</code>, so re-running a sync updates the same rows instead of creating new ones.</td>
+            </tr>
+            <tr>
+              <td>Tracks every sync</td>
+              <td>A <code>CatalogSyncLog</code> row records items imported, items failed, and why — per sync run.</td>
+            </tr>
+            <tr>
+              <td>Isolates bad items</td>
+              <td>One malformed catalog item (e.g. missing a price) is logged and skipped; it does not abort the rest of the batch.</td>
+            </tr>
+            <tr>
+              <td>Stays inside existing surfaces</td>
+              <td>Imported listings show up through the unchanged <code>/v1/search</code> and <code>/v1/listings/:id</code> endpoints — no new agent-facing capability was added.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Both endpoints require an operator key, not a buyer/seller agent's bearer key:</p>
+        <pre><code>POST /v1/connectors/square/sync
+  X-Operator-Key: &lt;operator key&gt;
+  { "sellerAgentId": "agent_seller_123" }
+
+GET /v1/connectors/sync-logs?limit=20&amp;offset=0
+  X-Operator-Key: &lt;operator key&gt;</code></pre>
+        <div class="callout warn">
+          <strong>What this spike does not do:</strong> no live Square OAuth or Catalog API
+          client, one-way only (nothing is ever written back to Square), no
+          scheduled/automatic or webhook-driven re-sync, no diffing or partial-field
+          merge on re-sync (last-write-wins), and no Shopify/BigCommerce/WooCommerce
+          connectors yet — those remain separate, unstarted roadmap items.
+        </div>
+        <p>
+          Full endpoint reference in
+          <a href="https://github.com/weareseeed/commercebackend/blob/master/docs/api/connectors-square.md">docs/api/connectors-square.md</a>.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>What none of this changes</h2>
+        <div class="callout">
+          <strong>The money path is untouched.</strong> Stripe test-mode checkout,
+          webhook-backed order reconciliation, and every other money-path route from
+          previous releases work exactly as before. Nothing in this recap touches
+          production settings, credentials, or the money path.
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Pull requests in this recap</h2>
+        <ul>
+          <li><a href="https://github.com/weareseeed/commercebackend/pull/155">#155</a> — per-record API key salt</li>
+          <li><a href="https://github.com/weareseeed/commercebackend/pull/157">#157</a> — real ACP adapter</li>
+          <li><a href="https://github.com/weareseeed/commercebackend/pull/158">#158</a> — real UCP adapter</li>
+          <li><a href="https://github.com/weareseeed/commercebackend/pull/156">#156</a> — read-only operator dashboard</li>
+          <li><a href="https://github.com/weareseeed/commercebackend/pull/160">#160</a> — Square catalog connector spike</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Discovery and reference links</h2>
+        <ul>
+          <li><a href="/docs/sandbox/">Sandbox quickstart</a></li>
+          <li><a href="/llms.txt">llms.txt</a></li>
+          <li><a href="/llms-full.txt">llms-full.txt</a></li>
+          <li><a href="/.well-known/commercebackend.json">/.well-known/commercebackend.json</a></li>
+          <li><a href="https://github.com/weareseeed/commercebackend/blob/master/docs/weekly-roadmap.md">Weekly roadmap</a></li>
+        </ul>
+      </section>
+
+      <p style="margin-top: 48px; font-size: 0.85rem;">
+        CommerceBackend is owned and maintained by Seeed LLC. Seeed LLC is unrelated to
+        Seeed Studio.
+      </p>
+    </main>
+  </body>
+</html>
