@@ -211,6 +211,23 @@ Every weekly item should ladder up to one of these long-horizon epics:
   includes `availableCurrencies` reflecting matched listings' currencies;
   tests cover single- and multi-currency catalogs.
 
+- [ ] **25. Contributor and release docs.** Launch readiness (see
+  `docs/launch/launch-readiness-plan.md`): add `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, and `CHANGELOG.md` matching the repo's actual workflow
+  (checks, CODEOWNERS, approval boundaries). _DoD:_ files exist, are linked
+  from the README, and describe only behavior that exists.
+- [ ] **26. Agent evaluation fixtures.** Proven reliability epic: fixtures that
+  let an agent framework verify discovery, approval-required checkout, and
+  failure handling against the sandbox or mock mode. _DoD:_ runnable fixtures
+  plus docs; tests cover each scenario.
+- [ ] **27. Sandbox success-metric counters (read-only).** After the
+  maintainers pick the Launch 1 metric (`openspec/changes/sandbox-success-metric`),
+  expose the needed counters on operator metrics. Blocked on that decision;
+  skip until it is recorded.
+- [ ] **28. Draft v0.3 release notes (docs only; do not publish or tag).**
+  _DoD:_ `docs/release-notes-v0.3.0.md` summarizing shipped behavior since
+  v0.2.2, with explicit limitations, verified against code.
+
 ## Human-led (design + human review first — do NOT auto-build)
 
 These are fenced off from the Friday routine because they touch payments,
@@ -220,6 +237,16 @@ compliance, or irreversible product decisions.
   when inventory is exhausted at webhook time (`orders.service.ts`), with no
   auto-refund today. Decide: auto-refund via Stripe vs. manual review queue.
   Refunds are a Stripe money-path feature and need a dedicated plan + review.
+  **Decided:** detect first (done: `PAYMENT_INVENTORY_CONFLICT` critical event,
+  counted on operator metrics), then an operator-triggered refund before any
+  real-money step (`openspec/changes/inventory-conflict-operator-refund`).
+  Unattended auto-refund is not planned; refunds stay human-triggered.
+- **`[HUMAN-LED]` Approval hardening** (spending-limit enforcement, approval
+  expiry, append-only `CheckoutEvent` table, operator notification). Design in
+  `docs/product/policy-approval-design.md`; change in
+  `openspec/changes/approval-hardening`.
+- **`[HUMAN-LED]` Publish `@commercebackend/sdk-js` and `@commercebackend/mcp`**
+  (`openspec/changes/publish-agent-packages`). External and hard to reverse.
 - **`[HUMAN-LED]` Stripe Connect payouts** feasibility + compliance review.
 - **`[HUMAN-LED]` Tax calculation** engine.
 - **`[HUMAN-LED]` Major dependency migrations** (Stripe, Prisma, Fastify, Zod,

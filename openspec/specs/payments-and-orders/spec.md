@@ -1,0 +1,33 @@
+# Payments and Orders
+
+## Requirements
+
+### Requirement: Webhook-created orders
+Orders SHALL be created only from verified `checkout.session.completed`
+webhooks, idempotently, decrementing inventory under a row lock.
+
+#### Scenario: Duplicate delivery
+- **WHEN** the same webhook is delivered twice
+- **THEN** exactly one order exists
+
+### Requirement: Signature verification
+Stripe signature verification SHALL be enforced; `BYPASS_STRIPE_SIGNATURE=true`
+SHALL be rejected in production.
+
+### Requirement: Inventory conflict handling
+If stock is insufficient at webhook time the system SHALL create no order,
+leave inventory unchanged (never negative), set the intent to
+`payment_inventory_conflict`, cancel the linked offer, and record a
+`PAYMENT_INVENTORY_CONFLICT` critical event and structured log. The system
+SHALL NOT refund or move money in this case.
+
+#### Scenario: Webhook retry
+- **WHEN** the conflicting webhook is retried
+- **THEN** exactly one conflict event exists
+
+### Requirement: Fulfillment
+Seller agents SHALL update fulfillment status; buyer agents SHALL read it.
+
+### Requirement: Persistence failure
+If persisting a created Stripe session fails, the system SHALL log
+`CHECKOUT_PERSISTENCE_FAILED`, record a critical event, and return an error.

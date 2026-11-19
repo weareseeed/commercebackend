@@ -4,6 +4,13 @@ CommerceBackend is Seeed LLC's open-source, agent-first commerce backend. The pr
 
 This roadmap is intentionally conservative. If a feature affects payments, inventory, fulfillment, customer data, or public claims, it needs tests, logs, and documentation before it is treated as shipped.
 
+## Direction
+
+- **Target user:** agent-framework builders: people building or integrating buyer and seller agents who want API-native commerce primitives, MCP/ACP/UCP access, and a sandbox they can try in minutes. Merchants are a later audience, reached through connectors.
+- **Seeed's goal:** both an ecosystem/credibility play (open source, protocol leadership) and a revenue product (CommerceBackend Cloud, planned). The open-source launch comes first and must stand on its own.
+- **Two launches:** Launch 1 is the public open-source release plus the hosted Stripe **test-mode** sandbox; Launch 2 is real-money operation / the Cloud, gated behind the money-path work. Launch 1 readiness, the checklist, approval gates, and Launch 2 entry criteria are in [`docs/launch/launch-readiness-plan.md`](docs/launch/launch-readiness-plan.md). The machine-readable spec and proposed changes are in [`openspec/`](openspec/).
+- **Success metric:** to be chosen by the maintainers (candidates are listed in the launch plan). No target is set yet.
+
 ## Current status
 
 ### Shipped foundation — v0.1 through v0.2.2

@@ -1,0 +1,5 @@
+- [ ] 1. Decide scope/names and npm ownership (Seeed)
+- [ ] 2. Package metadata and README for SDK and MCP
+- [ ] 3. Dry-run pack in CI; verify installed package against the sandbox
+- [ ] 4. Manual release workflow (reviewed by CODEOWNERS)
+- [ ] 5. Publish after Seeed approval; update docs, skill kit, discovery assets
