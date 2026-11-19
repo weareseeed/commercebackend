@@ -4,6 +4,7 @@
   "private": true,
   "author": "Seeed LLC",
   "license": "Apache-2.0",
+  "description": "JavaScript client SDK for the CommerceBackend agent-commerce API.",
   "homepage": "https://github.com/weareseeed/commercebackend",
   "repository": {
     "type": "git",
@@ -16,5 +17,22 @@
   },
   "devDependencies": {
     "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "commerce",
+    "agents",
+    "ai-agents",
+    "stripe",
+    "api-client"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

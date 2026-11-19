@@ -211,11 +211,11 @@ Every weekly item should ladder up to one of these long-horizon epics:
   includes `availableCurrencies` reflecting matched listings' currencies;
   tests cover single- and multi-currency catalogs.
 
-- [ ] **25. Contributor and release docs.** Launch readiness (see
+- [x] **25. Contributor and release docs.** Launch readiness (see
   `docs/launch/launch-readiness-plan.md`): add `CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md`, and `CHANGELOG.md` matching the repo's actual workflow
   (checks, CODEOWNERS, approval boundaries). _DoD:_ files exist, are linked
-  from the README, and describe only behavior that exists.
+  from the README, and describe only behavior that exists. — #209
 - [ ] **26. Agent evaluation fixtures.** Proven reliability epic: fixtures that
   let an agent framework verify discovery, approval-required checkout, and
   failure handling against the sandbox or mock mode. _DoD:_ runnable fixtures

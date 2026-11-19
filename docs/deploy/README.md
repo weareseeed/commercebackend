@@ -125,6 +125,12 @@ After the first successful boot, set `RUN_SEED=false` and redeploy.
 - [ ] Rate limits / body-size limits reviewed for public write routes
 - [ ] Rowland or Maria approval recorded for DNS + public API exposure
 
+## Backups and rollback
+
+See [`docs/operations/backup-restore.md`](../operations/backup-restore.md) for
+backups, migration rollback, restore, and Stripe reconciliation. The restore
+drill has not been run yet.
+
 ## Discovery parity after deploy
 
 Do not stop after a `200 OK` on `llms.txt` or `/.well-known/commercebackend.json`.

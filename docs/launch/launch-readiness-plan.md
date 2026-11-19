@@ -57,7 +57,7 @@ copy says what is not implemented (no refunds, disputes, tax, payouts).
 | --- | --- |
 | MCP server (`packages/mcp`) with core tools | done |
 | MCP parity: negotiation tools, reputation | gap (weekly backlog 20, 22, 23) |
-| JS SDK (`packages/sdk-js`) and MCP package are `private`, not published | gap, human-led (`openspec/changes/publish-agent-packages`) |
+| JS SDK (`packages/sdk-js`) and MCP package are `private`, not published. Publish metadata and an SDK README are prepared; MCP also depends on the private `@commercebackend/schemas`, which must be published or bundled first | gap, human-led (`openspec/changes/publish-agent-packages`) |
 | ACP/UCP adapters for a documented subset | done |
 | Runnable buyer and negotiation examples | done |
 | Agent evaluation fixtures (discovery, approval, failure handling) | gap (weekly backlog 26) |
@@ -77,14 +77,14 @@ copy says what is not implemented (no refunds, disputes, tax, payouts).
 | Operator metrics, dashboard, ledger lookup, incident runbook | done |
 | Named on-call/escalation for `CHECKOUT_PERSISTENCE_FAILED` and `PAYMENT_INVENTORY_CONFLICT` | decision |
 | Pending-approval notification to an operator | gap (design doc, `policy-approval-design.md` item 4) |
-| Backup/restore and migration-rollback procedure documented and tested | gap (verify; not found in `docs/deploy`) |
+| Backup/restore and migration-rollback procedure | documented (`docs/operations/backup-restore.md`); restore drill **not yet run** |
 
 ### E. Security and trust
 | Item | Status |
 | --- | --- |
 | Hashed API keys (scrypt + per-record salt), webhook signature guard, constant-time operator key, rate limits, CORS allowlist | done |
 | `SECURITY.md` with private reporting channel | done |
-| `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` | gap (weekly backlog 25) |
+| `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` | done (backlog 25); conduct contact currently routes to the `SECURITY.md` channel, maintainers may want a dedicated one |
 | Threat model / independent security review recorded | gap, decision (scope and owner) |
 | Dependency policy for money-path majors (AGENTS.md) | done |
 
