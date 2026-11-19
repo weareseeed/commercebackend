@@ -13,6 +13,12 @@ model Agent {
   type        AgentType
   ownerEmail  String
   apiKeyHash  String   @unique
+  // Per-record salt + public lookup id for API keys issued after the
+  // per-record-salt migration. Null on agents whose key predates it; those
+  // keep authenticating via the legacy shared-salt `apiKeyHash` lookup.
+  // See docs/security.md and packages/db/src/auth-utils.ts.
+  apiKeySalt  String?
+  apiKeyId    String?  @unique
   status      AgentStatus @default(active)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -49,14 +55,36 @@ model Listing {
   quantityAvailable       Int
   attributes              Json
   fulfillmentInstructions String?
+  // Set only for listings created by a catalog connector import (weekly
+  // backlog item 9); both null for natively-created listings. The pair is
+  // unique per source so re-running a sync updates the same listing instead
+  // of creating a duplicate. See packages/connectors/square and
+  // CatalogSyncService.
+  importSource            String?
+  externalId              String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   checkoutIntents CheckoutIntent[]
   orders          Order[]
   offers          Offer[]
 
+  @@unique([importSource, externalId])
   @@index([sellerAgentId])
   @@index([status])
+}
+
+model CatalogSyncLog {
+  id            String   @id @default(cuid())
+  connector     String
+  sellerAgentId String
+  status        String
+  itemsImported Int
+  itemsFailed   Int
+  errors        Json?
+  createdAt     DateTime @default(now())
+
+  @@index([connector])
+  @@index([sellerAgentId])
 }
 
 enum ListingType {
@@ -95,6 +123,12 @@ model CheckoutIntent {
   purchasePolicyId        String?
   purchasePolicy          PurchasePolicy? @relation(fields: [purchasePolicyId], references: [id], onDelete: SetNull)
   policyDecision          PurchasePolicyDecision?
+  // Read-only "would this checkout violate the buyer's spending limit?"
+  // signal computed at creation time (weekly backlog item 14). Separate from
+  // policyDecision/status above: it never blocks or alters checkout outcome,
+  // it only reports whether the policy's trailing-period budget would be
+  // exceeded. Null when no matching policy or no spending limit configured.
+  spendingLimitSignal     Json?
   approvalRequestedAt     DateTime?
   humanApprovedAt         DateTime?
   humanRejectedAt         DateTime?
@@ -143,6 +177,13 @@ model PurchasePolicy {
   allowedSellerAgentIds           String[] @default([])
   requireHumanApprovalAboveAmount Int
   requireHumanApprovalForOffers   Boolean  @default(false)
+  // Optional trailing-period spending budget, separate from the per-checkout
+  // thresholds above. Both null means no spending limit is configured. When
+  // both are set, checkout-intent creation reports (read-only, non-blocking)
+  // whether this checkout would push the buyer's spend for the trailing
+  // `spendingLimitPeriodDays` window over `spendingLimitAmount`.
+  spendingLimitAmount             Int?
+  spendingLimitPeriodDays         Int?
   createdAt                       DateTime @default(now())
   updatedAt                       DateTime @updatedAt
   checkoutIntents                 CheckoutIntent[]
@@ -255,5 +296,18 @@ model OfferHistory {
   createdAt  DateTime    @default(now())
 
   @@index([offerId])
+}
+
+// Persisted record of critical operational events (e.g. CHECKOUT_PERSISTENCE_FAILED)
+// that today are only structured console logs. Written best-effort so a logging
+// failure never masks or replaces the original error path.
+model CriticalEvent {
+  id        String   @id @default(cuid())
+  code      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([createdAt])
 }
 

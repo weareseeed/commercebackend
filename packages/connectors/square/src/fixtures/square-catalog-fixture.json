@@ -1,0 +1,78 @@
+{
+  "objects": [
+    {
+      "type": "ITEM",
+      "id": "SQ_ITEM_DEVKIT",
+      "item_data": {
+        "name": "Autonomous Agent Hardware DevKit",
+        "description": "Edge AI hardware kit pre-flashed with a local inference runtime.",
+        "category": "physical_good",
+        "variations": [
+          {
+            "item_variation_data": {
+              "price_money": { "amount": 15000, "currency": "USD" },
+              "inventory_count": 12
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ITEM",
+      "id": "SQ_ITEM_GUIDE",
+      "item_data": {
+        "name": "Agentic Commerce Field Guide (PDF)",
+        "description": "A downloadable guide to building buyer and seller agents.",
+        "category": "digital_good",
+        "variations": [
+          {
+            "item_variation_data": {
+              "price_money": { "amount": 1900, "currency": "USD" },
+              "inventory_count": 999
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ITEM",
+      "id": "SQ_ITEM_WORKSHOP",
+      "item_data": {
+        "name": "Negotiation Workshop Seat",
+        "description": "One seat in a live workshop on agent offer negotiation.",
+        "category": "service",
+        "variations": [
+          {
+            "item_variation_data": {
+              "price_money": { "amount": 25000, "currency": "USD" },
+              "inventory_count": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ITEM",
+      "id": "SQ_ITEM_MISSING_PRICE",
+      "item_data": {
+        "name": "Malformed Fixture Item (no price)",
+        "description": "Intentionally missing price_money to exercise per-item failure handling.",
+        "category": "physical_good",
+        "variations": [
+          {
+            "item_variation_data": {
+              "inventory_count": 5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "CATEGORY",
+      "id": "SQ_CATEGORY_MISC",
+      "category_data": {
+        "name": "Miscellaneous"
+      }
+    }
+  ]
+}

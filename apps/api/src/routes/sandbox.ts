@@ -60,7 +60,8 @@ export async function sandboxRoutes(fastify: FastifyInstance) {
       input.query,
       input.filters,
       input.limit,
-      input.offset
+      input.offset,
+      input.rankByReputation
     );
 
     return {
