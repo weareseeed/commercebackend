@@ -36,6 +36,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @commercebackend/api dev",
+    "verify": "pnpm lint && pnpm typecheck && pnpm build && NODE_ENV=test pnpm test",
     "build": "pnpm -r build",
     "lint": "eslint . --ext .ts",
     "pretypecheck": "node scripts/ensure-workspace-build.mjs",
@@ -54,6 +55,7 @@
     "verify:discovery": "node scripts/verify-discovery-assets.mjs",
     "verify:discovery:public": "node scripts/verify-discovery-assets.mjs --public",
     "verify:discovery:strict": "node scripts/verify-discovery-assets.mjs --public --strict-parity",
+    "security:alerts:snapshot": "node scripts/dependabot-alert-snapshot.mjs",
     "verify:github-metadata": "node scripts/verify-github-metadata.mjs",
     "db:migrate": "pnpm --filter @commercebackend/db migrate",
     "db:reset": "pnpm --filter @commercebackend/db reset",

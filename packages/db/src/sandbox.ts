@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { prisma, CheckoutIntentStatus, OfferStatus, PurchasePolicyDecision } from './client';
+import { prisma } from './client';
 import { generateApiKey } from './auth-utils';
 
 const credentialsPath = '.commercebackend-seed-credentials.json';
@@ -274,7 +274,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
       buyerAgentId: approvalBuyerAgent.id,
       priceAmount: 22000,
       quantity: 1,
-      status: OfferStatus.accepted,
+      status: 'accepted',
       expiresAt: nextWeek,
       acceptedPriceAmount: 23000,
       acceptedQuantity: 1,
@@ -289,7 +289,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     data: {
       offerId: acceptedOffer.id,
       fromStatus: null,
-      toStatus: OfferStatus.pending,
+      toStatus: 'pending',
       event: 'OFFER_CREATED',
       actorId: approvalBuyerAgent.id,
       note: 'Sandbox accepted offer fixture created.',
@@ -301,8 +301,8 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
   await prisma.offerHistory.create({
     data: {
       offerId: acceptedOffer.id,
-      fromStatus: OfferStatus.pending,
-      toStatus: OfferStatus.accepted,
+      fromStatus: 'pending',
+      toStatus: 'accepted',
       event: 'OFFER_ACCEPTED',
       actorId: sellerAgent.id,
       note: 'Sandbox seller accepted the negotiated terms.',
@@ -318,7 +318,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
       buyerAgentId: approvalBuyerAgent.id,
       priceAmount: 18000,
       quantity: 1,
-      status: OfferStatus.expired,
+      status: 'expired',
       expiresAt: lastWeek,
       createdAt: lastWeek,
       updatedAt: fixedNow,
@@ -329,7 +329,7 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
     data: {
       offerId: expiredOffer.id,
       fromStatus: null,
-      toStatus: OfferStatus.pending,
+      toStatus: 'pending',
       event: 'OFFER_CREATED',
       actorId: approvalBuyerAgent.id,
       note: 'Sandbox expired offer fixture created.',
@@ -341,8 +341,8 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
   await prisma.offerHistory.create({
     data: {
       offerId: expiredOffer.id,
-      fromStatus: OfferStatus.pending,
-      toStatus: OfferStatus.expired,
+      fromStatus: 'pending',
+      toStatus: 'expired',
       event: 'OFFER_EXPIRED',
       actorId: 'system',
       note: 'Sandbox expired offer fixture aged out before checkout.',
@@ -361,11 +361,11 @@ export async function resetAndSeedSandbox(): Promise<SandboxSeedResult> {
       amountSubtotal: 15000,
       amountTotal: 15000,
       currency: 'USD',
-      status: CheckoutIntentStatus.human_approval_required,
+      status: 'human_approval_required',
       successUrl: 'https://www.commercebackend.com/docs/sandbox/?checkout=success',
       cancelUrl: 'https://www.commercebackend.com/docs/sandbox/?checkout=cancelled',
       purchasePolicyId: approvalPolicy.id,
-      policyDecision: PurchasePolicyDecision.human_approval_required,
+      policyDecision: 'human_approval_required',
       approvalRequestedAt: tomorrow,
       createdAt: tomorrow,
       updatedAt: tomorrow,
