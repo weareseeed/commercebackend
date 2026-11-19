@@ -54,6 +54,7 @@ If you want to drive the sandbox from Gemini or another Google AI Studio client,
 Agent entry points:
 
 - Full LLM context: [`/llms-full.txt`](https://www.commercebackend.com/llms-full.txt)
+- Machine-readable project metadata: [`/.well-known/commercebackend.json`](https://www.commercebackend.com/.well-known/commercebackend.json)
 - Buyer flow example: [`examples/agent-buyer-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
 - Agent negotiation flow example: [`examples/agent-negotiation-flow`](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
 - Agent Skill Kit: [`agent-skill-kit/`](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
@@ -67,9 +68,10 @@ If you change `llms.txt`, `llms-full.txt`, `.well-known/*.json`, or other agent-
 
 ```bash
 pnpm verify:discovery:strict
+pnpm verify:github-metadata
 ```
 
-This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, stale website deployments, and newline-only byte drift before merge.
+This checks repository parity, required public content types, and public production parity for the canonical discovery files so maintainers can catch stale repo copies, incorrect headers, stale website deployments, and newline-only byte drift before merge. The GitHub metadata verifier compares the live repository description, homepage URL, and topic set against `apps/landing/public/.well-known/commercebackend.json` so agent-facing discovery stays aligned across repo-owned surfaces. Run `pnpm verify:github-metadata -- --strict` when you want drift to fail the command instead of surfacing as a nightly warning report.
 
 ---
 
@@ -306,6 +308,7 @@ CommerceBackend is built for agents first. If you are an autonomous coding, comm
    - **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
    - **Full LLM Context**: [/llms-full.txt](https://www.commercebackend.com/llms-full.txt)
    - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+   - **Machine-Readable Agent Metadata**: [/.well-known/agents.json](https://www.commercebackend.com/.well-known/agents.json)
    - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
    - **Buyer Agent Flow Example**: [examples/agent-buyer-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow)
    - **Agent Negotiation Flow Example**: [examples/agent-negotiation-flow](https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow)
@@ -345,6 +348,7 @@ To assist autonomous AI agents in discovering, understanding, and integrating wi
 - **LLM Metadata Context**: [/llms.txt](https://www.commercebackend.com/llms.txt)
 - **Full LLM Context**: [/llms-full.txt](https://www.commercebackend.com/llms-full.txt)
 - **Machine-Readable Project Metadata**: [/.well-known/commercebackend.json](https://www.commercebackend.com/.well-known/commercebackend.json)
+- **Machine-Readable Agent Metadata**: [/.well-known/agents.json](https://www.commercebackend.com/.well-known/agents.json)
 - **Agent Integration Guide**: [Agent Discovery Guide](https://github.com/weareseeed/commercebackend/blob/master/docs/agent-discovery.md)
 - **Repository Agent Guide**: [AGENTS.md](https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md)
 - **Agent Skill Kit**: [agent-skill-kit/](https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit)
