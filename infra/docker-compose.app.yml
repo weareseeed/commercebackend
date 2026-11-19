@@ -1,0 +1,56 @@
+# Prod-like local stack: Postgres + the CommerceBackend API container.
+#
+# This mirrors a hosted sandbox deployment (API image + managed Postgres) so the
+# container can be verified end to end before pushing to Cloud Run / Railway.
+#
+#   docker compose -f infra/docker-compose.app.yml up --build
+#
+# Then:  node scripts/smoke-sandbox.mjs   (with OPERATOR_API_KEY exported)
+#
+# NOTE: this runs the API in development mode with a placeholder Stripe key so
+# the keyless mock is active. A real hosted sandbox instead sets
+# NODE_ENV=production, SANDBOX_MODE=true, and real Stripe TEST keys.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: commercebackend
+      POSTGRES_PASSWORD: commercebackend
+      POSTGRES_DB: commercebackend
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U commercebackend']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://commercebackend:commercebackend@postgres:5432/commercebackend
+      # Development + placeholder key => in-process keyless Stripe mock.
+      NODE_ENV: development
+      SANDBOX_MODE: 'true'
+      STRIPE_SECRET_KEY: sk_test_your_test_key
+      STRIPE_WEBHOOK_SECRET: whsec_your_test_webhook_secret
+      BYPASS_STRIPE_SIGNATURE: 'true'
+      OPERATOR_API_KEY: ${OPERATOR_API_KEY:-local_sandbox_operator_key}
+      API_BASE_URL: http://localhost:4000
+      PORT: '4000'
+      # Apply migrations and seed fixtures on first boot.
+      RUN_MIGRATIONS: 'true'
+      RUN_SEED: 'true'
+    ports:
+      - '4000:4000'
+
+volumes:
+  postgres_data:

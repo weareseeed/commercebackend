@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+// Read-only, non-blocking "would this checkout violate the buyer's spending
+// limit?" signal (weekly backlog item 14). `configured: false` means the
+// matched purchase policy (if any) has no spending limit set.
+export const SpendingLimitSignalSchema = z.object({
+  configured: z.boolean(),
+  limitAmount: z.number().nullable(),
+  periodDays: z.number().nullable(),
+  periodSpendBeforeThisCheckout: z.number(),
+  projectedPeriodSpend: z.number(),
+  wouldExceedLimit: z.boolean(),
+});
+
 export const CheckoutIntentStatusSchema = z.enum([
   'open',
   'human_approval_required',
@@ -34,6 +46,7 @@ export const CheckoutIntentResponseSchema = z.object({
   stripeCheckoutSessionId: z.string().nullable().optional(),
   purchasePolicyId: z.string().nullable().optional(),
   policyDecision: z.enum(['policy_approved', 'human_approval_required', 'no_policy']).nullable().optional(),
+  spendingLimitSignal: SpendingLimitSignalSchema.nullable().optional(),
   approvalRequestedAt: z.date().or(z.string()).nullable().optional(),
   humanApprovedAt: z.date().or(z.string()).nullable().optional(),
   humanRejectedAt: z.date().or(z.string()).nullable().optional(),
@@ -54,3 +67,4 @@ export const CreateCheckoutIntentResponseSchema = z.object({
 export type CreateCheckoutIntentInput = z.infer<typeof CreateCheckoutIntentSchema>;
 export type CheckoutIntentResponse = z.infer<typeof CheckoutIntentResponseSchema>;
 export type CreateCheckoutIntentResponse = z.infer<typeof CreateCheckoutIntentResponseSchema>;
+export type SpendingLimitSignal = z.infer<typeof SpendingLimitSignalSchema>;
