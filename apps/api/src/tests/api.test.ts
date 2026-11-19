@@ -11,6 +11,8 @@ const mockDb = {
   purchasePolicies: [] as any[],
   offers: [] as any[],
   offerHistories: [] as any[],
+  criticalEvents: [] as any[],
+  catalogSyncLogs: [] as any[],
   reset() {
     this.agents = [];
     this.listings = [];
@@ -20,12 +22,28 @@ const mockDb = {
     this.purchasePolicies = [];
     this.offers = [];
     this.offerHistories = [];
+    this.criticalEvents = [];
+    this.catalogSyncLogs = [];
   },
 };
 
 // --- MOCK DATABASE WORKSPACE PACKAGE ---
 vi.mock('@commercebackend/db', () => {
   const hashKey = (key: string) => `hash_${key}`;
+  const hashKeyWithSalt = (key: string, salt: string) => `hash_${key}_${salt}`;
+  const randomHex = (length: number) => {
+    let s = '';
+    while (s.length < length) s += Math.floor(Math.random() * 16).toString(16);
+    return s.slice(0, length);
+  };
+  // Mirrors the real `extractApiKeyId` in packages/db/src/auth-utils.ts: new-format
+  // keys are `<prefix><16-hex-keyId>.<secret>`; legacy keys have no embedded id.
+  const extractApiKeyId = (apiKey: string): string | null => {
+    const dotIndex = apiKey.indexOf('.');
+    if (dotIndex === -1) return null;
+    const keyId = apiKey.slice(0, dotIndex).slice(-16);
+    return /^[0-9a-f]{16}$/.test(keyId) ? keyId : null;
+  };
 
   const prismaMock: any = {
     agent: {
@@ -44,6 +62,7 @@ vi.mock('@commercebackend/db', () => {
         return (
           mockDb.agents.find((a) => {
             if (where.apiKeyHash && a.apiKeyHash !== where.apiKeyHash) return false;
+            if (where.apiKeyId && a.apiKeyId !== where.apiKeyId) return false;
             return true;
           }) || null
         );
@@ -51,6 +70,7 @@ vi.mock('@commercebackend/db', () => {
       findUnique: vi.fn(async ({ where }) => {
         return mockDb.agents.find((a) => a.id === where.id) || null;
       }),
+      count: vi.fn(async () => mockDb.agents.length),
       deleteMany: vi.fn(),
     },
     listing: {
@@ -69,14 +89,41 @@ vi.mock('@commercebackend/db', () => {
         const listing = mockDb.listings.find((l) => l.id === where.id);
         return listing || null;
       }),
-      findMany: vi.fn(async ({ where }) => {
-        return mockDb.listings.filter((l) => {
+      findFirst: vi.fn(async ({ where }) => {
+        return (
+          mockDb.listings.find((l) => {
+            if (where?.importSource !== undefined && l.importSource !== where.importSource) return false;
+            if (where?.externalId !== undefined && l.externalId !== where.externalId) return false;
+            return true;
+          }) || null
+        );
+      }),
+      findMany: vi.fn(async ({ where, orderBy, skip, take } = {}) => {
+        let matches = mockDb.listings.filter((l) => {
           if (where?.status && l.status !== where.status) return false;
           if (where?.type && l.type !== where.type) return false;
           if (where?.currency && l.currency !== where.currency) return false;
           if (where?.priceAmount?.lte && l.priceAmount > where.priceAmount.lte) return false;
           return true;
         });
+        if (orderBy?.createdAt) {
+          const direction = orderBy.createdAt === 'desc' ? -1 : 1;
+          matches = [...matches].sort(
+            (a, b) => direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+        }
+        if (typeof skip === 'number') matches = matches.slice(skip);
+        if (typeof take === 'number') matches = matches.slice(0, take);
+        return matches;
+      }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.listings.filter((l) => {
+          if (where?.status && l.status !== where.status) return false;
+          if (where?.type && l.type !== where.type) return false;
+          if (where?.currency && l.currency !== where.currency) return false;
+          if (where?.priceAmount?.lte && l.priceAmount > where.priceAmount.lte) return false;
+          return true;
+        }).length;
       }),
       update: vi.fn(async ({ where, data }) => {
         const listing = mockDb.listings.find((l) => l.id === where.id);
@@ -106,6 +153,32 @@ vi.mock('@commercebackend/db', () => {
         if (!intent) throw new Error('CheckoutIntent not found');
         Object.assign(intent, data);
         return intent;
+      }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.checkoutIntents.filter((c) => {
+          if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && c.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(c.status)) return false;
+            } else if (c.status !== where.status) return false;
+          }
+          return true;
+        }).length;
+      }),
+      findMany: vi.fn(async ({ where } = {}) => {
+        return mockDb.checkoutIntents.filter((c) => {
+          if (where?.buyerAgentId && c.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.sellerAgentId && c.sellerAgentId !== where.sellerAgentId) return false;
+          if (where?.purchasePolicyId && c.purchasePolicyId !== where.purchasePolicyId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(c.status)) return false;
+            } else if (c.status !== where.status) return false;
+          }
+          if (where?.createdAt?.gte && new Date(c.createdAt) < new Date(where.createdAt.gte)) return false;
+          return true;
+        });
       }),
       deleteMany: vi.fn(),
     },
@@ -174,6 +247,7 @@ vi.mock('@commercebackend/db', () => {
         mockDb.queryLogs.push(log);
         return log;
       }),
+      count: vi.fn(async () => mockDb.queryLogs.length),
       deleteMany: vi.fn(),
     },
     purchasePolicy: {
@@ -256,6 +330,21 @@ vi.mock('@commercebackend/db', () => {
         Object.assign(offer, data);
         return offer;
       }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.offers.filter((o) => {
+          if (where?.buyerAgentId && o.buyerAgentId !== where.buyerAgentId) return false;
+          if (where?.status) {
+            if (where.status.in) {
+              if (!where.status.in.includes(o.status)) return false;
+            } else if (o.status !== where.status) return false;
+          }
+          if (where?.listing?.sellerAgentId) {
+            const listing = mockDb.listings.find((l) => l.id === o.listingId);
+            if (!listing || listing.sellerAgentId !== where.listing.sellerAgentId) return false;
+          }
+          return true;
+        }).length;
+      }),
       deleteMany: vi.fn(),
     },
     offerHistory: {
@@ -270,6 +359,65 @@ vi.mock('@commercebackend/db', () => {
       }),
       deleteMany: vi.fn(),
     },
+    criticalEvent: {
+      create: vi.fn(async ({ data }) => {
+        const event = {
+          id: `evt_${Math.random().toString(36).substring(2, 11)}`,
+          createdAt: new Date(),
+          ...data,
+        };
+        mockDb.criticalEvents.push(event);
+        return event;
+      }),
+      count: vi.fn(async ({ where } = {}) => {
+        return mockDb.criticalEvents.filter((e) => {
+          if (where?.code && e.code !== where.code) return false;
+          return true;
+        }).length;
+      }),
+      findMany: vi.fn(async ({ where, orderBy } = {}) => {
+        let matches = mockDb.criticalEvents.filter((e) => {
+          if (where?.code?.in) {
+            if (!where.code.in.includes(e.code)) return false;
+          } else if (where?.code && e.code !== where.code) {
+            return false;
+          }
+          return true;
+        });
+        if (orderBy?.createdAt) {
+          const direction = orderBy.createdAt === 'desc' ? -1 : 1;
+          matches = [...matches].sort(
+            (a, b) => direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+        }
+        return matches;
+      }),
+      deleteMany: vi.fn(),
+    },
+    catalogSyncLog: {
+      create: vi.fn(async ({ data }) => {
+        const log = {
+          id: `sync_${Math.random().toString(36).substring(2, 11)}`,
+          createdAt: new Date(),
+          ...data,
+        };
+        mockDb.catalogSyncLogs.push(log);
+        return log;
+      }),
+      findMany: vi.fn(async ({ orderBy, skip, take } = {}) => {
+        let matches = [...mockDb.catalogSyncLogs];
+        if (orderBy?.createdAt) {
+          const direction = orderBy.createdAt === 'desc' ? -1 : 1;
+          matches.sort(
+            (a, b) => direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+        }
+        if (typeof skip === 'number') matches = matches.slice(skip);
+        if (typeof take === 'number') matches = matches.slice(0, take);
+        return matches;
+      }),
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn(async (cb) => cb(prismaMock)),
     $queryRawUnsafe: vi.fn(async (query, ...params) => {
       if (query.includes('SELECT * FROM "Listing" WHERE id = $1 FOR UPDATE') || query.includes('FOR UPDATE')) {
@@ -279,7 +427,68 @@ vi.mock('@commercebackend/db', () => {
       }
       return [];
     }),
-    $queryRaw: vi.fn(async (query, ...params) => {
+    $queryRaw: vi.fn(async (query: any, ...params: any[]) => {
+      const text = Array.isArray(query) ? query.join('') : String(query);
+      if (text.includes('keyword_hits')) {
+        const [keywords, status, typeFilter, currencyFilter, maxPriceFilter, limit, offset] = params as [
+          string[],
+          string,
+          string | null,
+          string | null,
+          number | null,
+          number,
+          number,
+        ];
+        const matched = mockDb.listings
+          .filter((l) => {
+            if (l.status !== status) return false;
+            if (typeFilter && l.type !== typeFilter) return false;
+            if (currencyFilter && l.currency !== currencyFilter) return false;
+            if (maxPriceFilter != null && l.priceAmount > maxPriceFilter) return false;
+            return true;
+          })
+          .map((l) => {
+            const titleLower = l.title.toLowerCase();
+            const descLower = l.description.toLowerCase();
+            const attrsStr = JSON.stringify(l.attributes ?? {}).toLowerCase();
+            const matchedKeywords: string[] = [];
+            let titleMatched = false;
+            let descMatched = false;
+            let attrsMatched = false;
+            for (const kw of keywords) {
+              let hit = false;
+              if (titleLower.includes(kw)) {
+                hit = true;
+                titleMatched = true;
+              }
+              if (descLower.includes(kw)) {
+                hit = true;
+                descMatched = true;
+              }
+              if (attrsStr.includes(kw)) {
+                hit = true;
+                attrsMatched = true;
+              }
+              if (hit) matchedKeywords.push(kw);
+            }
+            return {
+              ...l,
+              matched_count: matchedKeywords.length,
+              title_matched: titleMatched,
+              desc_matched: descMatched,
+              attrs_matched: attrsMatched,
+              matched_keywords: matchedKeywords,
+            };
+          })
+          .filter((row) => row.matched_count > 0)
+          .sort((a, b) => {
+            if (b.matched_count !== a.matched_count) return b.matched_count - a.matched_count;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+
+        const total = matched.length;
+        return matched.slice(offset, offset + limit).map((row) => ({ ...row, total_count: total }));
+      }
       return [1];
     }),
   };
@@ -525,9 +734,14 @@ vi.mock('@commercebackend/db', () => {
   return {
     prisma: prismaMock,
     hashApiKey: hashKey,
+    hashApiKeyWithSalt: hashKeyWithSalt,
+    extractApiKeyId,
     generateApiKey: (prefix: string) => {
-      const apiKey = `${prefix}mock_key_${Math.random().toString(36).substring(2, 9)}`;
-      return { apiKey, apiKeyHash: hashKey(apiKey) };
+      const keyId = randomHex(16);
+      const secret = `mock_key_${Math.random().toString(36).substring(2, 9)}`;
+      const apiKey = `${prefix}${keyId}.${secret}`;
+      const apiKeySalt = randomHex(8);
+      return { apiKey, apiKeyHash: hashKeyWithSalt(apiKey, apiKeySalt), apiKeySalt, apiKeyId: keyId };
     },
     resetAndSeedSandbox,
     sandboxFixtureIds,
@@ -683,6 +897,210 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(responseAuth.statusCode).toBe(401);
       const authData = JSON.parse(responseAuth.body);
       expect(authData.error.code).toBe('UNAUTHORIZED');
+    });
+  });
+
+  describe('Agent Reputation (weekly item 11)', () => {
+    let repBuyerKey: string;
+    let repBuyerId: string;
+    let repSellerKey: string;
+    let repSellerId: string;
+    let repListingId: string;
+
+    beforeEach(async () => {
+      const buyerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Buyer', type: 'buyer', ownerEmail: 'buyer@reputation.test' },
+      });
+      const buyerBody = JSON.parse(buyerRes.body);
+      repBuyerKey = buyerBody.apiKey;
+      repBuyerId = buyerBody.agent.id;
+
+      const sellerRes = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Reputation Seller', type: 'seller', ownerEmail: 'seller@reputation.test' },
+      });
+      const sellerBody = JSON.parse(sellerRes.body);
+      repSellerKey = sellerBody.apiKey;
+      repSellerId = sellerBody.agent.id;
+
+      const listing = await prisma.listing.create({
+        data: {
+          sellerAgentId: repSellerId,
+          title: 'Reputation Test Item',
+          description: 'Item used to seed reputation history.',
+          type: 'physical_good',
+          priceAmount: 1000,
+          currency: 'USD',
+          quantityAvailable: 10,
+          attributes: {},
+        },
+      });
+      repListingId = listing.id;
+    });
+
+    it('returns a zero-valued reputation summary for a fresh agent with no history', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { reputation } = JSON.parse(res.body).agent;
+      expect(reputation).toEqual({
+        checkouts: {
+          asBuyer: { completed: 0, failed: 0, completionRate: null },
+          asSeller: { completed: 0, failed: 0, completionRate: null },
+        },
+        offers: {
+          asBuyer: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+          asSeller: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+        },
+      });
+    });
+
+    it('computes completed vs. failed checkouts and offer acceptance rate from seeded history', async () => {
+      // 2 completed + 1 failed checkout between this buyer and seller.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'paid',
+        },
+      });
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'expired',
+        },
+      });
+      // A non-terminal checkout intent should not count either way.
+      await prisma.checkoutIntent.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          sellerAgentId: repSellerId,
+          quantity: 1,
+          amountSubtotal: 1000,
+          amountTotal: 1000,
+          currency: 'USD',
+          status: 'open',
+        },
+      });
+
+      // 1 accepted + 1 rejected offer on the seller's listing from this buyer.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 900,
+          quantity: 1,
+          status: 'accepted',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 800,
+          quantity: 1,
+          status: 'rejected',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+      // A still-pending offer should not count either way.
+      await prisma.offer.create({
+        data: {
+          listingId: repListingId,
+          buyerAgentId: repBuyerId,
+          priceAmount: 850,
+          quantity: 1,
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+
+      const buyerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+      const buyerReputation = JSON.parse(buyerRes.body).agent.reputation;
+      expect(buyerReputation.checkouts.asBuyer).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(buyerReputation.offers.asBuyer).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+
+      const sellerRes = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${repSellerKey}` },
+      });
+      const sellerReputation = JSON.parse(sellerRes.body).agent.reputation;
+      expect(sellerReputation.checkouts.asSeller).toEqual({ completed: 2, failed: 1, completionRate: 2 / 3 });
+      expect(sellerReputation.offers.asSeller).toEqual({ accepted: 1, terminalTotal: 2, acceptanceRate: 0.5 });
+    });
+
+    it("GET /v1/agents/:id returns another agent's public profile with reputation, omitting ownerEmail", async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const { agent } = JSON.parse(res.body);
+      expect(agent.id).toBe(repSellerId);
+      expect(agent.name).toBe('Reputation Seller');
+      expect(agent.reputation).toBeDefined();
+      expect(agent.ownerEmail).toBeUndefined();
+      expect(agent.apiKeyHash).toBeUndefined();
+      expect(agent.apiKeySalt).toBeUndefined();
+    });
+
+    it('GET /v1/agents/:id returns 404 for an unknown agent id', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/agent_does_not_exist',
+        headers: { authorization: `Bearer ${repBuyerKey}` },
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('AGENT_NOT_FOUND');
+    });
+
+    it('GET /v1/agents/:id rejects requests without a valid API key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/agents/${repSellerId}`,
+      });
+
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -927,6 +1345,9 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(data.results[0].listing.title).toBe('Miami Jazz VIP Concert');
       expect(data.results[0].score).toBeDefined();
       expect(data.results[0].matchReason).toContain('title');
+      // Seller has no checkout/offer history yet, so the groundwork
+      // reputation signal (weekly backlog item 18) is null, not 0.
+      expect(data.results[0].sellerReputationScore).toBeNull();
 
       // Verify the query was logged
       expect(mockDb.queryLogs.length).toBe(1);
@@ -947,6 +1368,205 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       const data = JSON.parse(response.body);
       // Electro listing was paused, so it shouldn't show up in default (active) search
       expect(data.results.length).toBe(0);
+    });
+
+    it('should rank listings matching more query keywords ahead of partial matches', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami Rock Festival',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const data = JSON.parse(response.body);
+      // "Miami Rock Festival" matches all 3 keywords; the other active listing
+      // ("Miami Jazz VIP Concert") only matches "Miami", so it must rank lower.
+      expect(data.results[0].listing.title).toBe('Miami Rock Festival');
+      expect(data.results[0].score).toBeGreaterThan(data.results[1].score);
+    });
+
+    it('should paginate search results and report the total match count', async () => {
+      const firstPage = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami',
+          limit: 1,
+          offset: 0,
+        },
+      });
+
+      expect(firstPage.statusCode).toBe(200);
+      const firstPageData = JSON.parse(firstPage.body);
+      expect(firstPageData.results.length).toBe(1);
+      expect(firstPageData.pagination.total).toBe(2);
+
+      const secondPage = await app.inject({
+        method: 'POST',
+        url: '/v1/search',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          query: 'Miami',
+          limit: 1,
+          offset: 1,
+        },
+      });
+
+      expect(secondPage.statusCode).toBe(200);
+      const secondPageData = JSON.parse(secondPage.body);
+      expect(secondPageData.results.length).toBe(1);
+      expect(secondPageData.pagination.total).toBe(2);
+      expect(secondPageData.results[0].listing.id).not.toBe(firstPageData.results[0].listing.id);
+    });
+
+    describe('reputation-aware ranking (weekly backlog item 18)', () => {
+      it('surfaces sellerReputationScore and only reorders results when rankByReputation is set', async () => {
+        const buyerRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Buyer', type: 'buyer', ownerEmail: 'buyer@ranking.test' },
+        });
+        const buyerId = JSON.parse(buyerRes.body).agent.id;
+
+        const sellerARes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Seller A', type: 'seller', ownerEmail: 'seller-a@ranking.test' },
+        });
+        const sellerAId = JSON.parse(sellerARes.body).agent.id;
+        const sellerAKey = JSON.parse(sellerARes.body).apiKey;
+
+        const sellerBRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Ranking Seller B', type: 'seller', ownerEmail: 'seller-b@ranking.test' },
+        });
+        const sellerBId = JSON.parse(sellerBRes.body).agent.id;
+        const sellerBKey = JSON.parse(sellerBRes.body).apiKey;
+
+        // Listing A matches all 3 query keywords (higher relevance score);
+        // listing B only matches 2 (lower relevance score), so the default
+        // (no rankByReputation) order is deterministically A-then-B
+        // regardless of creation-timestamp precision. Seller reputation is
+        // assigned the other way around, so rankByReputation has to actually
+        // flip the order to prove it re-ranks by reputation.
+        const listingARes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerAKey}` },
+          payload: {
+            title: 'Reputation Ranking Gadget',
+            description: 'Gadget used for reputation ranking test',
+            type: 'physical_good' as const,
+            priceAmount: 2000,
+            quantityAvailable: 5,
+          },
+        });
+        const listingAId = JSON.parse(listingARes.body).listing.id;
+
+        const listingBRes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerBKey}` },
+          payload: {
+            // Deliberately omits "ranking" from both title and description
+            // so it matches only 2 of the 3 query keywords (unlike listing
+            // A, which matches all 3) - see comment above.
+            title: 'Reputation Gadget',
+            description: 'Gadget used for a reputation score test',
+            type: 'physical_good' as const,
+            priceAmount: 2000,
+            quantityAvailable: 5,
+          },
+        });
+        const listingBId = JSON.parse(listingBRes.body).listing.id;
+
+        // Listing A's seller: a failed checkout and a rejected offer -> reputation score 0.0.
+        await prisma.checkoutIntent.create({
+          data: {
+            listingId: listingAId,
+            buyerAgentId: buyerId,
+            sellerAgentId: sellerAId,
+            quantity: 1,
+            amountSubtotal: 2000,
+            amountTotal: 2000,
+            currency: 'USD',
+            status: 'expired',
+          },
+        });
+        await prisma.offer.create({
+          data: {
+            listingId: listingAId,
+            buyerAgentId: buyerId,
+            priceAmount: 1800,
+            quantity: 1,
+            status: 'rejected',
+            expiresAt: new Date(Date.now() + 3600_000),
+          },
+        });
+
+        // Listing B's seller: a completed checkout and an accepted offer -> reputation score 1.0.
+        await prisma.checkoutIntent.create({
+          data: {
+            listingId: listingBId,
+            buyerAgentId: buyerId,
+            sellerAgentId: sellerBId,
+            quantity: 1,
+            amountSubtotal: 2000,
+            amountTotal: 2000,
+            currency: 'USD',
+            status: 'paid',
+          },
+        });
+        await prisma.offer.create({
+          data: {
+            listingId: listingBId,
+            buyerAgentId: buyerId,
+            priceAmount: 1800,
+            quantity: 1,
+            status: 'accepted',
+            expiresAt: new Date(Date.now() + 3600_000),
+          },
+        });
+
+        const defaultResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/search',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: { query: 'Reputation Ranking Gadget' },
+        });
+        expect(defaultResponse.statusCode).toBe(200);
+        const defaultData = JSON.parse(defaultResponse.body);
+        expect(defaultData.results).toHaveLength(2);
+        // Default ordering (no rankByReputation) is unchanged by reputation:
+        // listing A matches all 3 query keywords vs. listing B's 2, so A
+        // ranks first by the existing relevance score, even though A's
+        // seller has the *weaker* reputation (seeded below).
+        const defaultOrder = defaultData.results.map((r: any) => r.listing.id);
+        expect(defaultOrder).toEqual([listingAId, listingBId]);
+        const scoreById = Object.fromEntries(
+          defaultData.results.map((r: any) => [r.listing.id, r.sellerReputationScore])
+        );
+        expect(scoreById[listingAId]).toBe(0);
+        expect(scoreById[listingBId]).toBe(1);
+
+        const rankedResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/search',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: { query: 'Reputation Ranking Gadget', rankByReputation: true },
+        });
+        expect(rankedResponse.statusCode).toBe(200);
+        const rankedData = JSON.parse(rankedResponse.body);
+        // Opt-in ranking favors the higher-reputation seller's listing,
+        // flipping the default relevance-based ordering above.
+        expect(rankedData.results[0].listing.id).toBe(listingBId);
+        expect(rankedData.results[1].listing.id).toBe(listingAId);
+      });
     });
   });
 
@@ -1375,6 +1995,246 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(data.checkoutIntent.approvalRejectionReason).toBe('Human declined purchase.');
       expect(data.checkoutIntent.stripeCheckoutSessionId).toBeNull();
       expect(data.checkoutIntent.checkoutUrl).toBeNull();
+    });
+
+    describe('Purchase-policy spending-limit signal (weekly backlog item 14)', () => {
+      const seedPolicyWithSpendingLimit = (
+        agentId: string,
+        overrides: { spendingLimitAmount?: number | null; spendingLimitPeriodDays?: number | null } = {}
+      ) => {
+        const policy = {
+          id: `pol_${Math.random().toString(36).substring(2, 11)}`,
+          buyerAgentId: agentId,
+          name: 'Spending-limit test policy',
+          enabled: true,
+          maxAutoApproveAmount: 1_000_000,
+          currency: 'USD',
+          allowedListingTypes: [],
+          allowedSellerAgentIds: [],
+          requireHumanApprovalAboveAmount: 1_000_000,
+          requireHumanApprovalForOffers: false,
+          spendingLimitAmount: overrides.spendingLimitAmount ?? 10000,
+          spendingLimitPeriodDays: overrides.spendingLimitPeriodDays ?? 30,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockDb.purchasePolicies.push(policy);
+        return policy;
+      };
+
+      it('reports configured: false when the matched policy has no spending limit set', async () => {
+        seedAutoApprovePolicy(buyerId); // no spendingLimitAmount/spendingLimitPeriodDays
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: false,
+          limitAmount: null,
+          periodDays: null,
+          periodSpendBeforeThisCheckout: 0,
+          projectedPeriodSpend: 5000,
+          wouldExceedLimit: false,
+        });
+      });
+
+      it('reports wouldExceedLimit: false when the checkout stays under the spending limit', async () => {
+        seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 10000, spendingLimitPeriodDays: 30 });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Listing price is 5000; nothing spent yet this period, so projected spend is 5000 < 10000.
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: true,
+          limitAmount: 10000,
+          periodDays: 30,
+          periodSpendBeforeThisCheckout: 0,
+          projectedPeriodSpend: 5000,
+          wouldExceedLimit: false,
+        });
+        // The signal is read-only: it never blocks checkout or alters policyDecision.
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+      });
+
+      it('reports wouldExceedLimit: false when the checkout lands exactly at the spending limit', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 5000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_prior_at_limit',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 0,
+          amountTotal: 0,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Prior spend 0 + this checkout's 5000 == the 5000 limit: at the limit, not over it.
+        expect(data.checkoutIntent.spendingLimitSignal.projectedPeriodSpend).toBe(5000);
+        expect(data.checkoutIntent.spendingLimitSignal.wouldExceedLimit).toBe(false);
+      });
+
+      it('reports wouldExceedLimit: true when prior period spend plus this checkout exceeds the limit', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 8000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_prior_spend',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 6000,
+          amountTotal: 6000,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        // Prior spend 6000 + this checkout's 5000 = 11000 > 8000 limit.
+        expect(data.checkoutIntent.spendingLimitSignal).toEqual({
+          configured: true,
+          limitAmount: 8000,
+          periodDays: 30,
+          periodSpendBeforeThisCheckout: 6000,
+          projectedPeriodSpend: 11000,
+          wouldExceedLimit: true,
+        });
+        // Still read-only: the over-limit checkout is NOT blocked by this signal alone.
+        expect(data.checkoutIntent.status).toBe('open');
+        expect(data.checkoutIntent.policyDecision).toBe('policy_approved');
+        expect(data.checkoutIntent.checkoutUrl).toContain('https://checkout.stripe.com/');
+      });
+
+      it('excludes checkout intents outside the trailing spending-limit period', async () => {
+        const policy = seedPolicyWithSpendingLimit(buyerId, { spendingLimitAmount: 8000, spendingLimitPeriodDays: 30 });
+        mockDb.checkoutIntents.push({
+          id: 'chk_old_spend',
+          listingId: testListingId,
+          buyerAgentId: buyerId,
+          sellerAgentId: sellerId,
+          quantity: 1,
+          amountSubtotal: 6000,
+          amountTotal: 6000,
+          currency: 'USD',
+          status: 'paid',
+          purchasePolicyId: policy.id,
+          createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 45 days ago, outside the 30-day window
+          updatedAt: new Date(),
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/checkout-intents',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            listingId: testListingId,
+            quantity: 1,
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.checkoutIntent.spendingLimitSignal.periodSpendBeforeThisCheckout).toBe(0);
+        expect(data.checkoutIntent.spendingLimitSignal.wouldExceedLimit).toBe(false);
+      });
+
+      it('lets operators set a spending limit on a purchase policy', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: `/v1/agents/${buyerId}/purchase-policies`,
+          headers: operatorHeaders,
+          payload: {
+            name: 'Policy with a monthly budget',
+            maxAutoApproveAmount: 50000,
+            currency: 'USD',
+            requireHumanApprovalAboveAmount: 50000,
+            spendingLimitAmount: 100000,
+            spendingLimitPeriodDays: 30,
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.purchasePolicy.spendingLimitAmount).toBe(100000);
+        expect(data.purchasePolicy.spendingLimitPeriodDays).toBe(30);
+      });
+
+      it('rejects a purchase policy that sets only one of the spending-limit fields', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: `/v1/agents/${buyerId}/purchase-policies`,
+          headers: operatorHeaders,
+          payload: {
+            name: 'Half-configured budget',
+            maxAutoApproveAmount: 50000,
+            currency: 'USD',
+            requireHumanApprovalAboveAmount: 50000,
+            spendingLimitAmount: 100000,
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+      });
     });
   });
 
@@ -2079,6 +2939,7 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const bodyCreate = JSON.parse(resCreate.body);
       expect(bodyCreate.agent.apiKeyHash).toBeUndefined();
+      expect(bodyCreate.agent.apiKeySalt).toBeUndefined();
       expect(bodyCreate.apiKey).toBeDefined();
 
       // GET /v1/agents/me response
@@ -2089,6 +2950,102 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       const bodyMe = JSON.parse(resMe.body);
       expect(bodyMe.agent.apiKeyHash).toBeUndefined();
+      expect(bodyMe.agent.apiKeySalt).toBeUndefined();
+    });
+  });
+
+  describe('API key hashing (per-record salt)', () => {
+    it('issues new agents a per-record-salted key and authenticates it', async () => {
+      const resCreate = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Salted Key Agent', type: 'buyer', ownerEmail: 'salted@test.com' },
+      });
+      const { apiKey } = JSON.parse(resCreate.body);
+
+      // New-format keys embed a public lookup id: `<prefix><16-hex keyId>.<secret>`.
+      expect(apiKey).toMatch(/^cb_test_[0-9a-f]{16}\..+$/);
+
+      const resMe = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${apiKey}` },
+      });
+      expect(resMe.statusCode).toBe(200);
+    });
+
+    it('two agents created back-to-back get different salts and different hashes', async () => {
+      const first = JSON.parse(
+        (
+          await app.inject({
+            method: 'POST',
+            url: '/v1/agents',
+            payload: { name: 'Agent One', type: 'buyer', ownerEmail: 'salt-one@test.com' },
+          })
+        ).body
+      );
+      const second = JSON.parse(
+        (
+          await app.inject({
+            method: 'POST',
+            url: '/v1/agents',
+            payload: { name: 'Agent Two', type: 'buyer', ownerEmail: 'salt-two@test.com' },
+          })
+        ).body
+      );
+
+      const firstAgent = mockDb.agents.find((a) => a.id === first.agent.id);
+      const secondAgent = mockDb.agents.find((a) => a.id === second.agent.id);
+      expect(firstAgent.apiKeySalt).not.toBe(secondAgent.apiKeySalt);
+      expect(firstAgent.apiKeyHash).not.toBe(secondAgent.apiKeyHash);
+    });
+
+    it('still authenticates an agent whose key predates the per-record-salt migration', async () => {
+      // Simulates a row written before this migration: a flat legacy-format
+      // key (no embedded keyId/dot), hashed with the old shared salt, and no
+      // apiKeySalt/apiKeyId columns populated.
+      const legacyApiKey = 'cb_test_legacy_preexisting_key';
+      mockDb.agents.push({
+        id: 'agent_legacy_1',
+        name: 'Legacy Agent',
+        type: 'buyer',
+        ownerEmail: 'legacy@test.com',
+        apiKeyHash: `hash_${legacyApiKey}`,
+        apiKeySalt: null,
+        apiKeyId: null,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const resMe = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${legacyApiKey}` },
+      });
+      expect(resMe.statusCode).toBe(200);
+      const body = JSON.parse(resMe.body);
+      expect(body.agent.id).toBe('agent_legacy_1');
+    });
+
+    it('rejects a new-format key whose secret has been tampered with', async () => {
+      const resCreate = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Tamper Test', type: 'buyer', ownerEmail: 'tamper@test.com' },
+      });
+      const { apiKey } = JSON.parse(resCreate.body);
+
+      // Keep the real, valid keyId (so the row is still found by lookup) but
+      // corrupt the secret portion that the per-record-salted hash covers.
+      const tamperedKey = `${apiKey}tampered`;
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: { authorization: `Bearer ${tamperedKey}` },
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -2520,6 +3477,10 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       expect(resCheckout.statusCode).toBe(500);
       expect(resCheckout.body).toContain('CHECKOUT_PERSISTENCE_FAILED');
 
+      const criticalEvent = mockDb.criticalEvents.find((e) => e.code === 'CHECKOUT_PERSISTENCE_FAILED');
+      expect(criticalEvent).toBeDefined();
+      expect(criticalEvent.payload.checkoutIntentId).toBeDefined();
+
       const dbOffer = mockDb.offers.find((o) => o.id === offerId);
       expect(dbOffer.status).toBe('checkout_pending');
 
@@ -2540,6 +3501,1263 @@ describe('CommerceBackend v0.1 API Integration Tests', () => {
       });
       expect(resCheckout2.statusCode).toBe(400);
       expect(JSON.parse(resCheckout2.body).error.code).toBe('OFFER_ALREADY_CHECKED_OUT');
+    });
+  });
+
+  describe('Operator Metrics API', () => {
+    it('rejects requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+      });
+      expect(res.statusCode).toBe(401);
+
+      const resWrongKey = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: { 'x-operator-key': 'not_the_real_key' },
+      });
+      expect(resWrongKey.statusCode).toBe(401);
+    });
+
+    it('returns live counts for an authenticated operator', async () => {
+      mockDb.agents.push({ id: 'metrics_agent_1', status: 'active' });
+      mockDb.listings.push({ id: 'metrics_listing_1' });
+      mockDb.offers.push({ id: 'metrics_offer_1' });
+      mockDb.checkoutIntents.push({ id: 'metrics_intent_1' });
+      mockDb.orders.push({ id: 'metrics_order_1' });
+      mockDb.queryLogs.push({ id: 'metrics_log_1' });
+      mockDb.criticalEvents.push({
+        id: 'metrics_evt_1',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: {},
+        createdAt: new Date(),
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.counts).toEqual({
+        agents: 1,
+        listings: 1,
+        offers: 1,
+        checkoutIntents: 1,
+        orders: 1,
+        queryLogs: 1,
+      });
+      expect(body.criticalEvents.total).toBe(1);
+      expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(1);
+      expect(typeof body.generatedAt).toBe('string');
+    });
+
+    it('returns zero counts on an empty database', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/metrics',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.counts).toEqual({
+        agents: 0,
+        listings: 0,
+        offers: 0,
+        checkoutIntents: 0,
+        orders: 0,
+        queryLogs: 0,
+      });
+      expect(body.criticalEvents.total).toBe(0);
+      expect(body.criticalEvents.byCode.CHECKOUT_PERSISTENCE_FAILED).toBe(0);
+    });
+  });
+
+  describe('Checkout Event Ledger API', () => {
+    it('rejects requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_missing/events',
+      });
+      expect(res.statusCode).toBe(401);
+
+      const resWrongKey = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_missing/events',
+        headers: { 'x-operator-key': 'not_the_real_key' },
+      });
+      expect(resWrongKey.statusCode).toBe(401);
+    });
+
+    it('returns 404 for an unknown checkout intent', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/does_not_exist/events',
+        headers: operatorHeaders,
+      });
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('CHECKOUT_INTENT_NOT_FOUND');
+    });
+
+    it('returns an ordered transition history for a seeded open checkout intent', async () => {
+      const createdAt = new Date('2026-01-01T00:00:00.000Z');
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_open',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 1000,
+        amountTotal: 1000,
+        currency: 'USD',
+        status: 'open',
+        createdAt,
+        updatedAt: createdAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_open/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.checkoutIntentId).toBe('ledger_intent_open');
+      expect(body.status).toBe('open');
+      expect(body.events).toHaveLength(1);
+      expect(body.events[0].type).toBe('created');
+      expect(body.events[0].occurredAt).toBe(createdAt.toISOString());
+    });
+
+    it('orders approval, payment, fulfillment, and critical-event transitions chronologically', async () => {
+      const createdAt = new Date('2026-02-01T00:00:00.000Z');
+      const approvalRequestedAt = new Date('2026-02-01T00:01:00.000Z');
+      const humanApprovedAt = new Date('2026-02-01T00:02:00.000Z');
+      const orderCreatedAt = new Date('2026-02-01T00:03:00.000Z');
+      const fulfillmentUpdatedAt = new Date('2026-02-01T00:04:00.000Z');
+
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_full',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 2000,
+        amountTotal: 2000,
+        currency: 'USD',
+        status: 'paid',
+        approvalRequestedAt,
+        humanApprovedAt,
+        createdAt,
+        updatedAt: humanApprovedAt,
+      });
+
+      mockDb.orders.push({
+        id: 'ledger_order_full',
+        checkoutIntentId: 'ledger_intent_full',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountTotal: 2000,
+        currency: 'USD',
+        paymentStatus: 'paid',
+        fulfillmentStatus: 'fulfilled',
+        fulfillmentNote: 'Shipped via carrier X',
+        createdAt: orderCreatedAt,
+        updatedAt: fulfillmentUpdatedAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_full/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.events.map((e: any) => e.type)).toEqual([
+        'created',
+        'human_approval_requested',
+        'human_approved',
+        'paid',
+        'fulfillment_updated',
+      ]);
+      const paidEvent = body.events.find((e: any) => e.type === 'paid');
+      expect(paidEvent.detail.orderId).toBe('ledger_order_full');
+      const fulfillmentEvent = body.events.find((e: any) => e.type === 'fulfillment_updated');
+      expect(fulfillmentEvent.detail.fulfillmentStatus).toBe('fulfilled');
+      expect(fulfillmentEvent.detail.fulfillmentNote).toBe('Shipped via carrier X');
+    });
+
+    it('includes a CHECKOUT_PERSISTENCE_FAILED critical event matched by payload.checkoutIntentId', async () => {
+      const createdAt = new Date('2026-03-01T00:00:00.000Z');
+      const failedAt = new Date('2026-03-01T00:05:00.000Z');
+
+      mockDb.checkoutIntents.push({
+        id: 'ledger_intent_failed',
+        listingId: 'ledger_listing',
+        buyerAgentId: 'ledger_buyer',
+        sellerAgentId: 'ledger_seller',
+        quantity: 1,
+        amountSubtotal: 500,
+        amountTotal: 500,
+        currency: 'USD',
+        status: 'failed',
+        createdAt,
+        updatedAt: failedAt,
+      });
+
+      mockDb.criticalEvents.push({
+        id: 'ledger_evt_failed',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: {
+          checkoutIntentId: 'ledger_intent_failed',
+          stripeSessionId: 'cs_test_ledger',
+          error: 'DB write failed',
+        },
+        createdAt: failedAt,
+      });
+
+      // A critical event for a different checkout intent must not leak in.
+      mockDb.criticalEvents.push({
+        id: 'ledger_evt_other',
+        code: 'CHECKOUT_PERSISTENCE_FAILED',
+        payload: { checkoutIntentId: 'some_other_intent' },
+        createdAt: failedAt,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/operator/checkout-intents/ledger_intent_failed/events',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.events.map((e: any) => e.type)).toEqual(['created', 'CHECKOUT_PERSISTENCE_FAILED']);
+      const failureEvent = body.events.find((e: any) => e.type === 'CHECKOUT_PERSISTENCE_FAILED');
+      expect(failureEvent.detail.stripeSessionId).toBe('cs_test_ledger');
+      expect(failureEvent.detail.error).toBe('DB write failed');
+    });
+  });
+
+  describe('ACP Protocol Adapter API (v0.2 scoped subset)', () => {
+    let acpListingId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'ACP Seller', type: 'seller', ownerEmail: 's@acp.com' },
+      });
+      sellerKey = JSON.parse(resSeller.body).apiKey;
+      sellerId = JSON.parse(resSeller.body).agent.id;
+
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'ACP Buyer', type: 'buyer', ownerEmail: 'b@acp.com' },
+      });
+      buyerKey = JSON.parse(resBuyer.body).apiKey;
+      buyerId = JSON.parse(resBuyer.body).agent.id;
+
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          title: 'ACP Widget',
+          description: 'A widget sold via the ACP adapter.',
+          type: 'physical_good',
+          priceAmount: 5000,
+          quantityAvailable: 10,
+        },
+      });
+      acpListingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    describe('GET /v1/protocols/acp/product-feed', () => {
+      it('rejects unauthenticated requests', async () => {
+        const res = await app.inject({ method: 'GET', url: '/v1/protocols/acp/product-feed' });
+        expect(res.statusCode).toBe(401);
+      });
+
+      it('returns only active listings mapped to the ACP catalog item shape', async () => {
+        const resPaused = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Paused Widget',
+            description: 'Should not appear in the feed.',
+            type: 'physical_good',
+            priceAmount: 2500,
+            quantityAvailable: 5,
+          },
+        });
+        const pausedListingId = JSON.parse(resPaused.body).listing.id;
+        await app.inject({
+          method: 'POST',
+          url: `/v1/listings/${pausedListingId}/pause`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        const res = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/acp/product-feed',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        const ids = body.items.map((item: any) => item.id);
+        expect(ids).toContain(acpListingId);
+        expect(ids).not.toContain(pausedListingId);
+
+        const acpItem = body.items.find((item: any) => item.id === acpListingId);
+        expect(acpItem).toEqual({
+          id: acpListingId,
+          title: 'ACP Widget',
+          description: 'A widget sold via the ACP adapter.',
+          price: { amount: 5000, currency: 'USD' },
+          availability: 'in_stock',
+          quantity_available: 10,
+        });
+      });
+    });
+
+    describe('POST /v1/protocols/acp/checkout-sessions', () => {
+      it('creates a checkout session backed by the existing Stripe-hosted checkout redirect', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 2 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+
+        expect(res.statusCode).toBe(201);
+        const body = JSON.parse(res.body);
+        expect(body.checkoutSession.status).toBe('ready_for_payment');
+        expect(body.checkoutSession.commercebackend_status).toBe('open');
+        expect(body.checkoutSession.line_items).toEqual([
+          { id: acpListingId, quantity: 2, amount_total: 10000 },
+        ]);
+        expect(body.checkoutSession.totals).toEqual({
+          subtotal: 10000,
+          total: 10000,
+          currency: 'USD',
+        });
+        expect(body.checkoutSession.buyer_agent_id).toBe(buyerId);
+        expect(body.checkoutSession.seller_agent_id).toBe(sellerId);
+        expect(body.checkoutSession.payment_provider.type).toBe('commercebackend_stripe_hosted_redirect');
+        expect(typeof body.checkoutSession.payment_provider.checkout_url).toBe('string');
+      });
+
+      it('rejects checkout sessions from non-buyer agents', async () => {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 1 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        expect(res.statusCode).toBe(403);
+      });
+
+      it('rejects multi-item carts with a clear 400 instead of silently truncating', async () => {
+        const resOtherListing = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Second Widget',
+            type: 'physical_good',
+            priceAmount: 1500,
+            quantityAvailable: 5,
+          },
+        });
+        const otherListingId = JSON.parse(resOtherListing.body).listing.id;
+
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [
+              { id: acpListingId, quantity: 1 },
+              { id: otherListingId, quantity: 1 },
+            ],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+
+        expect(res.statusCode).toBe(400);
+        const body = JSON.parse(res.body);
+        expect(body.error.code).toBe('ACP_UNSUPPORTED_REQUEST');
+      });
+
+      it('rejects requests missing required ACP fields', async () => {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        expect(res.statusCode).toBe(400);
+      });
+    });
+
+    describe('GET /v1/protocols/acp/checkout-sessions/:id', () => {
+      async function createAcpCheckoutSession() {
+        seedAutoApprovePolicy(buyerId);
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/acp/checkout-sessions',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            items: [{ id: acpListingId, quantity: 1 }],
+            success_url: 'https://buyer.example.com/success',
+            cancel_url: 'https://buyer.example.com/cancel',
+          },
+        });
+        return JSON.parse(res.body).checkoutSession;
+      }
+
+      it('allows the buyer agent to view their own checkout session', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        expect(JSON.parse(res.body).checkoutSession.id).toBe(created.id);
+      });
+
+      it('allows the seller agent to view the checkout session', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        expect(res.statusCode).toBe(200);
+        expect(JSON.parse(res.body).checkoutSession.id).toBe(created.id);
+      });
+
+      it('rejects an unrelated agent with 403', async () => {
+        const created = await createAcpCheckoutSession();
+
+        const resOutsider = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Outsider', type: 'buyer', ownerEmail: 'outsider@acp.com' },
+        });
+        const outsiderKey = JSON.parse(resOutsider.body).apiKey;
+
+        const res = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/acp/checkout-sessions/${created.id}`,
+          headers: { authorization: `Bearer ${outsiderKey}` },
+        });
+
+        expect(res.statusCode).toBe(403);
+      });
+
+      it('returns 404 for a checkout session that does not exist', async () => {
+        const res = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/acp/checkout-sessions/chk_does_not_exist',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(res.statusCode).toBe(404);
+      });
+    });
+  });
+
+  describe('UCP Protocol Adapter API Endpoints', () => {
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'UCP Seller', type: 'seller', ownerEmail: 's@ucp.com' },
+      });
+      sellerKey = JSON.parse(resSeller.body).apiKey;
+      sellerId = JSON.parse(resSeller.body).agent.id;
+
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'UCP Buyer', type: 'buyer', ownerEmail: 'b@ucp.com' },
+      });
+      buyerKey = JSON.parse(resBuyer.body).apiKey;
+      buyerId = JSON.parse(resBuyer.body).agent.id;
+
+      const resListing = await app.inject({
+        method: 'POST',
+        url: '/v1/listings',
+        headers: { authorization: `Bearer ${sellerKey}` },
+        payload: {
+          title: 'UCP Test Ticket',
+          description: 'A ticket sold through the UCP mapping layer.',
+          type: 'event_ticket',
+          priceAmount: 5000,
+          currency: 'USD',
+          quantityAvailable: 10,
+        },
+      });
+      testListingId = JSON.parse(resListing.body).listing.id;
+    });
+
+    describe('GET /v1/protocols/ucp/products', () => {
+      it('rejects unauthenticated requests', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+        });
+        expect(response.statusCode).toBe(401);
+      });
+
+      it('maps active listings to schema.org-style UCP products for any authenticated agent', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const data = JSON.parse(response.body);
+        expect(data.pagination.total).toBe(1);
+        expect(data.products).toEqual([
+          {
+            id: testListingId,
+            name: 'UCP Test Ticket',
+            description: 'A ticket sold through the UCP mapping layer.',
+            offers: [{ price: 5000, currency: 'USD' }],
+          },
+        ]);
+      });
+
+      it('excludes paused listings', async () => {
+        await app.inject({
+          method: 'POST',
+          url: `/v1/listings/${testListingId}/pause`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/products',
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const data = JSON.parse(response.body);
+        expect(data.products).toEqual([]);
+        expect(data.pagination.total).toBe(0);
+      });
+    });
+
+    describe('POST /v1/protocols/ucp/orders', () => {
+      it('rejects seller agents from creating UCP orders', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(403);
+        const data = JSON.parse(response.body);
+        expect(data.error.code).toBe('FORBIDDEN');
+      });
+
+      it('rejects a request naming more than one distinct product with a clear 400', async () => {
+        const otherListingRes = await app.inject({
+          method: 'POST',
+          url: '/v1/listings',
+          headers: { authorization: `Bearer ${sellerKey}` },
+          payload: {
+            title: 'Second UCP Product',
+            type: 'event_ticket',
+            priceAmount: 3000,
+            quantityAvailable: 5,
+          },
+        });
+        const otherListingId = JSON.parse(otherListingRes.body).listing.id;
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [
+              { productId: testListingId, quantity: 1 },
+              { productId: otherListingId, quantity: 1 },
+            ],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(400);
+        const data = JSON.parse(response.body);
+        expect(data.error.code).toBe('UCP_MULTI_ITEM_UNSUPPORTED');
+        // Not silently truncated or merged: no checkout intent should have been created.
+        expect(mockDb.checkoutIntents).toHaveLength(0);
+      });
+
+      it('creates a UCP order mapped onto an auto-approved checkout intent with a payment URL', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 2 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.order.status).toBe('payment_pending');
+        expect(data.order.buyerId).toBe(buyerId);
+        expect(data.order.sellerId).toBe(sellerId);
+        expect(data.order.lineItems).toEqual([{ productId: testListingId, quantity: 2 }]);
+        expect(data.order.totalPrice).toEqual({ amount: 10000, currency: 'USD' });
+        expect(data.order.paymentUrl).toContain('https://checkout.stripe.com/');
+
+        expect(mockDb.checkoutIntents).toHaveLength(1);
+        expect(mockDb.checkoutIntents[0].id).toBe(data.order.id);
+      });
+
+      it('creates a UCP order with requires_human_review and a null payment URL when no policy exists', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+
+        expect(response.statusCode).toBe(201);
+        const data = JSON.parse(response.body);
+        expect(data.order.status).toBe('requires_human_review');
+        expect(data.order.paymentUrl).toBeNull();
+      });
+    });
+
+    describe('GET /v1/protocols/ucp/orders/:id', () => {
+      it('lets the buyer and the seller view the UCP order, but forbids an unrelated agent', async () => {
+        seedAutoApprovePolicy(buyerId);
+
+        const createResponse = await app.inject({
+          method: 'POST',
+          url: '/v1/protocols/ucp/orders',
+          headers: { authorization: `Bearer ${buyerKey}` },
+          payload: {
+            lineItems: [{ productId: testListingId, quantity: 1 }],
+            successUrl: 'http://localhost:3000/success',
+            cancelUrl: 'http://localhost:3000/cancel',
+          },
+        });
+        const orderId = JSON.parse(createResponse.body).order.id;
+
+        const buyerView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(buyerView.statusCode).toBe(200);
+        expect(JSON.parse(buyerView.body).order.id).toBe(orderId);
+
+        const sellerView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${sellerKey}` },
+        });
+        expect(sellerView.statusCode).toBe(200);
+        expect(JSON.parse(sellerView.body).order.id).toBe(orderId);
+
+        const otherAgentRes = await app.inject({
+          method: 'POST',
+          url: '/v1/agents',
+          payload: { name: 'Unrelated Agent', type: 'buyer', ownerEmail: 'unrelated@ucp.com' },
+        });
+        const otherAgentKey = JSON.parse(otherAgentRes.body).apiKey;
+
+        const forbiddenView = await app.inject({
+          method: 'GET',
+          url: `/v1/protocols/ucp/orders/${orderId}`,
+          headers: { authorization: `Bearer ${otherAgentKey}` },
+        });
+        expect(forbiddenView.statusCode).toBe(403);
+      });
+
+      it('returns 404 for an unknown order id', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/v1/protocols/ucp/orders/chk_does_not_exist',
+          headers: { authorization: `Bearer ${buyerKey}` },
+        });
+        expect(response.statusCode).toBe(404);
+      });
+    });
+  });
+
+  describe('Square Connector API (weekly item 9, read-only spike)', () => {
+    let squareSellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Square Seller', type: 'seller', ownerEmail: 's@square-connector.test' },
+      });
+      squareSellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        payload: { sellerAgentId: squareSellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: squareSellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('square');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'square');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(squareSellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: squareSellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'square').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: squareSellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'square').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@square-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/square/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: squareSellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('square');
+    });
+
+    it('rejects listing sync logs without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+      });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
+  describe('Shopify Connector API (weekly item 8, read-only spike)', () => {
+    let shopifySellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Shopify Seller', type: 'seller', ownerEmail: 's@shopify-connector.test' },
+      });
+      shopifySellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('shopify');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(shopifySellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips draft/archived products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'shopify');
+      expect(imported.some((l: any) => l.title === 'Unpublished Draft Product')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('draft'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'shopify').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@shopify-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/shopify/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: shopifySellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('shopify');
+    });
+  });
+
+  describe('BigCommerce Connector API (weekly item 13, read-only spike)', () => {
+    let bigcommerceSellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'BigCommerce Seller', type: 'seller', ownerEmail: 's@bigcommerce-connector.test' },
+      });
+      bigcommerceSellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('bigcommerce');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(bigcommerceSellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips disabled products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce');
+      expect(imported.some((l: any) => l.title === 'Discontinued Terminal Skin')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('disabled'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'bigcommerce').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@bigcommerce-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/bigcommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: bigcommerceSellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('bigcommerce');
+    });
+  });
+
+  describe('WooCommerce Connector API (weekly item 15, read-only spike)', () => {
+    let woocommerceSellerId: string;
+
+    beforeEach(async () => {
+      const resSeller = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'WooCommerce Seller', type: 'seller', ownerEmail: 's@woocommerce-connector.test' },
+      });
+      woocommerceSellerId = JSON.parse(resSeller.body).agent.id;
+    });
+
+    it('rejects sync requests without a valid operator key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('imports the fixture catalog into listings owned by the given seller, recording per-item failures in the sync log', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.body);
+      expect(body.syncLog.connector).toBe('woocommerce');
+      expect(body.syncLog.status).toBe('partial');
+      expect(body.syncLog.itemsImported).toBeGreaterThan(0);
+      expect(body.syncLog.itemsFailed).toBeGreaterThan(0);
+      expect(Array.isArray(body.syncLog.errors)).toBe(true);
+      expect(body.syncLog.errors[0]).toHaveProperty('externalId');
+      expect(body.syncLog.errors[0]).toHaveProperty('message');
+
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'woocommerce');
+      expect(imported.length).toBe(body.syncLog.itemsImported);
+      for (const listing of imported) {
+        expect(listing.sellerAgentId).toBe(woocommerceSellerId);
+        expect(listing.externalId).toBeTruthy();
+      }
+    });
+
+    it('skips draft products without counting them as failures', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+
+      const body = JSON.parse(res.body);
+      const imported = mockDb.listings.filter((l: any) => l.importSource === 'woocommerce');
+      expect(imported.some((l: any) => l.title === 'Unpublished Draft Widget')).toBe(false);
+      expect(body.syncLog.errors.some((e: any) => e.message.includes('draft'))).toBe(false);
+    });
+
+    it('re-running the sync updates existing imported listings instead of duplicating them', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+      const firstImported = JSON.parse(first.body).syncLog.itemsImported;
+      const listingCountAfterFirst = mockDb.listings.filter((l: any) => l.importSource === 'woocommerce').length;
+
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+      const secondImported = JSON.parse(second.body).syncLog.itemsImported;
+      const listingCountAfterSecond = mockDb.listings.filter((l: any) => l.importSource === 'woocommerce').length;
+
+      expect(secondImported).toBe(firstImported);
+      expect(listingCountAfterSecond).toBe(listingCountAfterFirst);
+    });
+
+    it('rejects a sellerAgentId that is not a seller/both-type agent', async () => {
+      const resBuyer = await app.inject({
+        method: 'POST',
+        url: '/v1/agents',
+        payload: { name: 'Not A Seller', type: 'buyer', ownerEmail: 'buyer@woocommerce-connector.test' },
+      });
+      const buyerAgentId = JSON.parse(resBuyer.body).agent.id;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: buyerAgentId },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 for an unknown sellerAgentId', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: 'agent_does_not_exist' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('lists sync logs across connectors for an authenticated operator, newest first', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/v1/connectors/woocommerce/sync',
+        headers: operatorHeaders,
+        payload: { sellerAgentId: woocommerceSellerId },
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/connectors/sync-logs',
+        headers: operatorHeaders,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.syncLogs.length).toBeGreaterThan(0);
+      expect(body.syncLogs[0].connector).toBe('woocommerce');
     });
   });
 });

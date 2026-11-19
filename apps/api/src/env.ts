@@ -7,7 +7,12 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+// True for any vitest run, even if NODE_ENV hasn't been explicitly set to
+// 'test' (e.g. a bare `pnpm test` in a shell that already exports another
+// NODE_ENV). Vitest always sets VITEST='true', so checking both keeps
+// test-only gates (rate limiting, verbose logging) off regardless of how
+// NODE_ENV landed.
+export const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
 const EnvSchema = z.object({
   DATABASE_URL: isTest ? z.string().default('postgresql://mock') : z.string(),
@@ -26,6 +31,11 @@ const EnvSchema = z.object({
   // may set their own tighter limits.
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+  // Trust X-Forwarded-For so request.ip (and therefore per-IP rate limiting)
+  // reflects the real client behind a hosting proxy (Railway/Cloud Run/etc.).
+  // Default on; set to false only for a deployment with no reverse proxy in
+  // front, where trusting XFF would let a client spoof its own IP.
+  TRUST_PROXY: z.coerce.boolean().default(true),
 });
 
 // Run raw parse first

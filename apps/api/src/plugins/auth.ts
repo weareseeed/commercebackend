@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import crypto from 'crypto';
-import { prisma, Agent, hashApiKey } from '@commercebackend/db';
+import { prisma, Agent, hashApiKey, hashApiKeyWithSalt, extractApiKeyId } from '@commercebackend/db';
 import { AppError } from './error-handler';
 import { env } from '../env';
 
@@ -20,6 +20,28 @@ declare module 'fastify' {
   }
 }
 
+// Verifies a bearer API key against either key format:
+//  - new-format keys (`<prefix><keyId>.<secret>`): the public `keyId` looks
+//    up the row, then the full key is re-hashed with that row's own
+//    `apiKeySalt` and compared to `apiKeyHash`.
+//  - legacy keys (no embedded id): hashed with the old shared salt and
+//    looked up by `apiKeyHash` equality, same as before this migration.
+// This keeps every API key issued before the per-record-salt change working
+// with no backfill, while all new keys get a per-record salt.
+async function lookupAgentByApiKey(apiKey: string): Promise<Agent | null> {
+  const keyId = extractApiKeyId(apiKey);
+
+  if (keyId) {
+    const agent = await prisma.agent.findFirst({ where: { apiKeyId: keyId } });
+    if (!agent || !agent.apiKeySalt) return null;
+    const expectedHash = hashApiKeyWithSalt(apiKey, agent.apiKeySalt);
+    return constantTimeEquals(expectedHash, agent.apiKeyHash) ? agent : null;
+  }
+
+  const apiKeyHash = hashApiKey(apiKey);
+  return prisma.agent.findFirst({ where: { apiKeyHash } });
+}
+
 export async function authenticateAgent(request: FastifyRequest, reply: FastifyReply) {
   const authHeader = request.headers.authorization;
   if (!authHeader) {
@@ -32,11 +54,7 @@ export async function authenticateAgent(request: FastifyRequest, reply: FastifyR
   }
 
   const apiKey = parts[1];
-  const apiKeyHash = hashApiKey(apiKey);
-
-  const agent = await prisma.agent.findFirst({
-    where: { apiKeyHash },
-  });
+  const agent = await lookupAgentByApiKey(apiKey);
 
   if (!agent) {
     throw new AppError('UNAUTHORIZED', 'Invalid API key', 401);
@@ -48,6 +66,7 @@ export async function authenticateAgent(request: FastifyRequest, reply: FastifyR
 
   const agentWithoutHash = { ...agent };
   delete (agentWithoutHash as any).apiKeyHash;
+  delete (agentWithoutHash as any).apiKeySalt;
   request.agent = agentWithoutHash;
 }
 

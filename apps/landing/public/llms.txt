@@ -7,10 +7,13 @@ CommerceBackend is an open-source, agent-first commerce backend owned and mainta
 - **Agent Guide**: https://github.com/weareseeed/commercebackend/blob/master/AGENTS.md
 - **API Contract**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/native-api.md
 - **Full LLM Context**: https://www.commercebackend.com/llms-full.txt
+- **Machine-Readable Project Metadata**: https://www.commercebackend.com/.well-known/commercebackend.json
 - **Agent Metadata**: https://www.commercebackend.com/.well-known/agents.json
 - **Agent Skill Kit**: https://github.com/weareseeed/commercebackend/tree/master/agent-skill-kit
 - **Buyer Agent Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-buyer-flow
+- **Agent Negotiation Flow Example**: https://github.com/weareseeed/commercebackend/tree/master/examples/agent-negotiation-flow
 - **Prompt Pack**: https://github.com/weareseeed/commercebackend/tree/master/prompts
+- **MCP Server**: https://github.com/weareseeed/commercebackend/tree/master/packages/mcp
 - **MCP Tool Spec**: https://github.com/weareseeed/commercebackend/blob/master/docs/api/mcp-tool-spec.md
 - **License**: Apache-2.0
 - **Current Release Target**: v0.2.2
@@ -32,6 +35,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - Use `llms-full.txt` for complete model context.
 - Use `agent-skill-kit` for reusable buyer, seller, coding-agent, and evaluation instructions.
 - Use `examples/agent-buyer-flow` to run the buyer search, offer, and checkout pattern.
+- Use `examples/agent-negotiation-flow` to run a full buyer/seller counteroffer negotiation ending in checkout at the negotiated price.
 - Use `/prompts` for copy/paste-ready buyer, seller, and coding-agent prompts.
 - Use `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/commercebackend.mdc`, or `.windsurf/rules/commercebackend.md` for tool-specific coding-agent adapters.
 
@@ -43,6 +47,12 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 - **Submit and negotiate offers** through buyer/seller offer state transitions.
 - **Initiate Stripe-backed checkout intents** for listings or accepted offers.
 - **Track order and fulfillment status** after Stripe webhook confirmation.
+- **Check a per-agent reputation signal** (completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role) via `GET /v1/agents/me` (self) or `GET /v1/agents/:id` (another agent's public profile) — read-only groundwork for a future purchase-policy trust check.
+- **Check a purchase-policy spending-limit signal** on `POST /v1/checkout-intents` (`spendingLimitSignal`) — reports whether the checkout would push the buyer's trailing-period spend over an optional per-policy budget; read-only and does not block checkout or change `policyDecision`.
+- **See a seller reputation score alongside search results, and opt in to reputation-aware ranking** on `POST /v1/search` — each result includes `sellerReputationScore` (the listing seller's existing reputation signal collapsed to 0-1, or `null` with no history yet); passing `rankByReputation: true` re-sorts results to favor higher-reputation sellers, while the default (`false`/omitted) keeps existing relevance/recency ordering unchanged.
+- **Use an MCP server** (`packages/mcp`, `@commercebackend/mcp`) to operate the above through Model Context Protocol tools instead of hand-written REST calls.
+- **Use the ACP adapter** (`/v1/protocols/acp/*`) for a scoped subset of the Agentic Commerce Protocol — product feed and single-listing checkout sessions over the existing Stripe-hosted checkout redirect; see `docs/api/protocol-acp.md` for the supported subset and unsupported fields.
+- **Use the UCP adapter** (`/v1/protocols/ucp/*`, `@commercebackend/protocol-ucp`) — CommerceBackend's own vendor-neutral, schema.org-inspired mapping layer — to list products and create/read orders that map onto existing checkout intents; see `docs/api/protocol-ucp.md` for the supported subset. Not a claim of conformance to any named external "UCP" standard.
 
 ## Agent Safety Rules
 
@@ -75,9 +85,7 @@ Seeed LLC (https://www.seeed.us) is a software engineering company focused on Sq
 
 ## Roadmap
 
-- Connectors to third-party marketplaces.
-- Adapter layers for Agent Communication Protocol (ACP) and Universal Commerce Protocol (UCP).
-- Richer examples showing agent-to-agent commerce flows.
+- Additional example flows (e.g. operator dashboard ledger views for the checkout event ledger).
 
 ## Agent Skill Maintenance
 
