@@ -123,6 +123,8 @@ model CheckoutIntent {
   purchasePolicyId        String?
   purchasePolicy          PurchasePolicy? @relation(fields: [purchasePolicyId], references: [id], onDelete: SetNull)
   policyDecision          PurchasePolicyDecision?
+  // Why the policy required human approval (empty when auto-approved).
+  policyDecisionReasons   String[]                @default([])
   // Read-only "would this checkout violate the buyer's spending limit?"
   // signal computed at creation time (weekly backlog item 14). Separate from
   // policyDecision/status above: it never blocks or alters checkout outcome,

@@ -46,6 +46,7 @@ export const CheckoutIntentResponseSchema = z.object({
   stripeCheckoutSessionId: z.string().nullable().optional(),
   purchasePolicyId: z.string().nullable().optional(),
   policyDecision: z.enum(['policy_approved', 'human_approval_required', 'no_policy']).nullable().optional(),
+  policyDecisionReasons: z.array(z.string()).optional(),
   spendingLimitSignal: SpendingLimitSignalSchema.nullable().optional(),
   approvalRequestedAt: z.date().or(z.string()).nullable().optional(),
   humanApprovedAt: z.date().or(z.string()).nullable().optional(),
