@@ -2,6 +2,7 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import fastifyRawBody from 'fastify-raw-body';
+import { env, isTest } from './env';
 import { registerErrorHandler } from './plugins/error-handler';
 import { registerAuthPlugin } from './plugins/auth';
 import { healthRoutes } from './routes/health';
@@ -14,11 +15,28 @@ import { orderRoutes } from './routes/orders';
 import { offersRoutes } from './routes/offers';
 import { purchasePolicyRoutes } from './routes/purchase-policies';
 import { sandboxRoutes } from './routes/sandbox';
+import { operatorRoutes } from './routes/operator';
+import { checkoutEventsRoutes } from './routes/checkout-events';
+import { protocolAcpRoutes } from './routes/protocol-acp';
+import { protocolUcpRoutes } from './routes/protocol-ucp';
+import { connectorRoutes } from './routes/connectors';
 
 import crypto from 'crypto';
 
 export function buildApp() {
   const app = fastify({
+    // Behind a hosting proxy (Railway/Cloud Run/etc.) the socket peer is the
+    // proxy, not the client. Trust X-Forwarded-For so `request.ip` is the real
+    // client address — without this, per-IP rate limiting keys on the proxy hop
+    // and never accumulates (i.e. does not actually limit anyone). A client can
+    // still spoof XFF to evade limits; that is an accepted trade-off for a
+    // test-mode sandbox. Locally / in tests there is no proxy, so this is a no-op.
+    // Configurable via TRUST_PROXY (default on) for deployments with no
+    // reverse proxy in front, where trusting XFF would be spoofable.
+    trustProxy: env.TRUST_PROXY,
+    // Cap request bodies to blunt abuse on a public endpoint (agent payloads
+    // are small JSON documents). Oversized bodies are rejected with 413.
+    bodyLimit: 65536, // 64 KB
     logger: process.env.NODE_ENV !== 'test' ? {
       redact: {
         paths: [
@@ -30,8 +48,10 @@ export function buildApp() {
           'req.headers["stripe_signature"]',
           'apiKey',
           'apiKeyHash',
+          'apiKeySalt',
           '*.apiKey',
           '*.apiKeyHash',
+          '*.apiKeySalt',
         ],
         censor: '[REDACTED]',
       },
@@ -51,13 +71,24 @@ export function buildApp() {
     reply.header('x-request-id', request.id);
   });
 
-  // CORS Configuration
+  // CORS Configuration. Default '*' (public agent API); override with a
+  // comma-separated CORS_ORIGIN allowlist for browser callers.
+  const corsOrigin =
+    env.CORS_ORIGIN === '*'
+      ? '*'
+      : env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
   app.register(cors, {
-    origin: '*',
+    origin: corsOrigin,
   });
 
+  // Per-IP rate limiting. Applied globally outside tests so authenticated
+  // mutation routes are covered; individual routes may set tighter limits, and
+  // health/webhook opt out. Disabled under test (NODE_ENV==='test' or a bare
+  // vitest run) to keep the suite deterministic.
   app.register(rateLimit, {
-    global: false,
+    global: !isTest,
+    max: env.RATE_LIMIT_MAX,
+    timeWindow: env.RATE_LIMIT_WINDOW,
     keyGenerator: (request) => request.ip,
   });
 
@@ -84,6 +115,11 @@ export function buildApp() {
   app.register(offersRoutes);
   app.register(purchasePolicyRoutes);
   app.register(sandboxRoutes);
+  app.register(operatorRoutes);
+  app.register(checkoutEventsRoutes);
+  app.register(protocolAcpRoutes);
+  app.register(protocolUcpRoutes);
+  app.register(connectorRoutes);
 
   return app;
 }

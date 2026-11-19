@@ -71,12 +71,22 @@ export const SearchListingsRequestSchema = z.object({
   filters: SearchFiltersSchema.default({ status: 'active' }),
   limit: z.number().int().min(1).max(100).default(20),
   offset: z.number().int().nonnegative().default(0),
+  // Opt-in, read-only re-ranking (weekly backlog item 18): when true, results
+  // are re-sorted to favor higher seller-reputation scores. Default (false)
+  // keeps the existing relevance/recency ordering unchanged.
+  rankByReputation: z.boolean().default(false),
 });
 
 export const SearchListingResultSchema = z.object({
   listing: ListingResponseSchema,
   matchReason: z.string(),
   score: z.number(),
+  // Groundwork for the Search & discovery at scale epic: the listing
+  // seller's existing reputation signal (see AgentReputationSchema),
+  // collapsed to a single 0-1 score, or null when the seller has no decided
+  // checkout/offer history yet. Surfaced alongside results; only changes
+  // ordering when `rankByReputation` is set on the request.
+  sellerReputationScore: z.number().min(0).max(1).nullable(),
 });
 
 export const SearchListingsResponseSchema = z.object({
