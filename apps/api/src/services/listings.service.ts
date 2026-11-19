@@ -31,6 +31,10 @@ export class ListingsService {
     });
   }
 
+  static async countPublicListings() {
+    return prisma.listing.count({ where: { status: 'active' } });
+  }
+
   static async getListingById(id: string) {
     const listing = await prisma.listing.findUnique({
       where: { id },

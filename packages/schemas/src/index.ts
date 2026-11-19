@@ -5,3 +5,5 @@ export * from './order';
 export * from './errors';
 export * from './offer';
 export * from './purchase-policy';
+export * from './operator';
+export * from './checkout-events';
