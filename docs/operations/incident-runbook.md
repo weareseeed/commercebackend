@@ -88,16 +88,20 @@ case; instead it sets the checkout intent's status to
 `payment_inventory_conflict` and cancels the associated offer. **Money has
 already been captured by Stripe with no order to show for it.**
 
-### Known detection gap
+### Detection
 
-Unlike `CHECKOUT_PERSISTENCE_FAILED`, this state is **not currently written
-to `CriticalEvent`** and does **not** appear in
-`GET /v1/operator/metrics` or the operator dashboard. This is a real gap —
-tracked as the `[HUMAN-LED]` `payment_inventory_conflict` policy item in
-[`docs/weekly-roadmap.md`](../weekly-roadmap.md) — because the correct
-remediation (auto-refund vs. manual review queue) is a money-path policy
-decision that needs maintainer sign-off before any code change ships. Until
-that lands, detection is manual:
+When this state is reached, the webhook transaction also writes a
+`CriticalEvent` row (code `PAYMENT_INVENTORY_CONFLICT`) and a structured
+`critical` log line. The event payload has `checkoutIntentId`, `listingId`,
+`offerId`, `stripePaymentIntentId`, `quantityRequested`, and
+`quantityAvailable`.
+
+- **API**: `GET /v1/operator/metrics` — `criticalEvents.byCode.PAYMENT_INVENTORY_CONFLICT`.
+- **Operator dashboard** — the critical events table.
+- **Logs** — search for `"code":"PAYMENT_INVENTORY_CONFLICT"`.
+
+Conflicts that occurred **before** this event existed were not recorded.
+Find them with:
 
 ```sql
 SELECT id, "offerId", "stripePaymentIntentId", "updatedAt"
@@ -106,8 +110,9 @@ WHERE status = 'payment_inventory_conflict'
 ORDER BY "updatedAt" DESC;
 ```
 
-Run this periodically (or after a spike in checkout volume / known
-inventory races) against the environment's database.
+The remediation (manual refund now, operator-triggered refund later) is a
+`[HUMAN-LED]` decision; see
+[`inventory-conflict-options.md`](inventory-conflict-options.md).
 
 ### What to check
 

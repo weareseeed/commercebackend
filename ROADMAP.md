@@ -35,6 +35,18 @@ What exists now:
   body-size limits, and a strict registration/search abuse cap.
 - Live hosted public sandbox at `https://api.commercebackend.com` (Stripe test
   mode), rate limits verified enforcing behind the proxy.
+- Purchase policies with human-approval gating: checkout intents are evaluated
+  against the buyer agent's policy before any Stripe session exists;
+  `human_approval_required` intents are approved or rejected by an operator.
+  The spending-limit check is a read-only signal, not yet enforced.
+- Read-only operator metrics, dashboard, and checkout event ledger endpoint.
+- Working ACP and UCP adapters for a documented subset, and an MCP server
+  (`packages/mcp`).
+- Read-only, operator-triggered catalog import connectors for Shopify, Square,
+  BigCommerce, and WooCommerce (fixture-driven; optional live mode against the
+  operator's own sandbox/store).
+- Per-agent reputation signal and an opt-in reputation-aware search ranking.
+- Runnable buyer and negotiation examples; an incident runbook.
 - Apache-2.0 license.
 
 Current release:
@@ -44,7 +56,9 @@ Current release:
   auth, body limits).
 - `v0.2.1` — post-v0.2 hardening and discovery verification.
 
-## v0.3 — Connector imports, search correctness, and controlled checkout design
+## v0.3 — Connector imports, search correctness, and controlled checkout design (largely shipped)
+
+Status: purchase policy, approval states, the event-ledger endpoint, DB-level search, the connector abstraction, and the four connector spikes have shipped (see current status above). Still open: enforcing the spending limit, approval expiry and operator notification, redirect checkout for imported storefronts, and connector sync scheduling. See `docs/product/policy-approval-design.md`.
 
 Goal: let external commerce catalogs enter CommerceBackend while keeping the native agent marketplace model as the internal source of truth, and design the policy/approval layer agents need before money moves.
 
@@ -72,7 +86,9 @@ Non-goals for v0.3:
 - Multi-seller carts.
 - Finished merchant dashboard.
 
-## v0.4 — Hosted sandbox and operator visibility
+## v0.4 — Hosted sandbox and operator visibility (largely shipped)
+
+Status: the hosted test-mode sandbox, rate limiting, health endpoint, sandbox docs, operator metrics, dashboard, and ledger endpoint have shipped. Still open: a dashboard view for the ledger and pending approvals, and a measurable outside-builder success metric.
 
 Goal: make CommerceBackend feel live to outside builders without asking them to become infrastructure operators first.
 
@@ -105,7 +121,9 @@ Non-goals for v0.4:
 - Unrestricted public write access.
 - Production merchant connector onboarding.
 
-## v0.5 — Protocol adapters and agent integrations
+## v0.5 — Protocol adapters and agent integrations (in progress)
+
+Status: ACP/UCP adapters, the MCP server, and runnable buyer/negotiation examples have shipped. Still open: MCP parity for negotiation and reputation, agent evaluation fixtures, and permission-model examples.
 
 Goal: make CommerceBackend easier for agents and agent frameworks to consume without duplicating behavior across tools.
 
@@ -144,7 +162,7 @@ CommerceBackend v0.2.2 does not include:
 - Tax calculation.
 - Stripe Connect payouts.
 - Shipping labels.
-- Merchant connector imports.
+- Automatic or scheduled merchant connector sync, or imports from a third-party merchant's live store (operator-triggered, read-only imports exist).
 - Auctions.
 - Multi-seller carts.
 - A production public marketplace with unrestricted real-money seller onboarding.

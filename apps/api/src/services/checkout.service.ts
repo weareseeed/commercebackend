@@ -6,6 +6,14 @@ import { AppError } from '../plugins/error-handler';
 
 type PolicyDecision = 'policy_approved' | 'human_approval_required' | 'no_policy';
 
+export type PolicyDecisionReason =
+  | 'NO_POLICY'
+  | 'LISTING_TYPE_NOT_ALLOWED'
+  | 'SELLER_NOT_ALLOWED'
+  | 'OFFER_REQUIRES_APPROVAL'
+  | 'AMOUNT_ABOVE_AUTO_APPROVE'
+  | 'AMOUNT_ABOVE_APPROVAL_THRESHOLD';
+
 // Checkout intents in these statuses represent spend that is either
 // committed (awaiting a human or Stripe outcome) or completed. Statuses that
 // mean the checkout never went through (rejected, expired, cancelled,
@@ -39,7 +47,7 @@ export class CheckoutService {
     listing: any,
     amountTotal: number,
     hasOffer: boolean
-  ): Promise<{ purchasePolicy: any | null; policyDecision: PolicyDecision }> {
+  ): Promise<{ purchasePolicy: any | null; policyDecision: PolicyDecision; reasons: PolicyDecisionReason[] }> {
     const purchasePolicy = await prisma.purchasePolicy.findFirst({
       where: {
         buyerAgentId,
@@ -50,7 +58,7 @@ export class CheckoutService {
     });
 
     if (!purchasePolicy) {
-      return { purchasePolicy: null, policyDecision: 'human_approval_required' };
+      return { purchasePolicy: null, policyDecision: 'human_approval_required', reasons: ['NO_POLICY'] };
     }
 
     const listingTypeAllowed =
@@ -60,18 +68,23 @@ export class CheckoutService {
       purchasePolicy.allowedSellerAgentIds.length === 0 ||
       purchasePolicy.allowedSellerAgentIds.includes(listing.sellerAgentId);
     const offerRequiresApproval = hasOffer && purchasePolicy.requireHumanApprovalForOffers;
-    const amountRequiresApproval =
-      amountTotal > purchasePolicy.maxAutoApproveAmount ||
-      amountTotal > purchasePolicy.requireHumanApprovalAboveAmount;
 
-    if (!listingTypeAllowed || !sellerAllowed || offerRequiresApproval || amountRequiresApproval) {
+    const reasons: PolicyDecisionReason[] = [];
+    if (!listingTypeAllowed) reasons.push('LISTING_TYPE_NOT_ALLOWED');
+    if (!sellerAllowed) reasons.push('SELLER_NOT_ALLOWED');
+    if (offerRequiresApproval) reasons.push('OFFER_REQUIRES_APPROVAL');
+    if (amountTotal > purchasePolicy.maxAutoApproveAmount) reasons.push('AMOUNT_ABOVE_AUTO_APPROVE');
+    if (amountTotal > purchasePolicy.requireHumanApprovalAboveAmount) reasons.push('AMOUNT_ABOVE_APPROVAL_THRESHOLD');
+
+    if (reasons.length > 0) {
       return {
         purchasePolicy,
         policyDecision: 'human_approval_required',
+        reasons,
       };
     }
 
-    return { purchasePolicy, policyDecision: 'policy_approved' };
+    return { purchasePolicy, policyDecision: 'policy_approved', reasons: [] };
   }
 
   // Read-only, non-blocking signal (weekly backlog item 14): reports whether
@@ -392,6 +405,7 @@ export class CheckoutService {
           cancelUrl: input.cancelUrl,
           purchasePolicyId: policyEvaluation.purchasePolicy?.id ?? null,
           policyDecision: policyEvaluation.policyDecision,
+          policyDecisionReasons: policyEvaluation.reasons,
           spendingLimitSignal,
           approvalRequestedAt:
             policyEvaluation.policyDecision === 'human_approval_required' ? new Date() : null,
