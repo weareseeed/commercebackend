@@ -31,7 +31,7 @@ CommerceBackend is for:
 - autonomous commerce agents that need to discover, negotiate, and purchase goods or services through APIs;
 - AI coding agents that need a clear repo map and safe contribution boundaries;
 - marketplace operators testing agent-native commerce workflows;
-- protocol implementers integrating CommerceBackend's ACP adapter, or exploring UCP-style commerce adapters (still a stub).
+- protocol implementers integrating CommerceBackend's ACP adapter, or exploring CommerceBackend's UCP-style commerce adapter (a tested mapping layer for a documented subset).
 
 ## What agents can do today
 
