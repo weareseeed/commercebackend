@@ -1,6 +1,6 @@
 # Purchase policy and approval: remaining design
 
-Status: **design proposal for maintainer review. Nothing here is implemented.**
+Status: **design proposal for maintainer review.** Item 2 (decision reasons) and the read-only part of item 4 (pending-approval count in operator metrics and dashboard) are implemented; everything else is not.
 It touches checkout, so it is `[HUMAN-LED]` per `AGENTS.md`; do not build it
 from the weekly routine.
 
