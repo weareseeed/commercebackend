@@ -50,7 +50,7 @@ pnpm build
 NODE_ENV=test pnpm test
 ```
 
-`pnpm verify` is the repo shortcut for the full verification bundle above.
+`pnpm verify` is the repo shortcut for the full verification bundle above. `pnpm typecheck` and `pnpm test` auto-build missing workspace artifacts before they run; that build also generates the Prisma client for the workspace.
 
 For docs/static-discovery-only changes, still run formatting/build checks when practical. Validate JSON with a parser and verify Markdown links that changed.
 

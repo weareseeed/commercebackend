@@ -38,7 +38,7 @@ cp .env.example .env
 pnpm verify
 ```
 
-`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test`.
+`pnpm verify` runs `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `NODE_ENV=test pnpm test`. `pnpm typecheck` and `pnpm test` auto-build missing workspace artifacts on a clean clone before they start; that build also generates the Prisma client.
 
 Use mock self-tests for local commerce-loop verification without real Stripe network calls:
 
