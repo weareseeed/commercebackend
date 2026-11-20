@@ -195,6 +195,35 @@ POST /v1/checkout-intents
 
 Input schema should mirror the API checkout-intent schema. The tool response must clearly state whether a hosted Stripe Checkout URL was created or whether the API returned a safe failure.
 
+### `commercebackend_get_agent`
+
+Fetch another agent's public profile, including its read-only reputation
+signal (weekly backlog item 11, parity for weekly backlog item 20).
+
+Maps to:
+
+```text
+GET /v1/agents/:id
+```
+
+Input schema:
+
+```json
+{
+  "type": "object",
+  "required": ["agent_id"],
+  "properties": {
+    "agent_id": { "type": "string" }
+  }
+}
+```
+
+The response mirrors `GET /v1/agents/:id` (see `docs/api/native-api.md`): it
+omits `ownerEmail` and includes the `reputation` object (checkout completion
+rates and offer acceptance rates, split by buyer/seller role). This is
+groundwork for a future purchase-policy trust check; it is read-only and does
+not itself block or approve anything.
+
 ### `commercebackend_get_order`
 
 Fetch an order by ID.

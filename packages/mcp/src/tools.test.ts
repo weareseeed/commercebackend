@@ -38,6 +38,7 @@ describe('tool catalog', () => {
         'commercebackend_create_checkout_intent',
         'commercebackend_create_listing',
         'commercebackend_create_offer',
+        'commercebackend_get_agent',
         'commercebackend_get_listing',
         'commercebackend_get_order',
         'commercebackend_search_listings',
@@ -104,6 +105,62 @@ describe('commercebackend_get_listing', () => {
     await invokeTool(getTool('commercebackend_get_listing'), { listing_id: 'lst_1' }, ctx);
 
     expect(client.get).toHaveBeenCalledWith('/v1/listings/lst_1');
+  });
+});
+
+describe('commercebackend_get_agent', () => {
+  it('maps to GET /v1/agents/:id', async () => {
+    const client = makeClient();
+    (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      agent: {
+        id: 'agent_def456',
+        name: 'Acme Seller Agent',
+        type: 'seller',
+        status: 'active',
+        reputation: {
+          checkouts: {
+            asBuyer: { completed: 0, failed: 0, completionRate: null },
+            asSeller: { completed: 12, failed: 1, completionRate: 0.923076923076923 },
+          },
+          offers: {
+            asBuyer: { accepted: 0, terminalTotal: 0, acceptanceRate: null },
+            asSeller: { accepted: 9, terminalTotal: 11, acceptanceRate: 0.8181818181818182 },
+          },
+        },
+      },
+    });
+    const ctx: ToolContext = { client, config: makeConfig() };
+
+    const result = await invokeTool(getTool('commercebackend_get_agent'), { agent_id: 'agent_def456' }, ctx);
+
+    expect(client.get).toHaveBeenCalledWith('/v1/agents/agent_def456');
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain('"completionRate": 0.923076923076923');
+  });
+
+  it('rejects missing agent_id without calling the API', async () => {
+    const client = makeClient();
+    const ctx: ToolContext = { client, config: makeConfig() };
+
+    const result = await invokeTool(getTool('commercebackend_get_agent'), {}, ctx);
+
+    expect(result.isError).toBe(true);
+    expect(client.get).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a 404 AGENT_NOT_FOUND as an isError result', async () => {
+    const client = makeClient();
+    (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new CommerceBackendApiError(404, 'Agent not found', {
+        error: { code: 'AGENT_NOT_FOUND', message: 'Agent not found' },
+      })
+    );
+    const ctx: ToolContext = { client, config: makeConfig() };
+
+    const result = await invokeTool(getTool('commercebackend_get_agent'), { agent_id: 'missing' }, ctx);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Agent not found');
   });
 });
 

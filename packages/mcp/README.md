@@ -17,6 +17,7 @@ This package implements the contract in [`docs/api/mcp-tool-spec.md`](../../docs
 | `commercebackend_create_offer`                 | `POST /v1/listings/:id/offers`           |
 | `commercebackend_accept_offer`                 | `POST /v1/offers/:id/accept`             |
 | `commercebackend_create_checkout_intent`       | `POST /v1/checkout-intents`              |
+| `commercebackend_get_agent`                    | `GET /v1/agents/:id`                     |
 | `commercebackend_get_order`                    | `GET /v1/orders/:id`                     |
 | `commercebackend_update_fulfillment_status`    | `POST /v1/orders/:id/fulfillment`        |
 
