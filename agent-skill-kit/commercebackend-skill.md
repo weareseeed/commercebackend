@@ -54,7 +54,7 @@ Do not use this skill to claim unsupported capabilities such as refunds, Stripe 
 - Stripe-backed checkout intents for listings or accepted offers.
 - Stripe webhook reconciliation for paid checkout sessions.
 - Buyer/seller order lookup and seller fulfillment status updates.
-- An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order tools over the Model Context Protocol; see `docs/api/mcp-tool-spec.md`.
+- An MCP server (`packages/mcp`, `@commercebackend/mcp`) exposing search/listing/offer/checkout/order/agent-profile tools over the Model Context Protocol, including a read-only agent reputation lookup (`commercebackend_get_agent`); see `docs/api/mcp-tool-spec.md`.
 - Initial ACP (Agentic Commerce Protocol) adapter — a working, scoped subset (product feed + checkout sessions over the existing Stripe-hosted checkout redirect); see `docs/api/protocol-acp.md` for the supported subset and clearly-labeled unsupported fields.
 - Initial UCP adapter (CommerceBackend's own vendor-neutral, schema.org-inspired commerce mapping layer) — see `docs/api/protocol-ucp.md` for the supported subset.
 - Operator-triggered, read-only Square catalog import (fixture-driven by default; optionally live against the operator's own Square Developer Sandbox when a real `SQUARE_ACCESS_TOKEN` is configured, never a third-party merchant's account) mapping into ordinary agent-facing listings; see `docs/api/connectors-square.md`.

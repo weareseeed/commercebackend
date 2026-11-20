@@ -14,7 +14,7 @@ describe('buildServer', () => {
 
     expect(server.isConnected()).toBe(false);
     // Sanity check that we didn't silently drop a tool/resource while wiring registration.
-    expect(toolDefinitions.length).toBe(9);
+    expect(toolDefinitions.length).toBe(10);
     expect(resourceDefinitions.length).toBe(6);
   });
 });
