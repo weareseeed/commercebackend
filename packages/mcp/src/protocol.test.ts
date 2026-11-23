@@ -37,7 +37,28 @@ describe('MCP protocol round-trip', () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toContain('commercebackend_search_listings');
-    expect(tools.length).toBe(9);
+    expect(tools.length).toBe(10);
+  });
+
+  it('runs commercebackend_get_agent against a mocked API', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ agent: { id: 'agent_def456', name: 'Acme Seller Agent', type: 'seller', status: 'active' } }),
+        { status: 200 }
+      )
+    );
+
+    const client = await connectedClient();
+    const result = await client.callTool({
+      name: 'commercebackend_get_agent',
+      arguments: { agent_id: 'agent_def456' },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.test/v1/agents/agent_def456',
+      expect.objectContaining({ method: 'GET' })
+    );
   });
 
   it('runs commercebackend_search_listings against a mocked API', async () => {
