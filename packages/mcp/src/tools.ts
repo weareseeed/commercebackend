@@ -78,6 +78,10 @@ const GetOrderInput = z.object({
   order_id: z.string().min(1, 'order_id is required'),
 });
 
+const GetAgentInput = z.object({
+  agent_id: z.string().min(1, 'agent_id is required'),
+});
+
 const UpdateFulfillmentInput = UpdateFulfillmentSchema.extend({
   order_id: z.string().min(1, 'order_id is required'),
 });
@@ -213,6 +217,22 @@ export const toolDefinitions = [
       return jsonResult(data);
     },
   } satisfies ToolDefinition<typeof GetOrderInput>,
+
+  {
+    name: 'commercebackend_get_agent',
+    title: 'Get a CommerceBackend agent profile',
+    description:
+      'Fetch another agent\'s public profile by ID, including its read-only reputation signal ' +
+      '(completed vs. failed checkouts, offer acceptance rate, split by buyer/seller role). Maps to ' +
+      'GET /v1/agents/:id. This is groundwork for a future purchase-policy trust check; it is read-only ' +
+      'and does not itself block or approve anything.',
+    inputSchema: GetAgentInput,
+    mutating: false,
+    handler: async (args, { client }) => {
+      const data = await client.get(`/v1/agents/${encodeURIComponent(args.agent_id)}`);
+      return jsonResult(data);
+    },
+  } satisfies ToolDefinition<typeof GetAgentInput>,
 
   {
     name: 'commercebackend_update_fulfillment_status',

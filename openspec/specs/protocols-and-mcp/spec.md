@@ -29,3 +29,8 @@ standard.
 #### Scenario: Tool call
 - **WHEN** an MCP client calls `commercebackend_search_listings`
 - **THEN** the server calls `POST /v1/search` with the configured agent key
+
+#### Scenario: Agent reputation parity
+- **WHEN** an MCP client calls `commercebackend_get_agent` with an `agent_id`
+- **THEN** the server calls `GET /v1/agents/:id` and returns that agent's
+  public profile, including its read-only reputation signal
