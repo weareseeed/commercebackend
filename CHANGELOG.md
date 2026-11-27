@@ -30,6 +30,7 @@ Shipped on `master` since v0.2.2 (not yet tagged). PR numbers refer to
 - Read-only catalog connectors for Square, Shopify, BigCommerce, and
   WooCommerce (#160, #165, #173, #184).
 - Agent-to-agent negotiation example (#193) and an incident runbook (#168).
+- Connector sync log view on the read-only operator dashboard (#212).
 
 ### Changed
 - Listing search runs in PostgreSQL instead of an in-memory scan (#148).

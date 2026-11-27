@@ -300,6 +300,24 @@
         </table>
         <p class="empty" id="ledger-empty" style="display: none;">No events recorded for this checkout intent.</p>
       </section>
+
+      <section class="panel">
+        <h2>Connector sync log</h2>
+        <p>
+          Audit catalog import outcomes across the Square, Shopify, BigCommerce, and WooCommerce
+          connectors from <code>GET /v1/connectors/sync-logs</code>, newest first — without a raw
+          API call.
+        </p>
+        <button type="button" id="sync-logs-load-btn">Load sync logs</button>
+        <div class="status" id="sync-logs-status"></div>
+        <table id="sync-logs-table" style="display: none;">
+          <thead>
+            <tr><th>Connector</th><th>Seller</th><th>Status</th><th>Imported</th><th>Failed</th><th>Created at</th></tr>
+          </thead>
+          <tbody id="sync-logs-body"></tbody>
+        </table>
+        <p class="empty" id="sync-logs-empty" style="display: none;">No sync logs recorded yet.</p>
+      </section>
     </main>
     <script type="module" src="app.js"></script>
   </body>
