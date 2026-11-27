@@ -177,14 +177,14 @@ Every weekly item should ladder up to one of these long-horizon epics:
   `packages/mcp` so MCP clients have parity with the native API, matching
   `docs/api/mcp-tool-spec.md` conventions. _DoD:_ an MCP client can fetch the
   reputation signal for a seeded agent id; tests cover the tool. — [#210](https://github.com/weareseeed/commercebackend/pull/210)
-- [ ] **21. Operator dashboard: connector sync log view (read-only).**
+- [x] **21. Operator dashboard: connector sync log view (read-only).**
   Groundwork for the Operational credibility and Merchant reach epics:
   extend the read-only operator dashboard (item 10) with a page listing
   `CatalogSyncLog` rows (status, connector, seller, timestamps) across the
   Square/Shopify/BigCommerce/WooCommerce connectors (items 8, 9, 13, 15), so
   an operator can audit import outcomes without a raw API call. _DoD:_ the
   operator dashboard lists seeded sync logs across at least two connectors,
-  newest first; tests cover the view.
+  newest first; tests cover the view. — [#212](https://github.com/weareseeed/commercebackend/pull/212)
 - [ ] **22. Checkout event ledger exposed via MCP (read-only).** Groundwork
   for the Protocol leadership epic: expose the existing checkout event
   ledger endpoint (item 16, operator-gated) as an MCP resource/tool in
