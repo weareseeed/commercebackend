@@ -5,6 +5,7 @@
 // the rest of apps/landing. This page never calls any mutating endpoint.
 
 import { buildLedgerUrl, parseLedgerLookupResult, formatLedgerEvents } from './ledger.js';
+import { buildSyncLogsUrl, parseSyncLogsResult, formatSyncLogs } from './sync-logs.js';
 
 const DEFAULT_BASE_URL = 'https://api.commercebackend.com';
 
@@ -290,6 +291,111 @@ async function lookupLedger() {
   renderLedger(result.data);
 }
 
+const syncLogsLoadBtn = document.getElementById('sync-logs-load-btn');
+const syncLogsStatusEl = document.getElementById('sync-logs-status');
+const syncLogsTable = document.getElementById('sync-logs-table');
+const syncLogsBody = document.getElementById('sync-logs-body');
+const syncLogsEmpty = document.getElementById('sync-logs-empty');
+
+function setSyncLogsStatus(kind, message) {
+  syncLogsStatusEl.className = 'status';
+  if (!kind) {
+    syncLogsStatusEl.textContent = '';
+    return;
+  }
+  syncLogsStatusEl.classList.add(kind);
+  syncLogsStatusEl.textContent = message;
+}
+
+function renderSyncLogs(syncLogs) {
+  const rows = formatSyncLogs(syncLogs);
+  syncLogsBody.innerHTML = '';
+  if (rows.length === 0) {
+    syncLogsTable.style.display = 'none';
+    syncLogsEmpty.style.display = 'block';
+    return;
+  }
+  syncLogsEmpty.style.display = 'none';
+  syncLogsTable.style.display = 'table';
+  for (const row of rows) {
+    const tr = document.createElement('tr');
+    const connectorCell = document.createElement('td');
+    connectorCell.textContent = row.connector;
+    const sellerCell = document.createElement('td');
+    sellerCell.textContent = row.sellerAgentId;
+    const statusCell = document.createElement('td');
+    statusCell.textContent = row.status;
+    const importedCell = document.createElement('td');
+    importedCell.textContent = row.itemsImported.toLocaleString();
+    const failedCell = document.createElement('td');
+    failedCell.textContent = row.itemsFailed.toLocaleString();
+    const createdCell = document.createElement('td');
+    createdCell.textContent = row.createdAt ? new Date(row.createdAt).toLocaleString() : '—';
+    tr.appendChild(connectorCell);
+    tr.appendChild(sellerCell);
+    tr.appendChild(statusCell);
+    tr.appendChild(importedCell);
+    tr.appendChild(failedCell);
+    tr.appendChild(createdCell);
+    syncLogsBody.appendChild(tr);
+  }
+}
+
+async function loadSyncLogs() {
+  const baseUrl = baseUrlInput.value.trim().replace(/\/+$/, '');
+  const operatorKey = operatorKeyInput.value;
+
+  if (!baseUrl) {
+    setSyncLogsStatus('error', 'Enter an API base URL above.');
+    return;
+  }
+  if (!operatorKey) {
+    setSyncLogsStatus('error', 'Enter the operator key above.');
+    return;
+  }
+
+  syncLogsLoadBtn.disabled = true;
+  setSyncLogsStatus('loading', 'Loading sync logs…');
+  syncLogsTable.style.display = 'none';
+  syncLogsEmpty.style.display = 'none';
+
+  let response;
+  try {
+    response = await fetch(buildSyncLogsUrl(baseUrl), {
+      method: 'GET',
+      headers: {
+        'X-Operator-Key': operatorKey,
+      },
+    });
+  } catch (err) {
+    syncLogsLoadBtn.disabled = false;
+    setSyncLogsStatus(
+      'error',
+      'Network error — could not reach the API. Check the base URL, CORS configuration, and your connection.'
+    );
+    return;
+  }
+
+  syncLogsLoadBtn.disabled = false;
+
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    // Response wasn't JSON; parseSyncLogsResult still handles non-2xx
+    // statuses without needing the body.
+  }
+
+  const result = parseSyncLogsResult(response.status, body);
+  if (!result.ok) {
+    setSyncLogsStatus('error', result.errorMessage);
+    return;
+  }
+
+  setSyncLogsStatus(null);
+  renderSyncLogs(result.data.syncLogs);
+}
+
 configForm.addEventListener('submit', (event) => {
   event.preventDefault();
   fetchMetrics();
@@ -298,6 +404,10 @@ configForm.addEventListener('submit', (event) => {
 ledgerForm.addEventListener('submit', (event) => {
   event.preventDefault();
   lookupLedger();
+});
+
+syncLogsLoadBtn.addEventListener('click', () => {
+  loadSyncLogs();
 });
 
 // Keep sessionStorage in sync as the operator edits fields, even before they
